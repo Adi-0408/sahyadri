@@ -14,7 +14,20 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ mini = false
   const isMr = Boolean(currentLanguage?.startsWith('mr'));
 
   const toggleLanguage = (lang: string) => {
-    i18n.changeLanguage(lang);
+    if (i18n.language === lang) {
+      setIsOpen(false);
+      return;
+    }
+    setIsOpen(false);
+    React.startTransition(() => {
+      i18n.changeLanguage(lang);
+      try {
+        localStorage.setItem('i18nextLng', lang);
+      } catch {}
+      if (typeof document !== 'undefined') {
+        document.documentElement.lang = lang;
+      }
+    });
   };
 
   useEffect(() => {

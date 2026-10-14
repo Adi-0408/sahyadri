@@ -513,7 +513,7 @@ export const SupplierDashboard: React.FC = () => {
 
         {/* TAB 1: CATALOG */}
         {activeTab === 'catalog' && (
-          <div className="space-y-6">
+          <div className="space-y-6 tab-transition">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-bold font-serif text-slate-900">
                 {isMr ? 'उपलब्ध साहित्याची यादी' : 'Listed Materials & Hardware'}
@@ -599,7 +599,7 @@ export const SupplierDashboard: React.FC = () => {
 
         {/* TAB 2: INQUIRIES */}
         {activeTab === 'leads' && (
-          <div className="space-y-6">
+          <div className="space-y-6 tab-transition">
             {inquiries.length === 0 ? (
               <Card className="p-12 text-center bg-white rounded-3xl border border-slate-200 shadow-sm">
                 <div className="w-16 h-16 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center mx-auto mb-4">

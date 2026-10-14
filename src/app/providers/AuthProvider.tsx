@@ -32,11 +32,11 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(() => {
     if (typeof window !== 'undefined') {
-      const savedAdmin = localStorage.getItem('astitva_admin_session');
-      if (savedAdmin) {
+      const savedUser = localStorage.getItem('sahyadri_user_session');
+      if (savedUser) {
         try {
-          const parsed = JSON.parse(savedAdmin);
-          if (parsed && (parsed.role === 'admin' || parsed.email === 'admin@gmail.com')) {
+          const parsed = JSON.parse(savedUser);
+          if (parsed && parsed.uid && parsed.role !== 'admin') {
             return parsed;
           }
         } catch (e) {}
@@ -50,11 +50,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         } catch (e) {}
       }
-      const savedUser = localStorage.getItem('sahyadri_user_session');
-      if (savedUser) {
+      const savedAdmin = localStorage.getItem('astitva_admin_session');
+      if (savedAdmin) {
         try {
-          const parsed = JSON.parse(savedUser);
-          if (parsed && parsed.uid) {
+          const parsed = JSON.parse(savedAdmin);
+          if (parsed && (parsed.role === 'admin' || parsed.email === 'admin@gmail.com')) {
             return parsed;
           }
         } catch (e) {}
@@ -102,10 +102,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(authUser);
       if (authUser && typeof window !== 'undefined') {
         if (authUser.role === 'admin' || authUser.email === 'admin@gmail.com') {
+          localStorage.removeItem('sahyadri_user_session');
+          localStorage.removeItem('sahyadri_rep_session');
           localStorage.setItem('astitva_admin_session', JSON.stringify(authUser));
         } else if (authUser.role === 'representative') {
+          localStorage.removeItem('astitva_admin_session');
+          localStorage.removeItem('sahyadri_user_session');
           localStorage.setItem('sahyadri_rep_session', JSON.stringify(authUser));
         } else {
+          localStorage.removeItem('astitva_admin_session');
+          localStorage.removeItem('sahyadri_rep_session');
           localStorage.setItem('sahyadri_user_session', JSON.stringify(authUser));
         }
       }
@@ -205,11 +211,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const isAdmin = 
           Boolean(isAdminLogin) ||
           u.role === 'admin' ||
-          normalizedEmail === 'admin@gmail.com' ||
-          normalizedEmail.includes('admin') ||
-          u.uid === 'B47ojxIU3icqVzJSRTdHpouDN0A2' ||
-          u.uid === 'A4TMfsDPivRJGcCXJhhKwyAkJzw2' ||
-          u.uid === 'jIzLTB96RzOtiIqDZlypNr1K2cy1';
+          normalizedEmail === 'admin@gmail.com';
 
         const cleanMobile = u.mobile || (/^\d{10}$/.test(email) ? email : undefined);
 
@@ -225,10 +227,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           repCode: u.code || u.repCode
         };
         if (loggedInUser.role === 'admin') {
+          localStorage.removeItem('sahyadri_user_session');
+          localStorage.removeItem('sahyadri_rep_session');
           localStorage.setItem('astitva_admin_session', JSON.stringify(loggedInUser));
         } else if (loggedInUser.role === 'representative') {
+          localStorage.removeItem('astitva_admin_session');
+          localStorage.removeItem('sahyadri_user_session');
           localStorage.setItem('sahyadri_rep_session', JSON.stringify(loggedInUser));
         } else {
+          localStorage.removeItem('astitva_admin_session');
+          localStorage.removeItem('sahyadri_rep_session');
           localStorage.setItem('sahyadri_user_session', JSON.stringify(loggedInUser));
         }
         setUser(loggedInUser);

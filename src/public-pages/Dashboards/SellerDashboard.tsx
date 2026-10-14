@@ -840,7 +840,7 @@ export const SellerDashboard: React.FC = () => {
 
         {/* ── TAB 1: PROPERTIES LISTING ── */}
         {activeTab === 'properties' && (
-          <div className="space-y-6">
+          <div className="space-y-6 tab-transition">
             
             {/* Filters Bar */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
@@ -1047,7 +1047,7 @@ export const SellerDashboard: React.FC = () => {
 
         {/* ── TAB 2: BUYER LEADS / INQUIRIES ── */}
         {activeTab === 'leads' && (
-          <Card className="p-6 bg-white border border-slate-200 rounded-3xl shadow-sm">
+          <Card className="p-6 bg-white border border-slate-200 rounded-3xl shadow-sm tab-transition">
             <div className="border-b border-slate-100 pb-4 mb-6">
               <h3 className="text-xl font-bold font-serif text-slate-900">
                 {isMr ? 'आपल्या मालमत्तेवरील खरेदीदारांच्या चौकशी' : 'Buyer Inquiries Received'}
@@ -1118,7 +1118,7 @@ export const SellerDashboard: React.FC = () => {
 
         {/* ── TAB 3: SELLER RESOURCES & CHECKLIST ── */}
         {activeTab === 'tips' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 tab-transition">
             <Card className="p-6 bg-white border border-slate-200 rounded-3xl shadow-sm space-y-4">
               <h3 className="font-serif font-bold text-lg text-slate-900 flex items-center gap-2">
                 <ShieldCheck className="w-5 h-5 text-primary" />

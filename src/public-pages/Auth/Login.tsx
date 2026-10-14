@@ -89,28 +89,30 @@ export const Login: React.FC = () => {
       const searchParams = new URLSearchParams(window.location.search);
       const redirectUrl = searchParams.get('redirect');
 
+      const userRole = cred?.user?.role || 'user';
       const isAdmin =
         isExplicitAdmin ||
-        cred?.user?.role === 'admin' ||
+        userRole === 'admin' ||
         cred?.user?.email === 'admin@gmail.com' ||
-        loginIdentifier.toLowerCase() === 'admin@gmail.com' ||
-        loginIdentifier.toLowerCase().includes('admin');
+        loginIdentifier.toLowerCase() === 'admin@gmail.com';
 
       let dest = redirectUrl || '/role-inquiry';
       if (isAdmin) {
         dest = redirectUrl || '/admin/dashboard';
-      } else if (cred?.user?.role === 'representative') {
+      } else if (userRole === 'representative') {
         dest = redirectUrl || '/admin/tasks';
-      } else if (cred?.user?.role === 'seller') {
+      } else if (userRole === 'seller') {
         dest = redirectUrl || '/seller/dashboard';
-      } else if (cred?.user?.role === 'buyer') {
+      } else if (userRole === 'buyer') {
         dest = redirectUrl || '/buyer/dashboard';
-      } else if (cred?.user?.role === 'builder') {
+      } else if (userRole === 'builder') {
         dest = redirectUrl || '/builder/dashboard';
-      } else if (cred?.user?.role === 'agent') {
+      } else if (userRole === 'agent') {
         dest = redirectUrl || '/agent/dashboard';
-      } else if (cred?.user?.role === 'supplier') {
+      } else if (userRole === 'supplier') {
         dest = redirectUrl || '/supplier/dashboard';
+      } else {
+        dest = redirectUrl || '/role-inquiry';
       }
 
       setPanelVisible(false);

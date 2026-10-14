@@ -269,7 +269,7 @@ export const Home: React.FC = () => {
               ease: "easeInOut",
               delay: 0.5
             }}
-            className="absolute w-80 sm:w-[32rem] h-56 sm:h-80 rounded-full bg-gradient-to-tr from-emerald-600/35 via-green-500/25 to-amber-500/30 blur-3xl pointer-events-none"
+            className="absolute w-80 sm:w-[32rem] h-56 sm:h-80 rounded-full bg-gradient-to-tr from-emerald-600/35 via-green-500/25 to-amber-500/30 blur-3xl pointer-events-none will-change-[opacity,transform] transform-gpu"
           />
 
           <motion.div
@@ -290,12 +290,12 @@ export const Home: React.FC = () => {
               }
             }}
             whileHover={{ scale: 1.04, transition: { duration: 0.35 } }}
-            className="relative z-10 flex flex-col items-center text-center select-none cursor-pointer"
+            className="relative z-10 flex flex-col items-center text-center select-none cursor-pointer will-change-transform"
           >
             <img
               src="/sahyadri-logo.png"
               alt="Sahyadri Land Developer"
-              className="h-44 sm:h-60 md:h-76 lg:h-84 xl:h-[350px] w-auto object-contain transition-transform duration-500 animate-logo-breathe drop-shadow-[0_8px_20px_rgba(0,0,0,0.4)]"
+              className="h-44 sm:h-60 md:h-76 lg:h-84 xl:h-[350px] w-auto object-contain transition-transform duration-500 animate-logo-breathe will-change-transform"
             />
           </motion.div>
         </div>

@@ -14,23 +14,39 @@ const resources = {
   },
 };
 
+const savedLang = typeof window !== 'undefined' ? localStorage.getItem('i18nextLng') || 'mr' : 'mr';
+
 i18n
-  // detect user language
-  // learn more: https://github.com/i18next/i18next-browser-languageDetector
   .use(LanguageDetector)
-  // pass the i18n instance to react-i18next.
   .use(initReactI18next)
-  // init i18next
-  // for all options read: https://www.i18next.com/overview/configuration-options
   .init({
     resources,
     defaultNS: 'common',
-    lng: 'mr', // default language
+    lng: savedLang,
     fallbackLng: 'en',
+    supportedLngs: ['mr', 'en'],
     debug: false,
     interpolation: {
-      escapeValue: false, // not needed for react as it escapes by default
+      escapeValue: false,
+    },
+    react: {
+      useSuspense: false,
+      bindI18n: 'languageChanged',
+      bindI18nStore: '',
+    },
+    detection: {
+      order: ['localStorage', 'navigator'],
+      caches: ['localStorage'],
+      lookupLocalStorage: 'i18nextLng',
     },
   });
+
+// Keep html tag lang attribute in sync
+if (typeof document !== 'undefined') {
+  document.documentElement.lang = i18n.language || 'mr';
+  i18n.on('languageChanged', (lng) => {
+    document.documentElement.lang = lng;
+  });
+}
 
 export default i18n;

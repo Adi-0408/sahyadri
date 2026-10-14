@@ -699,8 +699,11 @@ export const Materials: React.FC = () => {
               </div>
             </Card>
           ) : (
-            /* Grid of Real Supplier Products */
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            /* Grid of Real Supplier Products with smooth section change transition */
+            <div
+              key={`${selectedCategory}-${selectedDistrict}-${selectedTaluka}-${sortBy}`}
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 animate-fade-in"
+            >
               {filteredProducts.map((item) => (
                 <Card
                   key={item.id}

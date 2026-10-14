@@ -471,9 +471,7 @@ const mockAuth = {
     ];
     const ADMIN_MOBILES = [
       '8328712712',
-      '918328712712',
-      '7507700162',
-      '9876543210'
+      '7507700162'
     ];
     const ACCEPTED_ADMIN_PASSWORDS = [
       'admin@123',
@@ -481,19 +479,18 @@ const mockAuth = {
       'Admin@123',
       'Admin@1234',
       'admin',
-      '123456',
       'sahyadri@123',
       'PropertyVishvaMasterPassword2026!'
     ];
 
     const isExplicitAdmin = (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin'));
+    const isTargetingAdmin = ADMIN_EMAILS.includes(email.toLowerCase()) || (mobile && ADMIN_MOBILES.includes(mobile)) || isExplicitAdmin;
 
-    if (
-      (ADMIN_EMAILS.includes(email.toLowerCase()) || ADMIN_MOBILES.includes(mobile) || isExplicitAdmin || ACCEPTED_ADMIN_PASSWORDS.includes(cleanPass)) &&
-      ACCEPTED_ADMIN_PASSWORDS.includes(cleanPass)
-    ) {
+    if (isTargetingAdmin && ACCEPTED_ADMIN_PASSWORDS.includes(cleanPass)) {
       const user = { uid: 'admin-123', email: 'admin@gmail.com', mobile: mobile || '8328712712', displayName: 'Super Admin', role: 'admin', permissions: ['all'], photoURL: null };
       this.currentUser = user;
+      localStorage.removeItem('sahyadri_user_session');
+      localStorage.removeItem('sahyadri_rep_session');
       localStorage.setItem('luminous_mock_user', JSON.stringify(user));
       localStorage.setItem('astitva_admin_session', JSON.stringify(user));
       this.listeners.forEach(l => l(user));
@@ -558,7 +555,10 @@ const mockAuth = {
       }
       const user = { uid: existing.uid || existing.id, email: existing.email || email, displayName: existing.name, role: existing.role || 'user', photoURL: existing.photoURL || null };
       this.currentUser = user;
+      localStorage.removeItem('astitva_admin_session');
+      localStorage.removeItem('sahyadri_rep_session');
       localStorage.setItem('luminous_mock_user', JSON.stringify(user));
+      localStorage.setItem('sahyadri_user_session', JSON.stringify(user));
       this.listeners.forEach(l => l(user));
       return { user };
     }
@@ -1393,9 +1393,7 @@ export const signIn = async (email: string, pass: string, options?: { isAdminLog
     ];
     const ADMIN_MOBILES = [
       '8328712712',
-      '918328712712',
-      '7507700162',
-      '9876543210'
+      '7507700162'
     ];
     const ACCEPTED_ADMIN_PASSWORDS = [
       'admin@123',
@@ -1403,7 +1401,6 @@ export const signIn = async (email: string, pass: string, options?: { isAdminLog
       'Admin@123',
       'Admin@1234',
       'admin',
-      '123456',
       'sahyadri@123',
       AUTH_MASTER_PASSWORD
     ];
@@ -1414,25 +1411,25 @@ export const signIn = async (email: string, pass: string, options?: { isAdminLog
 
     const isEmailAdmin = ADMIN_EMAILS.includes(normalizedLogin);
 
-    let isMobileAdmin = Boolean(
-      mobile && (
-        ADMIN_MOBILES.includes(mobile) ||
-        isExplicitAdminLogin ||
-        ACCEPTED_ADMIN_PASSWORDS.includes(cleanPass)
-      )
-    );
+    // Only consider mobile as admin if it is explicitly an official admin mobile number
+    let isMobileAdmin = false;
+    if (mobile) {
+      if (ADMIN_MOBILES.includes(mobile) || (isExplicitAdminLogin && ADMIN_MOBILES.includes(mobile.slice(-10)))) {
+        isMobileAdmin = true;
+      }
+    }
 
     let storedAdminPassword = '';
-    if (mobile) {
+    if (mobile && isExplicitAdminLogin) {
       try {
         const uSnap = await firebaseGetDoc(firebaseDoc(db, 'users', mobile));
         if (uSnap.exists()) {
           const uData = uSnap.data();
           if (uData?.role === 'admin') {
             isMobileAdmin = true;
+            if (uData?.password) storedAdminPassword = String(uData.password).trim();
+            else if (uData?.pass) storedAdminPassword = String(uData.pass).trim();
           }
-          if (uData?.password) storedAdminPassword = String(uData.password).trim();
-          else if (uData?.pass) storedAdminPassword = String(uData.pass).trim();
         }
       } catch (e) {}
 
@@ -1464,7 +1461,7 @@ export const signIn = async (email: string, pass: string, options?: { isAdminLog
         await setPersistence(auth, browserLocalPersistence);
         const adminSessionUser = {
           uid: 'B47ojxIU3icqVzJSRTdHpouDN0A2',
-          email: 'admin@gmail.com',
+          email: isEmailAdmin ? normalizedLogin : 'admin@gmail.com',
           displayName: 'Super Admin',
           role: 'admin',
           status: 'active',
@@ -1472,25 +1469,26 @@ export const signIn = async (email: string, pass: string, options?: { isAdminLog
           mobile: mobile || '8328712712'
         };
 
+        localStorage.removeItem('sahyadri_user_session');
+        localStorage.removeItem('sahyadri_rep_session');
+        localStorage.setItem('astitva_admin_session', JSON.stringify(adminSessionUser));
+
         try {
           const masterCred = await firebaseSignIn(auth, 'admin@gmail.com', 'admin@123');
           if (masterCred?.user) {
-            localStorage.setItem('astitva_admin_session', JSON.stringify(adminSessionUser));
             if (currentAuthCallback) currentAuthCallback(adminSessionUser);
-            return masterCred;
+            return { user: adminSessionUser, credential: masterCred };
           }
         } catch {}
 
         try {
-          const cred = await firebaseSignIn(auth, 'admin@gmail.com', cleanPass);
+          const cred = await firebaseSignIn(auth, isEmailAdmin ? normalizedLogin : 'admin@gmail.com', cleanPass);
           if (cred?.user) {
-            localStorage.setItem('astitva_admin_session', JSON.stringify(adminSessionUser));
             if (currentAuthCallback) currentAuthCallback(adminSessionUser);
-            return cred;
+            return { user: adminSessionUser, credential: cred };
           }
         } catch {}
 
-        localStorage.setItem('astitva_admin_session', JSON.stringify(adminSessionUser));
         if (currentAuthCallback) currentAuthCallback(adminSessionUser);
         return { user: adminSessionUser };
       }
@@ -1537,6 +1535,8 @@ export const signIn = async (email: string, pass: string, options?: { isAdminLog
             status: 'active',
             permissions: ['/admin/tasks', '/admin/enquiries']
           };
+          localStorage.removeItem('astitva_admin_session');
+          localStorage.removeItem('sahyadri_user_session');
           localStorage.setItem('sahyadri_rep_session', JSON.stringify(repSessionUser));
           if (currentAuthCallback) {
             currentAuthCallback(repSessionUser);
@@ -1704,7 +1704,7 @@ export const signIn = async (email: string, pass: string, options?: { isAdminLog
         }
 
         const userSession = {
-          uid: authenticatedCred?.user?.uid || activeDoc.uid || activeDoc.firebaseId || activeDoc.id,
+          uid: authenticatedCred?.user?.uid || activeDoc.uid || activeDoc.firebaseId || activeDoc.id || `user-${mobile}`,
           email: authenticatedCred?.user?.email || primaryEmail,
           displayName: activeDoc.name || authenticatedCred?.user?.displayName || 'User',
           mobile: activeDoc.mobile || mobile,
@@ -1713,12 +1713,14 @@ export const signIn = async (email: string, pass: string, options?: { isAdminLog
           permissions: activeDoc.permissions || []
         };
 
+        localStorage.removeItem('astitva_admin_session');
+        localStorage.removeItem('sahyadri_rep_session');
         localStorage.setItem('sahyadri_user_session', JSON.stringify(userSession));
         if (currentAuthCallback) {
           currentAuthCallback(userSession);
         }
 
-        return authenticatedCred || { user: userSession };
+        return { user: userSession, credential: authenticatedCred };
       }
 
       // Candidate email sign-in fallback
@@ -1733,13 +1735,59 @@ export const signIn = async (email: string, pass: string, options?: { isAdminLog
         try {
           const credential = await firebaseSignIn(auth, candEmail, cleanPass);
           if (credential?.user) {
-            return credential;
+            let role = 'user';
+            let name = credential.user.displayName || 'User';
+            try {
+              const uDoc = await firebaseGetDoc(firebaseDoc(db, 'users', credential.user.uid));
+              if (uDoc.exists()) {
+                const uData = uDoc.data();
+                role = uData?.role || 'user';
+                name = uData?.name || name;
+              }
+            } catch {}
+            const userSession = {
+              uid: credential.user.uid,
+              email: credential.user.email,
+              displayName: name,
+              mobile: mobile,
+              role: role,
+              status: 'active',
+              permissions: []
+            };
+            localStorage.removeItem('astitva_admin_session');
+            localStorage.removeItem('sahyadri_rep_session');
+            localStorage.setItem('sahyadri_user_session', JSON.stringify(userSession));
+            if (currentAuthCallback) currentAuthCallback(userSession);
+            return { user: userSession, credential };
           }
         } catch {}
         try {
           const credential = await firebaseSignIn(auth, candEmail, AUTH_MASTER_PASSWORD);
           if (credential?.user) {
-            return credential;
+            let role = 'user';
+            let name = credential.user.displayName || 'User';
+            try {
+              const uDoc = await firebaseGetDoc(firebaseDoc(db, 'users', credential.user.uid));
+              if (uDoc.exists()) {
+                const uData = uDoc.data();
+                role = uData?.role || 'user';
+                name = uData?.name || name;
+              }
+            } catch {}
+            const userSession = {
+              uid: credential.user.uid,
+              email: credential.user.email,
+              displayName: name,
+              mobile: mobile,
+              role: role,
+              status: 'active',
+              permissions: []
+            };
+            localStorage.removeItem('astitva_admin_session');
+            localStorage.removeItem('sahyadri_rep_session');
+            localStorage.setItem('sahyadri_user_session', JSON.stringify(userSession));
+            if (currentAuthCallback) currentAuthCallback(userSession);
+            return { user: userSession, credential };
           }
         } catch {}
       }
@@ -1753,7 +1801,32 @@ export const signIn = async (email: string, pass: string, options?: { isAdminLog
     await setPersistence(auth, browserLocalPersistence);
     try {
       const credential = await firebaseSignIn(auth, normalizedLogin, cleanPass);
-      return credential;
+      let userDocData: any = null;
+      try {
+        const uDoc = await firebaseGetDoc(firebaseDoc(db, 'users', credential.user.uid));
+        if (uDoc.exists()) userDocData = uDoc.data();
+      } catch {}
+      const role = userDocData?.role || 'user';
+      const userSession = {
+        uid: credential.user.uid,
+        email: credential.user.email,
+        displayName: userDocData?.name || credential.user.displayName || 'User',
+        mobile: userDocData?.mobile || '',
+        role: role,
+        status: userDocData?.status || 'active',
+        permissions: userDocData?.permissions || []
+      };
+      if (role === 'admin') {
+        localStorage.removeItem('sahyadri_user_session');
+        localStorage.removeItem('sahyadri_rep_session');
+        localStorage.setItem('astitva_admin_session', JSON.stringify(userSession));
+      } else {
+        localStorage.removeItem('astitva_admin_session');
+        localStorage.removeItem('sahyadri_rep_session');
+        localStorage.setItem('sahyadri_user_session', JSON.stringify(userSession));
+      }
+      if (currentAuthCallback) currentAuthCallback(userSession);
+      return { user: userSession, credential };
     } catch (err: any) {
       // Check in Firestore users or agents by email
       try {
@@ -1788,6 +1861,8 @@ export const signIn = async (email: string, pass: string, options?: { isAdminLog
             status: matchedDoc.status || 'active',
             permissions: matchedDoc.permissions || []
           };
+          localStorage.removeItem('astitva_admin_session');
+          localStorage.removeItem('sahyadri_rep_session');
           localStorage.setItem('sahyadri_user_session', JSON.stringify(userSession));
           if (currentAuthCallback) {
             currentAuthCallback(userSession);
@@ -2195,19 +2270,19 @@ export const subscribeToAuth = (callback: (user: any) => void) => {
   } else {
     // Check local admin, representative, and user session immediately on startup/refresh
     if (typeof window !== 'undefined') {
+      const savedUser = localStorage.getItem('sahyadri_user_session');
+      const savedRep = localStorage.getItem('sahyadri_rep_session');
       const savedAdmin = localStorage.getItem('astitva_admin_session');
-      if (savedAdmin) {
+
+      if (savedUser) {
         try {
-          const parsed = JSON.parse(savedAdmin);
-          if (parsed && (parsed.role === 'admin' || parsed.email === 'admin@gmail.com')) {
-            console.log('[Auth] Restoring active master admin session for', parsed.mobile || parsed.email);
+          const parsed = JSON.parse(savedUser);
+          if (parsed && parsed.uid && parsed.role !== 'admin') {
+            console.log('[Auth] Restoring active user session for', parsed.mobile || parsed.email);
             callback(parsed);
           }
         } catch (e) {}
-      }
-
-      const savedRep = localStorage.getItem('sahyadri_rep_session');
-      if (savedRep) {
+      } else if (savedRep) {
         try {
           const parsed = JSON.parse(savedRep);
           if (parsed && parsed.role === 'representative') {
@@ -2215,14 +2290,11 @@ export const subscribeToAuth = (callback: (user: any) => void) => {
             callback(parsed);
           }
         } catch (e) {}
-      }
-
-      const savedUser = localStorage.getItem('sahyadri_user_session');
-      if (savedUser) {
+      } else if (savedAdmin) {
         try {
-          const parsed = JSON.parse(savedUser);
-          if (parsed && parsed.uid) {
-            console.log('[Auth] Restoring active user session for', parsed.mobile || parsed.email);
+          const parsed = JSON.parse(savedAdmin);
+          if (parsed && (parsed.role === 'admin' || parsed.email === 'admin@gmail.com')) {
+            console.log('[Auth] Restoring active master admin session for', parsed.mobile || parsed.email);
             callback(parsed);
           }
         } catch (e) {}
@@ -2232,37 +2304,47 @@ export const subscribeToAuth = (callback: (user: any) => void) => {
     return firebaseOnAuthStateChanged(auth, async (firebaseUser) => {
       // If master admin, representative, or user session is active in localStorage and firebaseUser is null, preserve session
       if (typeof window !== 'undefined') {
-        const activeAdmin = localStorage.getItem('astitva_admin_session');
-        if (!firebaseUser && activeAdmin) {
-          try {
-            const parsed = JSON.parse(activeAdmin);
-            if (parsed && (parsed.role === 'admin' || parsed.email === 'admin@gmail.com')) {
-              callback(parsed);
-              return;
-            }
-          } catch (e) {}
-        }
-
-        const activeRep = localStorage.getItem('sahyadri_rep_session');
-        if (!firebaseUser && activeRep) {
-          try {
-            const parsed = JSON.parse(activeRep);
-            if (parsed && parsed.role === 'representative') {
-              callback(parsed);
-              return;
-            }
-          } catch (e) {}
-        }
-
         const activeUser = localStorage.getItem('sahyadri_user_session');
-        if (!firebaseUser && activeUser) {
-          try {
-            const parsed = JSON.parse(activeUser);
-            if (parsed && parsed.uid) {
-              callback(parsed);
-              return;
-            }
-          } catch (e) {}
+        const activeRep = localStorage.getItem('sahyadri_rep_session');
+        const activeAdmin = localStorage.getItem('astitva_admin_session');
+
+        if (!firebaseUser) {
+          if (activeUser) {
+            try {
+              const parsed = JSON.parse(activeUser);
+              if (parsed && parsed.uid && parsed.role !== 'admin') {
+                callback(parsed);
+                return;
+              }
+            } catch (e) {}
+          } else if (activeRep) {
+            try {
+              const parsed = JSON.parse(activeRep);
+              if (parsed && parsed.role === 'representative') {
+                callback(parsed);
+                return;
+              }
+            } catch (e) {}
+          } else if (activeAdmin) {
+            try {
+              const parsed = JSON.parse(activeAdmin);
+              if (parsed && (parsed.role === 'admin' || parsed.email === 'admin@gmail.com')) {
+                callback(parsed);
+                return;
+              }
+            } catch (e) {}
+          }
+        } else {
+          // If a user session is active in localStorage, do not let old Firebase Auth admin cache hijack it!
+          if (activeUser) {
+            try {
+              const parsed = JSON.parse(activeUser);
+              if (parsed && parsed.uid && parsed.role !== 'admin') {
+                callback(parsed);
+                return;
+              }
+            } catch (e) {}
+          }
         }
       }
 
@@ -2277,7 +2359,7 @@ export const subscribeToAuth = (callback: (user: any) => void) => {
           'admin@propertyastitv.com',
           'admin@propertyvishva.com'
         ];
-        const isKnownAdminEmail = ADMIN_EMAILS.includes((firebaseUser.email || '').toLowerCase()) || (firebaseUser.email || '').toLowerCase().includes('admin@');
+        const isKnownAdminEmail = ADMIN_EMAILS.includes((firebaseUser.email || '').toLowerCase());
         console.log("isAdminEmailCheck:", { email: firebaseUser.email, isKnownAdminEmail });
 
         // Immediate resolution for known admins: avoid slow sequential Firestore roundtrips!

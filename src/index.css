@@ -49,7 +49,7 @@ body {
 
 html {
   overflow-x: hidden;
-  scroll-behavior: smooth;
+  text-rendering: optimizeLegibility;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -209,31 +209,39 @@ body.mobile-device {
 
 @keyframes logoBorderBreathe {
   0%, 100% {
-    filter: drop-shadow(1.5px 0 0 rgba(0, 0, 0, 0.5))
-            drop-shadow(-1.5px 0 0 rgba(0, 0, 0, 0.5))
-            drop-shadow(0 1.5px 0 rgba(0, 0, 0, 0.5))
-            drop-shadow(0 -1.5px 0 rgba(0, 0, 0, 0.5))
-            drop-shadow(1px 1px 0 rgba(0, 0, 0, 0.5))
-            drop-shadow(-1px -1px 0 rgba(0, 0, 0, 0.5))
-            drop-shadow(1px -1px 0 rgba(0, 0, 0, 0.5))
-            drop-shadow(-1px 1px 0 rgba(0, 0, 0, 0.5))
-            drop-shadow(0 4px 14px rgba(0, 0, 0, 0.5))
-            brightness(1.25) contrast(1.10);
+    transform: scale(1) translateZ(0);
+    filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.4)) brightness(1.15);
   }
   50% {
-    filter: drop-shadow(3.5px 0 0 rgba(0, 0, 0, 0.5))
-            drop-shadow(-3.5px 0 0 rgba(0, 0, 0, 0.5))
-            drop-shadow(0 3.5px 0 rgba(0, 0, 0, 0.5))
-            drop-shadow(0 -3.5px 0 rgba(0, 0, 0, 0.5))
-            drop-shadow(2.5px 2.5px 0 rgba(0, 0, 0, 0.5))
-            drop-shadow(-2.5px -2.5px 0 rgba(0, 0, 0, 0.5))
-            drop-shadow(2.5px -2.5px 0 rgba(0, 0, 0, 0.5))
-            drop-shadow(-2.5px 2.5px 0 rgba(0, 0, 0, 0.5))
-            drop-shadow(0 10px 24px rgba(0, 0, 0, 0.5))
-            brightness(1.25) contrast(1.10);
+    transform: scale(1.025) translateZ(0);
+    filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.55)) brightness(1.22);
   }
 }
 
 .animate-logo-breathe {
-  animation: logoBorderBreathe 3.5s ease-in-out infinite;
+  animation: logoBorderBreathe 4s ease-in-out infinite;
+  will-change: transform, filter;
+  transform: translateZ(0);
+}
+
+@keyframes sectionFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-section-in {
+  animation: sectionFadeIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.gpu-accelerated {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: transform, opacity;
 }

@@ -483,7 +483,7 @@ export const BuyerDashboard: React.FC = () => {
 
         {/* ── TAB 1: BOUGHT PROPERTIES (खरेदी केलेल्या मालमत्ता) ── */}
         {activeTab === 'bought' && (
-          <div className="space-y-6">
+          <div className="space-y-6 tab-transition">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
               <div>
                 <h3 className="font-serif font-bold text-xl text-slate-900">
@@ -589,7 +589,7 @@ export const BuyerDashboard: React.FC = () => {
 
         {/* ── TAB 2: INTERESTED PROPERTIES (स्वारस्य असलेल्या मालमत्ता) ── */}
         {activeTab === 'interested' && (
-          <div className="space-y-6">
+          <div className="space-y-6 tab-transition">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
               <div>
                 <h3 className="font-serif font-bold text-xl text-slate-900">
@@ -687,7 +687,7 @@ export const BuyerDashboard: React.FC = () => {
 
         {/* ── TAB 3: RECOMMENDED MATCHES (शिफारस केलेल्या मालमत्ता) ── */}
         {activeTab === 'matches' && (
-          <div className="space-y-6">
+          <div className="space-y-6 tab-transition">
             <div>
               <h3 className="font-serif font-bold text-xl text-slate-900">
                 {isMr ? 'आपल्या पसंतीनुसार शिफारस केलेल्या मालमत्ता' : 'Properties Matching Your Preferences'}
@@ -750,7 +750,7 @@ export const BuyerDashboard: React.FC = () => {
 
         {/* ── TAB 4: SAVED PROPERTIES (WISHLIST) ── */}
         {activeTab === 'saved' && (
-          <div className="space-y-6">
+          <div className="space-y-6 tab-transition">
             <div>
               <h3 className="font-serif font-bold text-xl text-slate-900">
                 {isMr ? 'जतन केलेल्या आवडत्या मालमत्ता' : 'Saved Properties in Wishlist'}
@@ -817,7 +817,7 @@ export const BuyerDashboard: React.FC = () => {
 
         {/* ── TAB 5: INQUIRIES SENT ── */}
         {activeTab === 'inquiries' && (
-          <Card className="p-6 bg-white border border-slate-200 rounded-3xl shadow-sm">
+          <Card className="p-6 bg-white border border-slate-200 rounded-3xl shadow-sm tab-transition">
             <h3 className="font-serif font-bold text-lg text-slate-900 mb-1">
               {isMr ? 'आपण पाठवलेल्या चौकशी विनंत्या' : 'Inquiries & Contact Requests Sent by You'}
             </h3>

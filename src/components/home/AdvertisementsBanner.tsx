@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight, Sparkles, ArrowRight, Search } from 'lucide-react';
@@ -194,26 +194,31 @@ export const AdvertisementsBanner: React.FC = () => {
     touchEndX.current = null;
   };
 
-  // Slide animation variants for 2-3 sec smooth horizontal scroll
-  const slideVariants = {
+  // Slide animation variants for buttery smooth horizontal transition
+  const slideVariants: Variants = {
     enter: (dir: number) => ({
       x: dir > 0 ? '100%' : '-100%',
-      opacity: 0.4
+      opacity: 0,
+      scale: 0.98
     }),
     center: {
       x: '0%',
       opacity: 1,
+      scale: 1,
       transition: {
-        x: { type: 'spring' as const, stiffness: 300, damping: 32 },
-        opacity: { duration: 0.35 }
+        x: { duration: 0.48, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] },
+        opacity: { duration: 0.38 },
+        scale: { duration: 0.38 }
       }
     },
     exit: (dir: number) => ({
       x: dir > 0 ? '-100%' : '100%',
-      opacity: 0.4,
+      opacity: 0,
+      scale: 0.98,
       transition: {
-        x: { type: 'spring' as const, stiffness: 300, damping: 32 },
-        opacity: { duration: 0.35 }
+        x: { duration: 0.48, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] },
+        opacity: { duration: 0.38 },
+        scale: { duration: 0.38 }
       }
     })
   };
@@ -240,7 +245,7 @@ export const AdvertisementsBanner: React.FC = () => {
               initial="enter"
               animate="center"
               exit="exit"
-              className="absolute inset-0 w-full h-full"
+              className="absolute inset-0 w-full h-full will-change-transform"
             >
               {/* Image */}
               <img

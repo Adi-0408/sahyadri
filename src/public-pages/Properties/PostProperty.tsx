@@ -63,7 +63,7 @@ export const PostProperty: React.FC = () => {
 
   // Automatically scroll to top of window whenever the active step or success state changes
   React.useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'instant' });
   }, [step, success]);
 
   React.useEffect(() => {
@@ -304,7 +304,7 @@ export const PostProperty: React.FC = () => {
           </div>
         )}
 
-        <Card className="p-4 sm:p-6 md:p-8 bg-white/95 backdrop-blur-xl border-slate-200/60 shadow-2xl shadow-primary/5" >
+        <Card key={step} className="p-4 sm:p-6 md:p-8 bg-white/95 backdrop-blur-xl border-slate-200/60 shadow-2xl shadow-primary/5 tab-transition" >
 
           {step === 0 ? (
             <form onSubmit={(e) => e.preventDefault()} className="flex flex-col gap-6">

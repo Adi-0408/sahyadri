@@ -532,7 +532,7 @@ export const BuilderDashboard: React.FC = () => {
 
         {/* TAB 1: PROJECTS */}
         {activeTab === 'projects' && (
-          <div className="space-y-6">
+          <div className="space-y-6 tab-transition">
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
               <div className="relative flex-1 max-w-md">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
@@ -686,7 +686,7 @@ export const BuilderDashboard: React.FC = () => {
 
         {/* TAB 2: LEADS */}
         {activeTab === 'leads' && (
-          <div className="space-y-6">
+          <div className="space-y-6 tab-transition">
             {inquiries.length === 0 ? (
               <Card className="p-12 text-center bg-white rounded-3xl border border-slate-200/80 shadow-sm">
                 <div className="w-16 h-16 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center mx-auto mb-4">
@@ -745,7 +745,7 @@ export const BuilderDashboard: React.FC = () => {
 
         {/* TAB 3: MATERIAL SUPPLIERS */}
         {activeTab === 'suppliers' && (
-          <div className="space-y-6">
+          <div className="space-y-6 tab-transition">
             <div className="bg-purple-50/80 border border-purple-200/80 rounded-2xl p-4 flex items-center justify-between">
               <div>
                 <h3 className="font-bold text-sm text-purple-900">

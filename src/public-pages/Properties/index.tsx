@@ -1268,7 +1268,10 @@ export const Properties: React.FC = () => {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-5 sm:gap-8 relative z-0">
+          <div
+            key={`${type}-${category}-${searchParams.get('status') || ''}-${showSavedOnly}`}
+            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-5 sm:gap-8 relative z-0 animate-fade-in"
+          >
             {filteredProperties.map((prop) => {
               const isSaved = savedIds.includes(prop.id);
               return (

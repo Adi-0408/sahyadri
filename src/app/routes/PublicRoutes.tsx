@@ -1,6 +1,6 @@
 import React, { useEffect, Suspense, lazy } from 'react';
 import { Route, Routes, Outlet, Navigate, useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Navbar } from '../../components/layout/Navbar';
 import { Footer } from '../../components/layout/Footer';
 import { MobileBottomNav } from '../../components/layout/MobileBottomNav';
@@ -28,26 +28,29 @@ const Materials = lazy(() => import('../../public-pages/Materials').then(module 
 const PublicLayout: React.FC = () => {
   const location = useLocation();
 
-  // Scroll to top on route change
+  // Instant scroll to top on route change to prevent smooth scroll stutter
   useEffect(() => {
-    window.scrollTo(0, 0);
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   }, [location.pathname]);
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 relative w-full overflow-x-hidden pb-16 md:pb-0">
       <Navbar />
 
-      <main className="flex-grow w-full overflow-x-hidden flex flex-col">
+      <main className="flex-grow w-full overflow-x-hidden flex flex-col relative">
         <Suspense fallback={<PageLoader />}>
-          <motion.div
-            key={location.pathname}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-            className="w-full flex-grow flex flex-col"
-          >
-            <Outlet />
-          </motion.div>
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+              className="w-full flex-grow flex flex-col will-change-[opacity,transform]"
+            >
+              <Outlet />
+            </motion.div>
+          </AnimatePresence>
         </Suspense>
       </main>
       <Footer />
