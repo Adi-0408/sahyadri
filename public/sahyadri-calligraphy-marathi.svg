@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 80" width="380" height="80" fill="none">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Anek+Marathi:wght@700&amp;family=Rozha+One&amp;display=swap');
+      .title-text {
+        font-family: 'Rozha One', 'Yatra One', 'Devanagari Sangam MN', serif;
+        font-size: 46px;
+        font-weight: bold;
+        fill: #b81414;
+      }
+      .sub-text {
+        font-family: 'Anek Marathi', 'Noto Sans Marathi', sans-serif;
+        font-size: 26px;
+        font-weight: 700;
+        fill: #0f172a;
+      }
+    </style>
+  </defs>
+  <text x="5" y="56" class="title-text">सह्याद्री</text>
+  <text x="180" y="53" class="sub-text">लँड डेव्हलपर</text>
+</svg>

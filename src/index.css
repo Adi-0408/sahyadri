@@ -1,0 +1,239 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #0f172a; /* Dark Navy Blue */
+  --color-primary-dark: #020617; /* Darker Navy */
+  --color-success: #15803d; /* Green 700 */
+  --color-accent: #f97316; /* Orange 500 */
+  --color-accent-dark: #ea580c; /* Orange 600 */
+  
+  --font-sans: "Manrope", "Inter", "Roboto", "Segoe UI", system-ui, sans-serif;
+  --font-serif: "Playfair Display", Georgia, Cambria, serif;
+  
+  --breakpoint-xs: 375px;
+  --breakpoint-lg: 960px;
+}
+
+@layer base {
+  :root {
+    --background: 248 250 252; /* slate-50 */
+    --foreground: 15 23 42;    /* #0f172a */
+    --card: 255 255 255;
+    --card-foreground: 15 23 42;
+    --popover: 255 255 255;
+    --popover-foreground: 15 23 42;
+    --primary: 15 23 42;       /* Dark Navy Blue */
+    --primary-foreground: 255 255 255;
+    --secondary: 21 128 61;    /* Green 700 */
+    --secondary-foreground: 255 255 255;
+    --muted: 241 245 249;
+    --muted-foreground: 100 116 139;
+    --accent: 249 115 22;      /* Orange 500 */
+    --accent-foreground: 255 255 255;
+    --destructive: 239 68 68;
+    --destructive-foreground: 255 255 255;
+    --border: 226 232 240;
+    --input: 226 232 240;
+    --ring: 15 23 42;
+    --radius: 0.75rem;
+  }
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: #f8fafc;
+  color: #0f172a;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+html {
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-sans);
+}
+
+/* Hide standard scrollbars for slider/gallery areas */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Unified default styling for any native select dropdown */
+select:not(.sr-only) {
+  border-radius: 0.75rem;
+  border-color: #e2e8f0;
+  background-color: #ffffff;
+  color: #0f172a;
+  font-family: inherit;
+  font-weight: 600;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1rem 1rem;
+  padding-right: 2.25rem;
+}
+
+select:not(.sr-only):focus {
+  outline: none;
+  border-color: #0f172a;
+  box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.1);
+}
+
+/* Custom CSS Overrides for Mobile Device Mode */
+body.mobile-device {
+  /* Force mobile layout sizes and behavior by overriding desktop responsive classes */
+  
+  /* 1. Hide desktop-only layout wrappers */
+  .hidden.lg\:block,
+  .hidden.lg\:flex,
+  .hidden.md\:flex,
+  .hidden.md\:block,
+  .lg\:flex:not(.flex),
+  .lg\:block:not(.block),
+  .md\:flex:not(.flex),
+  .md\:block:not(.block) {
+    display: none !important;
+  }
+
+  /* 2. Show mobile-only elements */
+  .lg\:hidden,
+  .md\:hidden,
+  .sm\:hidden {
+    display: block !important;
+  }
+  
+  /* If the mobile view is inline-flex or flex, override to flex */
+  .flex.lg\:hidden,
+  .flex.md\:hidden,
+  .flex.sm\:hidden {
+    display: flex !important;
+  }
+  
+  .inline-flex.lg\:hidden,
+  .inline-flex.md\:hidden,
+  .inline-flex.sm\:hidden {
+    display: inline-flex !important;
+  }
+
+  /* 3. Disable desktop layout properties */
+  .lg\:absolute,
+  .md\:absolute {
+    position: static !important;
+  }
+  
+  /* Reset hero layout height & background in desktop-site mode */
+  .lg\:min-h-\[calc\(100vh-4rem\)\] {
+    min-height: auto !important;
+  }
+  
+  .lg\:bg-slate-900 {
+    background-color: #f8fafc !important;
+  }
+  
+  .lg\:py-0 {
+    padding-top: 1rem !important;
+    padding-bottom: 2rem !important;
+  }
+  
+  .lg\:pt-20, .sm\:pt-24 {
+    padding-top: 0.5rem !important;
+  }
+
+  /* 4. Hide desktop dropdown filters on mobile list page */
+  .hidden.md\:contents {
+    display: none !important;
+  }
+
+  /* 5. Ensure hero video remains absolute background in mobile device mode */
+  .hero-video-container {
+    position: absolute !important;
+    inset: 0 !important;
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    z-index: 0 !important;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in,
+.animate-fadeIn {
+  animation: fadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes tabSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tab-transition {
+  animation: tabSlideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(calc(-50% - 12px)); } /* 12px accounts for gap spacing */
+}
+
+.animate-marquee {
+  animation: marquee 25s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+@keyframes logoBorderBreathe {
+  0%, 100% {
+    filter: drop-shadow(1.5px 0 0 rgba(0, 0, 0, 0.5))
+            drop-shadow(-1.5px 0 0 rgba(0, 0, 0, 0.5))
+            drop-shadow(0 1.5px 0 rgba(0, 0, 0, 0.5))
+            drop-shadow(0 -1.5px 0 rgba(0, 0, 0, 0.5))
+            drop-shadow(1px 1px 0 rgba(0, 0, 0, 0.5))
+            drop-shadow(-1px -1px 0 rgba(0, 0, 0, 0.5))
+            drop-shadow(1px -1px 0 rgba(0, 0, 0, 0.5))
+            drop-shadow(-1px 1px 0 rgba(0, 0, 0, 0.5))
+            drop-shadow(0 4px 14px rgba(0, 0, 0, 0.5))
+            brightness(1.25) contrast(1.10);
+  }
+  50% {
+    filter: drop-shadow(3.5px 0 0 rgba(0, 0, 0, 0.5))
+            drop-shadow(-3.5px 0 0 rgba(0, 0, 0, 0.5))
+            drop-shadow(0 3.5px 0 rgba(0, 0, 0, 0.5))
+            drop-shadow(0 -3.5px 0 rgba(0, 0, 0, 0.5))
+            drop-shadow(2.5px 2.5px 0 rgba(0, 0, 0, 0.5))
+            drop-shadow(-2.5px -2.5px 0 rgba(0, 0, 0, 0.5))
+            drop-shadow(2.5px -2.5px 0 rgba(0, 0, 0, 0.5))
+            drop-shadow(-2.5px 2.5px 0 rgba(0, 0, 0, 0.5))
+            drop-shadow(0 10px 24px rgba(0, 0, 0, 0.5))
+            brightness(1.25) contrast(1.10);
+  }
+}
+
+.animate-logo-breathe {
+  animation: logoBorderBreathe 3.5s ease-in-out infinite;
+}

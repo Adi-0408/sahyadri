@@ -1,0 +1,735 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Models
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: Firebase Auth UID or 10-digit mobile number
+    // Fields:
+    //   - id: string (optional, 1-128 chars)
+    //   - uid: string (optional, 1-128 chars)
+    //   - firebaseId: string (optional, 1-128 chars)
+    //   - name: string (required, 1-100 chars)
+    //   - email: string (required, 3-100 chars)
+    //   - mobile: string or number (optional, <= 20 chars)
+    //   - role: string (required, 'user' | 'seller' | 'buyer' | 'builder' | 'agent' | 'supplier' | 'representative' | 'admin')
+    //   - password: string (optional, <= 100 chars)
+    //   - permissions: list of strings (optional, <= 50 items)
+    //   - userCode: string (optional, <= 50 chars)
+    //   - status: string (optional, 'active' | 'blocked' | 'deleted' | 'inactive')
+    //   - isBlocked: boolean (optional)
+    //   - isBlacklisted: boolean (optional)
+    //   - isDeleted: boolean (optional)
+    //   - createdAt, updatedAt, lastLoginAt: string or timestamp (optional)
+    //   - photoURL, photo: string (optional, <= 500 chars)
+    //   - district, taluka, cityVillage, address: string (optional, <= 200 chars)
+    //
+    // Collection: admins
+    // Document ID: Admin Firebase Auth UID
+    // Fields:
+    //   - uid, id: string (optional, 1-128 chars)
+    //   - name: string (required, 1-100 chars)
+    //   - email: string (required, 3-100 chars)
+    //   - role: string ('admin')
+    //   - permissions: list of strings (optional, <= 50 items)
+    //   - status: string (optional, 'active' | 'inactive')
+    //
+    // Collection: representatives
+    // Document ID: Auto-generated ID or UID
+    // Fields:
+    //   - name: string (required, 1-100 chars)
+    //   - mobile: string (required, <= 20 chars)
+    //   - email: string (optional, <= 100 chars)
+    //   - district, taluka: string (optional, <= 100 chars)
+    //   - qualification, experience, bio: string (optional, <= 2000 chars)
+    //   - status: string (optional, 'active' | 'inactive')
+    //
+    // Collection: properties
+    // Document ID: Auto-generated or custom property code
+    // Fields:
+    //   - id, propertyCode: string (optional, <= 100 chars)
+    //   - category: string (required, <= 50 chars)
+    //   - type: string (required, 'sale' | 'rent')
+    //   - status: string (required, 'pending' | 'approved' | 'active' | 'rejected' | 'inactive' | 'sold')
+    //   - userId, uid: string (optional, <= 128 chars)
+    //   - title, propertyName: string (optional, <= 200 chars)
+    //   - description, descriptionMr: string (optional, <= 5000 chars)
+    //   - expectedPrice, price, monthlyRent, securityDeposit: number (optional)
+    //   - isNegotiable, adminApproved, isActive: boolean (optional)
+    //   - district, taluka, cityVillage, pincode, fullAddress: string (optional, <= 500 chars)
+    //   - images: list of URLs (optional, <= 30 items)
+    //   - amenities: list of strings (optional, <= 50 items)
+    //   - visibilitySettings: map (optional)
+    //   - createdAt, updatedAt: string or timestamp (optional)
+    //
+    // Collection: enquiries
+    // Document ID: Auto-generated ID
+    // Fields:
+    //   - propertyId: string or null (optional, <= 100 chars)
+    //   - propertyName: string (optional, <= 200 chars)
+    //   - name: string (required, 1-100 chars)
+    //   - email: string (optional, <= 100 chars)
+    //   - phone: string (optional, <= 20 chars)
+    //   - message: string (optional, <= 2000 chars)
+    //   - status: string (required, 'pending' | 'approved' | 'rejected' | 'contacted' | 'closed')
+    //   - userId, uid: string (optional, <= 128 chars)
+    //   - createdAt: string or timestamp (optional)
+    //
+    // Collection: role_inquiries
+    // Document ID: Auto-generated ID
+    // Fields:
+    //   - userId: string (required, <= 128 chars)
+    //   - userName, userEmail, userMobile: string (required, <= 100 chars)
+    //   - requestedRole: string (required, 'seller' | 'buyer' | 'builder' | 'agent' | 'supplier' | 'representative')
+    //   - status: string (required, 'pending' | 'approved' | 'rejected')
+    //   - sellerDetails, buyerDetails, builderDetails, agentDetails, supplierDetails, representativeDetails: map (optional)
+    //   - createdAt, updatedAt: string or timestamp (optional)
+    //
+    // Collection: visit_requests
+    // Document ID: Auto-generated ID
+    // Fields:
+    //   - propertyId: string (optional, <= 100 chars)
+    //   - propertyName: string (optional, <= 200 chars)
+    //   - name: string (required, 1-100 chars)
+    //   - email, phone: string (optional, <= 100 chars)
+    //   - date, time: string (optional, <= 50 chars)
+    //   - status: string (required, 'pending' | 'confirmed' | 'completed' | 'cancelled')
+    //   - userId: string (optional, <= 128 chars)
+    //   - createdAt: string or timestamp (optional)
+    //
+    // Collection: projects
+    // Document ID: Auto-generated ID
+    // Fields:
+    //   - title, titleMr: string (required, 1-200 chars)
+    //   - description, descriptionMr: string (optional, <= 5000 chars)
+    //   - location, locationMr: string (optional, <= 200 chars)
+    //   - priceRange: string (optional, <= 100 chars)
+    //   - status: string (optional, <= 50 chars)
+    //   - images: list of URLs (optional, <= 30 items)
+    //   - developerName: string (optional, <= 100 chars)
+    //
+    // Collection: blogs
+    // Document ID: Auto-generated ID
+    // Fields:
+    //   - title, titleMr: string (required, 1-200 chars)
+    //   - content, contentMr: string (optional, <= 50000 chars)
+    //   - author: string (optional, <= 100 chars)
+    //   - image: string (optional, <= 500 chars)
+    //   - date, createdAt: string or timestamp (optional)
+    //
+    // Collections: advertisements, banners, posters, app_banners, hero_settings
+    // Document ID: Auto-generated ID or 'general'
+    // Fields:
+    //   - title, titleMr, subtitle, preTitle: string (optional, <= 200 chars)
+    //   - image: string (optional, <= 500 chars)
+    //   - link: string (optional, <= 500 chars)
+    //   - active: boolean (optional)
+    //   - type: string (optional, <= 50 chars)
+    //
+    // Collections: shots, shorts, 99shots, 99shorts, reels
+    // Document ID: Auto-generated ID
+    // Fields:
+    //   - title, titleMr: string (required, 1-200 chars)
+    //   - description: string (optional, <= 2000 chars)
+    //   - videoUrl, hlsUrl, directPlayUrl: string (optional, <= 500 chars)
+    //   - thumbnailUrl: string (optional, <= 500 chars)
+    //   - price, location, district, taluka: string (optional, <= 100 chars)
+    //   - status: string (optional, 'active' | 'hidden' | 'inactive')
+    //   - active: boolean (optional)
+    //   - views, likes: number (optional)
+    //
+    // Collections: districts, talukas, property_types, settings, amenities, states, cms_fields, facing_directions
+    // Master data records (name, nameMr, code, order, isVisible, etc.)
+    //
+    // Collection: notifications
+    // Document ID: Auto-generated ID
+    // Fields:
+    //   - type: string (required, <= 50 chars)
+    //   - title, titleMr: string (optional, <= 200 chars)
+    //   - message, messageMr: string (optional, <= 1000 chars)
+    //   - read: boolean (optional)
+    //   - link: string (optional, <= 500 chars)
+    //   - createdAt: string or timestamp (optional)
+    //   - metadata: map (optional)
+    //
+    // Collections: blacklisted_users, deleted_users
+    // Document ID: UID, user ID, or mobile number
+    // Fields: Lookup and audit entries for blocked/deleted accounts
+    //
+    // Collection: agents
+    // Document ID: Agent UID or ID
+    // Fields:
+    //   - id, name, mobile, email, status, role, district, taluka, cityVillage: string
+    //   - clients, activityLogs: list of maps
+    //   - totalClientsHandled, rating, growthScore: number
+    //
+    // Collections: sellers, buyers, builders, suppliers, employee, agent_clients, supplier_products, supplier_inquiries, property_inquiries, admin_logs
+    // ===============================================================
+
+    // ===============================================================
+    // Global Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isBootstrapAdmin() {
+      return isAuthenticated() && (
+        request.auth.uid in [
+          'B47ojxIU3icqVzJSRTdHpouDN0A2',
+          'A4TMfsDPivRJGcCXJhhKwyAkJzw2',
+          'jIzLTB96RzOtiIqDZlypNr1K2cy1'
+        ] ||
+        (request.auth.token.email != null && (
+          request.auth.token.email.lower() == 'admin@gmail.com' ||
+          request.auth.token.email.lower() == 'admin@sahayadrilanddev.com' ||
+          request.auth.token.email.lower() == 'admin@astitvarealestate.com' ||
+          request.auth.token.email.lower() == 'admin@propertyastitv.com' ||
+          request.auth.token.email.lower() == 'admin@propertyvishva.com'
+        )) ||
+        (request.auth.token.role != null && request.auth.token.role == 'admin')
+      );
+    }
+
+    function isAdmin() {
+      return isBootstrapAdmin() ||
+        (isAuthenticated() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+    }
+
+    function areImmutableFieldsUnchanged(fields) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
+    }
+
+    // ===============================================================
+    // Domain Validator Functions (Enforce Types, Sizes & Schemas)
+    // ===============================================================
+
+    function isValidUser(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+        data.email is string && data.email.size() >= 3 && data.email.size() <= 100 &&
+        (!('role' in data) || (data.role is string && data.role in ['user', 'seller', 'buyer', 'builder', 'agent', 'supplier', 'representative', 'admin'])) &&
+        (!('mobile' in data) || (data.mobile is string && data.mobile.size() <= 20) || data.mobile is number) &&
+        (!('password' in data) || (data.password is string && data.password.size() <= 100)) &&
+        (!('userCode' in data) || (data.userCode is string && data.userCode.size() <= 50)) &&
+        (!('permissions' in data) || (data.permissions is list && data.permissions.size() <= 50)) &&
+        (!('status' in data) || (data.status is string && data.status in ['active', 'blocked', 'deleted', 'inactive'])) &&
+        (!('isBlocked' in data) || data.isBlocked is bool) &&
+        (!('isBlacklisted' in data) || data.isBlacklisted is bool) &&
+        (!('isDeleted' in data) || data.isDeleted is bool) &&
+        (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 500)) &&
+        (!('photo' in data) || (data.photo is string && data.photo.size() <= 500)) &&
+        (!('district' in data) || (data.district is string && data.district.size() <= 100)) &&
+        (!('taluka' in data) || (data.taluka is string && data.taluka.size() <= 100)) &&
+        (!('cityVillage' in data) || (data.cityVillage is string && data.cityVillage.size() <= 100)) &&
+        (!('address' in data) || (data.address is string && data.address.size() <= 500));
+    }
+
+    function isValidAdmin(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+        data.email is string && data.email.size() >= 3 && data.email.size() <= 100 &&
+        data.role == 'admin' &&
+        (!('permissions' in data) || (data.permissions is list && data.permissions.size() <= 50)) &&
+        (!('status' in data) || (data.status is string && data.status.size() <= 50));
+    }
+
+    function isValidRepresentative(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+        (!('mobile' in data) || (data.mobile is string && data.mobile.size() <= 20) || data.mobile is number) &&
+        (!('email' in data) || (data.email is string && data.email.size() <= 100)) &&
+        (!('district' in data) || (data.district is string && data.district.size() <= 100)) &&
+        (!('taluka' in data) || (data.taluka is string && data.taluka.size() <= 100)) &&
+        (!('qualification' in data) || (data.qualification is string && data.qualification.size() <= 500)) &&
+        (!('experience' in data) || (data.experience is string && data.experience.size() <= 500)) &&
+        (!('bio' in data) || (data.bio is string && data.bio.size() <= 2000)) &&
+        (!('status' in data) || (data.status is string && data.status in ['active', 'inactive']));
+    }
+
+    function isValidProperty(data) {
+      return data.category is string && data.category.size() <= 50 &&
+        data.type is string && data.type in ['sale', 'rent'] &&
+        data.status is string && data.status in ['pending', 'approved', 'active', 'rejected', 'inactive', 'sold'] &&
+        (!('title' in data) || (data.title is string && data.title.size() <= 200)) &&
+        (!('propertyName' in data) || (data.propertyName is string && data.propertyName.size() <= 200)) &&
+        (!('description' in data) || (data.description is string && data.description.size() <= 5000)) &&
+        (!('descriptionMr' in data) || (data.descriptionMr is string && data.descriptionMr.size() <= 5000)) &&
+        (!('expectedPrice' in data) || data.expectedPrice is number) &&
+        (!('price' in data) || data.price is number) &&
+        (!('monthlyRent' in data) || data.monthlyRent is number) &&
+        (!('securityDeposit' in data) || data.securityDeposit is number) &&
+        (!('isNegotiable' in data) || data.isNegotiable is bool) &&
+        (!('adminApproved' in data) || data.adminApproved is bool) &&
+        (!('isActive' in data) || data.isActive is bool) &&
+        (!('images' in data) || (data.images is list && data.images.size() <= 30)) &&
+        (!('amenities' in data) || (data.amenities is list && data.amenities.size() <= 50)) &&
+        (!('visibilitySettings' in data) || data.visibilitySettings is map) &&
+        (!('propertyCode' in data) || (data.propertyCode is string && data.propertyCode.size() <= 100)) &&
+        (!('district' in data) || (data.district is string && data.district.size() <= 100)) &&
+        (!('taluka' in data) || (data.taluka is string && data.taluka.size() <= 100)) &&
+        (!('cityVillage' in data) || (data.cityVillage is string && data.cityVillage.size() <= 100)) &&
+        (!('fullAddress' in data) || (data.fullAddress is string && data.fullAddress.size() <= 500)) &&
+        (!('ownerName' in data) || (data.ownerName is string && data.ownerName.size() <= 100)) &&
+        (!('mobileNumber' in data) || (data.mobileNumber is string && data.mobileNumber.size() <= 20) || data.mobileNumber is number) &&
+        (!('email' in data) || (data.email is string && data.email.size() <= 100));
+    }
+
+    function isValidEnquiry(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+        (!('email' in data) || (data.email is string && data.email.size() <= 100)) &&
+        (!('phone' in data) || (data.phone is string && data.phone.size() <= 20)) &&
+        (!('message' in data) || (data.message is string && data.message.size() <= 2000)) &&
+        (!('propertyName' in data) || (data.propertyName is string && data.propertyName.size() <= 200)) &&
+        (!('propertyId' in data) || data.propertyId == null || (data.propertyId is string && data.propertyId.size() <= 100)) &&
+        data.status is string && data.status in ['pending', 'approved', 'rejected', 'contacted', 'closed'];
+    }
+
+    function isValidRoleInquiry(data) {
+      return data.userId is string && data.userId.size() <= 128 &&
+        data.userName is string && data.userName.size() <= 100 &&
+        data.userMobile is string && data.userMobile.size() <= 20 &&
+        data.requestedRole is string && data.requestedRole in ['seller', 'buyer', 'builder', 'agent', 'supplier', 'representative'] &&
+        data.status is string && data.status in ['pending', 'approved', 'rejected'] &&
+        (!('sellerDetails' in data) || data.sellerDetails is map) &&
+        (!('buyerDetails' in data) || data.buyerDetails is map) &&
+        (!('builderDetails' in data) || data.builderDetails is map) &&
+        (!('agentDetails' in data) || data.agentDetails is map) &&
+        (!('supplierDetails' in data) || data.supplierDetails is map) &&
+        (!('representativeDetails' in data) || data.representativeDetails is map);
+    }
+
+    function isValidVisitRequest(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+        (!('email' in data) || (data.email is string && data.email.size() <= 100)) &&
+        (!('phone' in data) || (data.phone is string && data.phone.size() <= 20)) &&
+        (!('date' in data) || (data.date is string && data.date.size() <= 50)) &&
+        (!('time' in data) || (data.time is string && data.time.size() <= 50)) &&
+        (!('propertyName' in data) || (data.propertyName is string && data.propertyName.size() <= 200)) &&
+        (!('propertyId' in data) || (data.propertyId is string && data.propertyId.size() <= 100)) &&
+        data.status is string && data.status in ['pending', 'confirmed', 'completed', 'cancelled'];
+    }
+
+    function isValidProject(data) {
+      return data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
+        (!('description' in data) || (data.description is string && data.description.size() <= 5000)) &&
+        (!('descriptionMr' in data) || (data.descriptionMr is string && data.descriptionMr.size() <= 5000)) &&
+        (!('location' in data) || (data.location is string && data.location.size() <= 200)) &&
+        (!('images' in data) || (data.images is list && data.images.size() <= 30)) &&
+        (!('developerName' in data) || (data.developerName is string && data.developerName.size() <= 100));
+    }
+
+    function isValidBlog(data) {
+      return data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
+        (!('content' in data) || (data.content is string && data.content.size() <= 50000)) &&
+        (!('contentMr' in data) || (data.contentMr is string && data.contentMr.size() <= 50000)) &&
+        (!('author' in data) || (data.author is string && data.author.size() <= 100)) &&
+        (!('image' in data) || (data.image is string && data.image.size() <= 500));
+    }
+
+    function isValidAdBanner(data) {
+      return (!('title' in data) || (data.title is string && data.title.size() <= 200)) &&
+        (!('image' in data) || (data.image is string && data.image.size() <= 500)) &&
+        (!('link' in data) || (data.link is string && data.link.size() <= 500)) &&
+        (!('active' in data) || data.active is bool) &&
+        (!('type' in data) || (data.type is string && data.type.size() <= 50));
+    }
+
+    function isValidShot(data) {
+      return data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
+        (!('videoUrl' in data) || (data.videoUrl is string && data.videoUrl.size() <= 500)) &&
+        (!('thumbnailUrl' in data) || (data.thumbnailUrl is string && data.thumbnailUrl.size() <= 500)) &&
+        (!('price' in data) || (data.price is string && data.price.size() <= 100) || data.price is number) &&
+        (!('status' in data) || (data.status is string && data.status in ['active', 'hidden', 'inactive'])) &&
+        (!('active' in data) || data.active is bool) &&
+        (!('views' in data) || data.views is number) &&
+        (!('likes' in data) || data.likes is number);
+    }
+
+    function isValidNotification(data) {
+      return data.type is string && data.type.size() <= 50 &&
+        (!('title' in data) || (data.title is string && data.title.size() <= 200)) &&
+        (!('message' in data) || (data.message is string && data.message.size() <= 1000)) &&
+        (!('read' in data) || data.read is bool) &&
+        (!('link' in data) || (data.link is string && data.link.size() <= 500)) &&
+        (!('metadata' in data) || data.metadata is map);
+    }
+
+    function isValidAgent(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+        (!('mobile' in data) || (data.mobile is string && data.mobile.size() <= 20) || data.mobile is number) &&
+        (!('email' in data) || (data.email is string && data.email.size() <= 100)) &&
+        (!('status' in data) || (data.status is string && data.status in ['active', 'inactive'])) &&
+        (!('clients' in data) || (data.clients is list && data.clients.size() <= 200)) &&
+        (!('activityLogs' in data) || (data.activityLogs is list && data.activityLogs.size() <= 200));
+    }
+
+    // ===============================================================
+    // Root Rule: Default Deny All Collections
+    // ===============================================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ===============================================================
+    // 1. Users Collection
+    // ===============================================================
+    match /users/{userId} {
+      // Lookup allowed for document owner, admin, or during login/registration verification
+      allow get: if isAdmin() ||
+                    isOwner(userId) ||
+                    (isAuthenticated() && resource.data.uid == request.auth.uid) ||
+                    (userId.size() == 10 && userId.matches("^[0-9]+$"));
+
+      // Queries by mobile/email allowed for login/registration verification and admin management
+      allow list: if isAdmin() || true;
+
+      // New users can create non-admin profile; admins can create any user profile
+      allow create: if isValidUser(request.resource.data) && (
+        isAdmin() ||
+        (
+          isAuthenticated() &&
+          (request.auth.uid == userId || (request.resource.data.uid is string && request.resource.data.uid == request.auth.uid)) &&
+          (!('role' in request.resource.data) || request.resource.data.role in ['user', 'seller', 'buyer', 'builder', 'agent', 'supplier', 'representative']) &&
+          (!('permissions' in request.resource.data) || request.resource.data.permissions.size() == 0) &&
+          (!('isBlocked' in request.resource.data) || request.resource.data.isBlocked == false) &&
+          (!('isBlacklisted' in request.resource.data) || request.resource.data.isBlacklisted == false)
+        )
+      );
+
+      // Users can update their own data; roles/permissions/ownership are protected from tampering
+      allow update: if isValidUser(request.resource.data) && (
+        isAdmin() ||
+        (
+          isAuthenticated() &&
+          (request.auth.uid == userId || resource.data.uid == request.auth.uid) &&
+          areImmutableFieldsUnchanged(['role', 'permissions', 'uid', 'id', 'userCode', 'isBlocked', 'isBlacklisted']) &&
+          (!('role' in request.resource.data) || request.resource.data.role == resource.data.role)
+        )
+      );
+
+      // Owner or admin can delete account record
+      allow delete: if isAdmin() ||
+                       (isAuthenticated() && (request.auth.uid == userId || resource.data.uid == request.auth.uid));
+    }
+
+    // ===============================================================
+    // 2. Admins Collection
+    // ===============================================================
+    match /admins/{adminId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAdmin() && isValidAdmin(request.resource.data);
+      allow delete: if isAdmin() && request.auth.uid != adminId;
+    }
+
+    // ===============================================================
+    // 3. Representatives Collection
+    // ===============================================================
+    match /representatives/{repId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAdmin() && isValidRepresentative(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    // ===============================================================
+    // 4. Properties Collection
+    // ===============================================================
+    match /properties/{propId} {
+      allow read: if true;
+
+      // Authenticated users create pending properties; Admins can create directly approved properties
+      allow create: if isAuthenticated() && isValidProperty(request.resource.data) && (
+        isAdmin() ||
+        (
+          (request.resource.data.userId == request.auth.uid || request.resource.data.uid == request.auth.uid) &&
+          request.resource.data.status == 'pending' &&
+          (!('adminApproved' in request.resource.data) || request.resource.data.adminApproved == false)
+        )
+      );
+
+      // Property owner can edit their property without self-approving or hijacking ownership
+      allow update: if isAuthenticated() && isValidProperty(request.resource.data) && (
+        isAdmin() ||
+        (
+          (resource.data.userId == request.auth.uid || resource.data.uid == request.auth.uid) &&
+          areImmutableFieldsUnchanged(['userId', 'uid', 'id', 'createdAt', 'propertyCode', 'adminApproved']) &&
+          (request.resource.data.status == resource.data.status || request.resource.data.status == 'pending')
+        )
+      );
+
+      // Owner or admin can delete
+      allow delete: if isAdmin() ||
+                       (isAuthenticated() && (resource.data.userId == request.auth.uid || resource.data.uid == request.auth.uid));
+    }
+
+    // ===============================================================
+    // 5. Enquiries & Role Inquiries Collections
+    // ===============================================================
+    match /enquiries/{enquiryId} {
+      allow get: if isAdmin() || (
+        isAuthenticated() && (
+          resource.data.userId == request.auth.uid ||
+          resource.data.uid == request.auth.uid ||
+          (resource.data.email != null && request.auth.token.email != null && resource.data.email == request.auth.token.email) ||
+          (resource.data.userEmail != null && request.auth.token.email != null && resource.data.userEmail == request.auth.token.email)
+        )
+      );
+      allow list: if isAdmin() || (
+        isAuthenticated() && (
+          resource.data.userId == request.auth.uid ||
+          resource.data.uid == request.auth.uid ||
+          (resource.data.email != null && request.auth.token.email != null && resource.data.email == request.auth.token.email) ||
+          (resource.data.userEmail != null && request.auth.token.email != null && resource.data.userEmail == request.auth.token.email)
+        )
+      );
+      allow create: if isValidEnquiry(request.resource.data) && request.resource.data.status == 'pending';
+      allow update: if isAdmin() && isValidEnquiry(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /role_inquiries/{inquiryId} {
+      allow read: if true;
+      allow create: if isValidRoleInquiry(request.resource.data) && request.resource.data.status == 'pending';
+      allow update, delete: if isAdmin();
+    }
+
+    // ===============================================================
+    // 6. Visit Requests Collection
+    // ===============================================================
+    match /visit_requests/{visitId} {
+      allow get: if isAdmin() || (
+        isAuthenticated() && (
+          resource.data.userId == request.auth.uid ||
+          resource.data.uid == request.auth.uid ||
+          (resource.data.email != null && request.auth.token.email != null && resource.data.email == request.auth.token.email)
+        )
+      );
+      allow list: if isAdmin() || (
+        isAuthenticated() && (
+          resource.data.userId == request.auth.uid ||
+          resource.data.uid == request.auth.uid ||
+          (resource.data.email != null && request.auth.token.email != null && resource.data.email == request.auth.token.email)
+        )
+      );
+      allow create: if isValidVisitRequest(request.resource.data) && request.resource.data.status == 'pending';
+      allow update: if isAdmin() && isValidVisitRequest(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    // ===============================================================
+    // 7. Projects Collection
+    // ===============================================================
+    match /projects/{projId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && isValidProject(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    // ===============================================================
+    // 8. Blogs Collection
+    // ===============================================================
+    match /blogs/{blogId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && isValidBlog(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    // ===============================================================
+    // 9. Advertisements, Banners & Hero Settings
+    // ===============================================================
+    match /advertisements/{adId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && isValidAdBanner(request.resource.data);
+      allow delete: if isAdmin();
+    }
+    match /banners/{bannerId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && isValidAdBanner(request.resource.data);
+      allow delete: if isAdmin();
+    }
+    match /posters/{posterId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && isValidAdBanner(request.resource.data);
+      allow delete: if isAdmin();
+    }
+    match /app_banners/{appBannerId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && isValidAdBanner(request.resource.data);
+      allow delete: if isAdmin();
+    }
+    match /hero_settings/{settingId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && isValidAdBanner(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    // ===============================================================
+    // 10. Shots, Shorts & Reels Collections
+    // ===============================================================
+    match /shots/{shotId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidShot(request.resource.data);
+      allow update: if (isAdmin() && isValidShot(request.resource.data)) ||
+                       (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views', 'likes']));
+      allow delete: if isAdmin();
+    }
+    match /shorts/{shotId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidShot(request.resource.data);
+      allow update: if (isAdmin() && isValidShot(request.resource.data)) ||
+                       (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views', 'likes']));
+      allow delete: if isAdmin();
+    }
+    match /99shots/{shotId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidShot(request.resource.data);
+      allow update: if (isAdmin() && isValidShot(request.resource.data)) ||
+                       (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views', 'likes']));
+      allow delete: if isAdmin();
+    }
+    match /99shorts/{shotId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidShot(request.resource.data);
+      allow update: if (isAdmin() && isValidShot(request.resource.data)) ||
+                       (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views', 'likes']));
+      allow delete: if isAdmin();
+    }
+    match /reels/{reelId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidShot(request.resource.data);
+      allow update: if (isAdmin() && isValidShot(request.resource.data)) ||
+                       (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views', 'likes']));
+      allow delete: if isAdmin();
+    }
+
+    // ===============================================================
+    // 11. Master Data Collections
+    // ===============================================================
+    match /districts/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /talukas/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /property_types/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /amenities/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /states/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /cms_fields/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /facing_directions/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ===============================================================
+    // 12. Notifications Collection
+    // ===============================================================
+    match /notifications/{notifId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidNotification(request.resource.data);
+      allow update: if isAuthenticated() && (
+        isAdmin() ||
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read'])
+      );
+      allow delete: if isAuthenticated();
+    }
+
+    // ===============================================================
+    // 13. Blacklisted & Deleted Users Collections
+    // ===============================================================
+    match /blacklisted_users/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /deleted_users/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ===============================================================
+    // Additional App Collections (Agents, Partners, Dashboards & Logs)
+    // ===============================================================
+    match /agents/{agentId} {
+      allow read: if true;
+      allow create: if (isAuthenticated() && (request.auth.uid == agentId || (request.resource.data.id is string && request.resource.data.id == request.auth.uid)) && isValidAgent(request.resource.data)) || isAdmin();
+      allow update: if (isAuthenticated() && (request.auth.uid == agentId || (resource.data.id is string && resource.data.id == request.auth.uid)) && isValidAgent(request.resource.data)) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /sellers/{sellerId} {
+      allow read: if true;
+      allow create, update: if true;
+      allow delete: if isAdmin();
+    }
+
+    match /buyers/{buyerId} {
+      allow read: if true;
+      allow create, update: if true;
+      allow delete: if isAdmin();
+    }
+
+    match /builders/{builderId} {
+      allow read: if true;
+      allow create, update: if (isAuthenticated() && (request.auth.uid == builderId || ('userId' in request.resource.data && request.resource.data.userId == request.auth.uid))) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /suppliers/{supplierId} {
+      allow read: if true;
+      allow create, update: if (isAuthenticated() && (request.auth.uid == supplierId || ('userId' in request.resource.data && request.resource.data.userId == request.auth.uid))) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /employee/{empId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /agent_clients/{clientId} {
+      allow read, write: if (isAuthenticated() && (('agentId' in resource.data && resource.data.agentId == request.auth.uid) || ('agentId' in request.resource.data && request.resource.data.agentId == request.auth.uid))) || isAdmin();
+    }
+
+    match /supplier_products/{productId} {
+      allow read: if true;
+      allow write: if (isAuthenticated() && (('supplierId' in resource.data && resource.data.supplierId == request.auth.uid) || ('supplierId' in request.resource.data && request.resource.data.supplierId == request.auth.uid))) || isAdmin();
+    }
+
+    match /supplier_inquiries/{inquiryId} {
+      allow create: if true;
+      allow read: if isAdmin() || (isAuthenticated() && (('userId' in resource.data && resource.data.userId == request.auth.uid) || ('email' in resource.data && request.auth.token.email != null && resource.data.email == request.auth.token.email)));
+      allow update, delete: if isAdmin();
+    }
+
+    match /property_inquiries/{inquiryId} {
+      allow create: if true;
+      allow read: if isAdmin() || (isAuthenticated() && (('userId' in resource.data && resource.data.userId == request.auth.uid) || ('email' in resource.data && request.auth.token.email != null && resource.data.email == request.auth.token.email)));
+      allow update, delete: if isAdmin();
+    }
+
+    match /admin_logs/{logId} {
+      allow read, write: if isAdmin();
+    }
+  }
+}

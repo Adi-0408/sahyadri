@@ -1,0 +1,2191 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import {
+  Building2,
+  CheckCircle2,
+  Clock,
+  AlertCircle,
+  ArrowRight,
+  User,
+  Plus,
+  Trash2,
+  Store,
+  Handshake,
+  Wrench,
+  Search,
+  UserCheck
+} from 'lucide-react';
+import { useAuth } from '../../app/providers/AuthProvider';
+import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
+import { Textarea } from '../../components/ui/Textarea';
+import { Card } from '../../components/ui/Card';
+import { Select } from '../../components/ui/Select';
+import {
+  submitRoleInquiry,
+  fetchUserRoleInquiry,
+  subscribeToUserRoleInquiry
+} from '../../services/roleInquiry';
+import type {
+  RoleInquiry,
+  UserRole
+} from '../../services/roleInquiry';
+import { fetchCollection } from '../../services/firebase';
+
+export const RoleInquiryPage: React.FC = () => {
+  const { i18n } = useTranslation();
+  const isMr = Boolean(i18n.language?.startsWith('mr'));
+  const { user, loading: authLoading, refreshUser } = useAuth();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  const [viewMode, setViewMode] = useState<'roles' | 'explore'>('roles');
+
+  const initialRoleParam = (searchParams.get('role') as UserRole) || 'buyer';
+  const [selectedRole, setSelectedRole] = useState<UserRole>(
+    ['buyer', 'seller', 'builder', 'agent', 'supplier', 'representative'].includes(initialRoleParam)
+      ? initialRoleParam
+      : 'buyer'
+  );
+
+  const [existingInquiry, setExistingInquiry] = useState<RoleInquiry | null>(null);
+  const [checkingInquiry, setCheckingInquiry] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [submittedSuccess, setSubmittedSuccess] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+
+  // Dropdown lists
+  const [districtsList, setDistrictsList] = useState<string[]>(['Sangli', 'Kolhapur', 'Pune', 'Satara']);
+  const [talukasList, setTalukasList] = useState<string[]>(['Miraj', 'Walwa', 'Tasgaon', 'Karad', 'Shirala']);
+
+  // Common Contact Info
+  const [fullName, setFullName] = useState(user?.displayName || '');
+  const [mobile, setMobile] = useState(user?.mobile || '');
+  const [email, setEmail] = useState(user?.email || '');
+
+  // ── SELLER SPECIFIC FIELDS ──
+  const [sellerType, setSellerType] = useState<'owner' | 'builder' | 'promoter'>('owner');
+  const [sellerDistrict, setSellerDistrict] = useState('Sangli');
+  const [sellerTaluka, setSellerTaluka] = useState('Miraj');
+  const [sellerCity, setSellerCity] = useState('');
+
+  // ── SELLER & BUILDER 1st PROPERTY/PROJECT DETAILS ──
+  const [propCategory, setPropCategory] = useState<'House' | 'Flat' | 'Bungalow' | 'Plot' | 'Land'>('House');
+  const [propType, setPropType] = useState<'sale' | 'rent'>('sale');
+  const [propTitle, setPropTitle] = useState('');
+  const [propPrice, setPropPrice] = useState<number | ''>('');
+  const [propRent, setPropRent] = useState<number | ''>('');
+  const [isNegotiable, setIsNegotiable] = useState(true);
+  const [propAddress, setPropAddress] = useState('');
+  const [propDescription, setPropDescription] = useState('');
+  const [propImageUrl, setPropImageUrl] = useState('');
+  const [propImages, setPropImages] = useState<string[]>([]);
+
+  // Flat / House / Bungalow specific states
+  const [propBuiltUp, setPropBuiltUp] = useState<number | ''>('');
+  const [carpetArea, setCarpetArea] = useState<number | ''>('');
+  const [propFlatType, setPropFlatType] = useState('2BHK');
+  const [propBedrooms, setPropBedrooms] = useState<number | ''>(2);
+  const [propBathrooms, setPropBathrooms] = useState<number | ''>(2);
+  const [floorNo, setFloorNo] = useState('2nd Floor (of 4)');
+  const [totalFloors, setTotalFloors] = useState('G+1 (Ground + 1 Floor)');
+  const [propFurnishing, setPropFurnishing] = useState<'Unfurnished' | 'Semi-Furnished' | 'Fully-Furnished'>('Semi-Furnished');
+  const [propCarParking, setPropCarParking] = useState(true);
+
+  // Plot specific states
+  const [plotAreaSqFt, setPlotAreaSqFt] = useState<number | ''>('');
+  const [plotAreaGuntha, setPlotAreaGuntha] = useState<number | ''>('');
+  const [plotDimensions, setPlotDimensions] = useState('');
+  const [facingDirection, setFacingDirection] = useState('East (पूर्व)');
+  const [roadWidth, setRoadWidth] = useState('30 Ft');
+  const [plotSanctionType, setPlotSanctionType] = useState('Collector NA (कलेक्टर एन.ए.)');
+  const [boundaryWall, setBoundaryWall] = useState('Compound Wall (तार/भिंत कंपाऊंड)');
+
+  // Land specific states
+  const [landArea, setLandArea] = useState('');
+  const [landType, setLandType] = useState('शेतजमीन बागायत (Irrigated Agriculture)');
+  const [waterSource, setWaterSource] = useState('विहीर / कालवा (Well / Canal)');
+  const [roadAccess, setRoadAccess] = useState('डांबरी रस्ता टच (Tar Road Touch)');
+  const [electricity, setElectricity] = useState('३-फेज वीज कनेक्शन (3-Phase)');
+  const [titleClear, setTitleClear] = useState('होय - निर्वेध ७/१२ (Clear Title)');
+
+  // ── BUYER SPECIFIC FIELDS ──
+  const [buyerCategory, setBuyerCategory] = useState('House');
+  const [buyerReqType, setBuyerReqType] = useState<'sale' | 'rent'>('sale');
+  const [buyerBudgetMin, setBuyerBudgetMin] = useState<number | ''>('');
+  const [buyerBudgetMax, setBuyerBudgetMax] = useState<number | ''>('');
+  const [buyerDistrict, setBuyerDistrict] = useState('Sangli');
+  const [buyerTaluka, setBuyerTaluka] = useState('Miraj');
+  const [buyerCity, setBuyerCity] = useState('');
+  const [buyerTimeline, setBuyerTimeline] = useState<'immediate' | 'within_1_month' | 'within_3_months' | 'exploring'>('within_1_month');
+  const [buyerNotes, setBuyerNotes] = useState('');
+
+  // ── BUILDER SPECIFIC FIELDS ──
+  const [builderCompany, setBuilderCompany] = useState('');
+  const [builderRera, setBuilderRera] = useState('');
+  const [builderExp, setBuilderExp] = useState<number | ''>(5);
+  const [builderAddress, setBuilderAddress] = useState('');
+  const [builderDistrict, setBuilderDistrict] = useState('Sangli');
+  const [builderTaluka, setBuilderTaluka] = useState('Miraj');
+  const [builderWebsite, setBuilderWebsite] = useState('');
+  const [builderSpecialization, setBuilderSpecialization] = useState('Residential Apartments & Schemes');
+
+  // ── AGENT SPECIFIC FIELDS ──
+  const [agencyName, setAgencyName] = useState('');
+  const [agentExperience, setAgentExperience] = useState<number | ''>(2);
+  const [agentRera, setAgentRera] = useState('');
+  const [agentSpecialization, setAgentSpecialization] = useState('Residential Houses & Flats');
+  const [agentNotes, setAgentNotes] = useState('');
+
+  // ── SUPPLIER SPECIFIC FIELDS ──
+  const [supplierBusiness, setSupplierBusiness] = useState('');
+  const [supplierCategory, setSupplierCategory] = useState('All');
+  const [supplierGst, setSupplierGst] = useState('');
+  const [supplierAddress, setSupplierAddress] = useState('');
+  const [supplierDistrict, setSupplierDistrict] = useState('Sangli');
+  const [supplierTaluka, setSupplierTaluka] = useState('Miraj');
+  const [supplierDelivery, setSupplierDelivery] = useState(true);
+  const [supplierNotes, setSupplierNotes] = useState('');
+
+  // ── REPRESENTATIVE SPECIFIC FIELDS ──
+  const [repQualification, setRepQualification] = useState('');
+  const [repExperience, setRepExperience] = useState('');
+  const [repDistrict, setRepDistrict] = useState('Sangli');
+  const [repTaluka, setRepTaluka] = useState('Miraj');
+  const [repBio, setRepBio] = useState('');
+
+  // Fetch districts and existing inquiry
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [dList, tList] = await Promise.all([
+          fetchCollection('districts'),
+          fetchCollection('talukas')
+        ]);
+        if (dList && dList.length > 0) {
+          setDistrictsList(dList.map((d: any) => d.label || d.name).filter(Boolean));
+        }
+        if (tList && tList.length > 0) {
+          setTalukasList(tList.map((t: any) => t.label || t.name).filter(Boolean));
+        }
+      } catch (e) {
+        console.warn('Fallback locations used');
+      }
+    };
+    loadData();
+  }, []);
+
+  // Sync user info
+  useEffect(() => {
+    if (user) {
+      if (!fullName && user.displayName) setFullName(user.displayName);
+      if (!mobile && user.mobile) setMobile(user.mobile);
+      if (!email && user.email) setEmail(user.email);
+    }
+  }, [user]);
+
+  // Real-time live inquiry listener across all devices (Mobile/Desktop)
+  useEffect(() => {
+    if (!user) {
+      setCheckingInquiry(false);
+      return;
+    }
+
+    const rawMob = String(
+      user.mobile ||
+      (user.email && /^\d{10}@/.test(user.email) ? user.email.split('@')[0] : '') ||
+      ''
+    );
+    const userCleanMobile = rawMob.replace(/[^0-9]/g, '').slice(-10);
+
+    setCheckingInquiry(true);
+    const unsub = subscribeToUserRoleInquiry(
+      { uid: user.uid, mobile: userCleanMobile || String(user.mobile || ''), email: user.email },
+      (inq) => {
+        if (inq) {
+          setExistingInquiry(inq);
+          if (inq.requestedRole) setSelectedRole(inq.requestedRole);
+          // If approved, also trigger refreshUser to sync active session
+          const isApproved = inq.status === 'approved' || (inq.status as any) === 'accepted';
+          if (isApproved && refreshUser && user.role !== inq.requestedRole && user.role !== 'admin') {
+            refreshUser();
+          }
+        } else {
+          setExistingInquiry(null);
+        }
+        setCheckingInquiry(false);
+      }
+    );
+
+    return () => {
+      unsub();
+    };
+  }, [user, refreshUser]);
+
+  const handleAddImageUrl = () => {
+    if (!propImageUrl.trim()) return;
+    setPropImages([...propImages, propImageUrl.trim()]);
+    setPropImageUrl('');
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setPropImages(propImages.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg('');
+
+    if (!user) {
+      navigate('/login?redirect=/role-inquiry');
+      return;
+    }
+
+    if (!fullName.trim() || !mobile.trim()) {
+      setErrorMsg(isMr ? 'कृपया आपले नाव आणि मोबाईल नंबर प्रविष्ट करा.' : 'Please enter your Full Name and Mobile Number.');
+      return;
+    }
+
+    // Validation for Seller
+    if (selectedRole === 'seller') {
+      if (!propTitle.trim()) {
+        setErrorMsg(isMr ? 'कृपया मालमत्तेचे नाव / शीर्षक प्रविष्ट करा.' : 'Please enter Property Title or Name.');
+        return;
+      }
+      if (propType === 'sale' && !propPrice) {
+        setErrorMsg(isMr ? 'कृपया अपेक्षित विक्री किंमत (₹) प्रविष्ट करा.' : 'Please enter Expected Price in ₹.');
+        return;
+      }
+      if (propType === 'rent' && !propRent) {
+        setErrorMsg(isMr ? 'कृपया मासिक भाडे (₹) प्रविष्ट करा.' : 'Please enter Monthly Rent in ₹.');
+        return;
+      }
+      if (!sellerCity.trim()) {
+        setErrorMsg(isMr ? 'कृपया गाव / शहर / परिसर प्रविष्ट करा.' : 'Please enter City, Village, or Locality.');
+        return;
+      }
+      if (!propAddress.trim()) {
+        setErrorMsg(isMr ? 'कृपया संपूर्ण पत्ता किंवा लँडमार्क प्रविष्ट करा.' : 'Please enter Full Address or Landmark.');
+        return;
+      }
+
+      // Category-Specific Mandatory Validations
+      if (propCategory === 'Flat') {
+        if (!propBuiltUp) {
+          setErrorMsg(isMr ? 'कृपया फ्लॅटचे बांधकाम क्षेत्र (Built-up Sq.Ft) प्रविष्ट करा.' : 'Please enter Flat Built-up Area in Sq.Ft.');
+          return;
+        }
+        if (!carpetArea) {
+          setErrorMsg(isMr ? 'कृपया फ्लॅटचे कार्पेट क्षेत्र (Carpet Sq.Ft) प्रविष्ट करा.' : 'Please enter Flat Carpet Area in Sq.Ft.');
+          return;
+        }
+        if (!floorNo.trim()) {
+          setErrorMsg(isMr ? 'कृपया मजला क्रमांक प्रविष्ट करा (उदा. 3rd Floor of 7).' : 'Please enter Floor No. & Total Floors.');
+          return;
+        }
+      } else if (propCategory === 'House' || propCategory === 'Bungalow') {
+        if (!propBuiltUp) {
+          setErrorMsg(isMr ? 'कृपया घराचे बांधकाम क्षेत्र (Built-up Sq.Ft) प्रविष्ट करा.' : 'Please enter House Built-up Area in Sq.Ft.');
+          return;
+        }
+        if (!plotAreaSqFt) {
+          setErrorMsg(isMr ? 'कृपया घराचे एकूण प्लॉट क्षेत्र (Plot Area Sq.Ft) प्रविष्ट करा.' : 'Please enter Total Plot Area in Sq.Ft.');
+          return;
+        }
+        if (!totalFloors.trim()) {
+          setErrorMsg(isMr ? 'कृपया एकूण मजले निवडा (उदा. Ground + 1 Floor).' : 'Please select Total Floors.');
+          return;
+        }
+      } else if (propCategory === 'Plot') {
+        if (!plotAreaSqFt) {
+          setErrorMsg(isMr ? 'कृपया प्लॉटचे क्षेत्र (Sq.Ft) प्रविष्ट करा.' : 'Please enter Plot Area in Sq.Ft.');
+          return;
+        }
+        if (!plotAreaGuntha) {
+          setErrorMsg(isMr ? 'कृपया प्लॉटचे क्षेत्र (गुंठा) प्रविष्ट करा.' : 'Please enter Plot Area in Guntha.');
+          return;
+        }
+        if (!plotDimensions.trim()) {
+          setErrorMsg(isMr ? 'कृपया प्लॉट आकारमान प्रविष्ट करा (उदा. 30 x 50 Ft).' : 'Please enter Plot Dimensions (e.g. 30 x 50 Ft).');
+          return;
+        }
+      } else if (propCategory === 'Land') {
+        if (!landArea.trim()) {
+          setErrorMsg(isMr ? 'कृपया एकूण जमीन क्षेत्र प्रविष्ट करा (उदा. 2.5 Acres किंवा 30 Guntha).' : 'Please enter Total Land Area (e.g. 2.5 Acres or 30 Guntha).');
+          return;
+        }
+      }
+
+      if (!propDescription.trim()) {
+        setErrorMsg(isMr ? 'कृपया मालमत्तेचे वर्णन / प्रमुख वैशिष्ट्ये प्रविष्ट करा.' : 'Please enter Property Description / Key Features.');
+        return;
+      }
+
+      if (propImages.length === 0 && !propImageUrl.trim()) {
+        setErrorMsg(isMr ? 'कृपया मालमत्तेचा किमान १ फोटो जोडा.' : 'Please add at least 1 property photo or image URL.');
+        return;
+      }
+    }
+
+    // Validation for Builder
+    if (selectedRole === 'builder') {
+      if (!builderCompany.trim()) {
+        setErrorMsg(isMr ? 'कृपया आपल्या कंपनीचे / फर्मचे नाव द्या.' : 'Please enter your Company or Firm name.');
+        return;
+      }
+      if (!propTitle.trim()) {
+        setErrorMsg(isMr ? 'कृपया पहिल्या प्रकल्पाचे / इमारतीचे नाव द्या.' : 'Please enter 1st Project or Scheme title.');
+        return;
+      }
+    }
+
+    // Validation for Supplier
+    if (selectedRole === 'supplier') {
+      if (!supplierBusiness.trim()) {
+        setErrorMsg(isMr ? 'कृपया दुकानाचे / व्यवसायाचे नाव प्रविष्ट करा.' : 'Please enter your Business or Shop name.');
+        return;
+      }
+    }
+
+    setSubmitting(true);
+    try {
+      const allImages = [...propImages];
+      if (propImageUrl.trim()) {
+        allImages.push(propImageUrl.trim());
+      }
+      if (allImages.length === 0 && (selectedRole === 'seller' || selectedRole === 'builder')) {
+        allImages.push(
+          selectedRole === 'builder'
+            ? 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80'
+            : 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80'
+        );
+      }
+
+      const uid = String(user.uid || (user as any).id || (user as any).userId || `user-${Date.now()}`).trim();
+      const userCode = String((user as any).userCode || (user as any).code || (uid ? uid.slice(0, 8) : 'USER')).trim();
+
+      const inquiryPayload: any = {
+        userId: uid,
+        userCode,
+        userName: fullName.trim(),
+        userMobile: mobile.trim(),
+        userEmail: email.trim() || `${mobile.trim()}@sahyadriland.com`,
+        requestedRole: selectedRole
+      };
+
+      if (selectedRole === 'seller') {
+        inquiryPayload.sellerDetails = {
+          sellerType,
+          district: sellerDistrict,
+          taluka: sellerTaluka,
+          cityVillage: sellerCity.trim(),
+          firstProperty: {
+            category: propCategory,
+            type: propType,
+            title: propTitle.trim(),
+            propertyName: propTitle.trim(),
+            expectedPrice: propType === 'sale' ? (Number(String(propPrice || '').replace(/[^0-9.]/g, '')) || 0) : undefined,
+            monthlyRent: propType === 'rent' ? (Number(String(propRent || '').replace(/[^0-9.]/g, '')) || 0) : undefined,
+            isNegotiable,
+            district: sellerDistrict,
+            taluka: sellerTaluka,
+            cityVillage: sellerCity.trim(),
+            fullAddress: propAddress.trim(),
+            builtUpArea: Number(String(propBuiltUp || '').replace(/[^0-9.]/g, '')) || 0,
+            carpetArea: Number(String(carpetArea || '').replace(/[^0-9.]/g, '')) || 0,
+            flatType: propFlatType,
+            bedrooms: Number(String(propBedrooms || '').replace(/[^0-9.]/g, '')) || 0,
+            bathrooms: Number(String(propBathrooms || '').replace(/[^0-9.]/g, '')) || 0,
+            floorNo: floorNo.trim(),
+            totalFloors: totalFloors.trim(),
+            furnishingStatus: propFurnishing,
+            carParking: propCarParking,
+            // Plot specific
+            plotAreaSqFt: Number(String(plotAreaSqFt || '').replace(/[^0-9.]/g, '')) || 0,
+            plotAreaGuntha: Number(String(plotAreaGuntha || '').replace(/[^0-9.]/g, '')) || 0,
+            plotDimensions: plotDimensions.trim(),
+            facingDirection: facingDirection.trim(),
+            roadWidth: roadWidth.trim(),
+            plotSanctionType: plotSanctionType.trim(),
+            boundaryWall: boundaryWall.trim(),
+            // Land specific
+            landArea: landArea.trim(),
+            landType: landType.trim(),
+            waterSource: waterSource.trim(),
+            roadAccess: roadAccess.trim(),
+            electricity: electricity.trim(),
+            titleClear: titleClear.trim(),
+            description: propDescription.trim() || `${propCategory} in ${sellerCity}, ${sellerTaluka}`,
+            images: allImages
+          }
+        };
+      } else if (selectedRole === 'builder') {
+        inquiryPayload.builderDetails = {
+          companyName: builderCompany.trim() || fullName.trim(),
+          reraNumber: builderRera.trim(),
+          experienceYears: Number(String(builderExp || '').replace(/[^0-9.]/g, '')) || 1,
+          officeAddress: builderAddress.trim(),
+          district: builderDistrict,
+          taluka: builderTaluka,
+          website: builderWebsite.trim(),
+          specialization: builderSpecialization,
+          firstProject: {
+            category: propCategory,
+            type: propType,
+            title: propTitle.trim(),
+            propertyName: propTitle.trim(),
+            expectedPrice: propType === 'sale' ? (Number(String(propPrice || '').replace(/[^0-9.]/g, '')) || 0) : undefined,
+            monthlyRent: propType === 'rent' ? (Number(String(propRent || '').replace(/[^0-9.]/g, '')) || 0) : undefined,
+            isNegotiable,
+            district: builderDistrict,
+            taluka: builderTaluka,
+            cityVillage: sellerCity.trim() || 'Sangli',
+            fullAddress: propAddress.trim(),
+            builtUpArea: Number(String(propBuiltUp || '').replace(/[^0-9.]/g, '')) || 0,
+            flatType: propFlatType,
+            bedrooms: Number(String(propBedrooms || '').replace(/[^0-9.]/g, '')) || 0,
+            bathrooms: Number(String(propBathrooms || '').replace(/[^0-9.]/g, '')) || 0,
+            furnishingStatus: propFurnishing,
+            carParking: propCarParking,
+            description: propDescription.trim() || `${propTitle} by ${builderCompany}`,
+            images: allImages
+          }
+        };
+      } else if (selectedRole === 'supplier') {
+        inquiryPayload.supplierDetails = {
+          businessName: supplierBusiness.trim() || fullName.trim(),
+          category: supplierCategory,
+          gstNumber: supplierGst.trim(),
+          officeAddress: supplierAddress.trim(),
+          operatingDistricts: [supplierDistrict],
+          operatingTalukas: [supplierTaluka],
+          deliveryAvailable: supplierDelivery,
+          notes: supplierNotes.trim()
+        };
+      } else if (selectedRole === 'buyer') {
+        inquiryPayload.buyerDetails = {
+          propertyCategory: buyerCategory,
+          requirementType: buyerReqType,
+          budgetMin: Number(String(buyerBudgetMin || '').replace(/[^0-9.]/g, '')) || 0,
+          budgetMax: Number(String(buyerBudgetMax || '').replace(/[^0-9.]/g, '')) || 0,
+          preferredDistrict: buyerDistrict,
+          preferredTaluka: buyerTaluka,
+          preferredCity: buyerCity.trim(),
+          urgencyTimeline: buyerTimeline,
+          notes: buyerNotes.trim()
+        };
+      } else if (selectedRole === 'agent') {
+        inquiryPayload.agentDetails = {
+          agencyName: agencyName.trim(),
+          experienceYears: Number(String(agentExperience || '').replace(/[^0-9.]/g, '')) || 1,
+          operatingDistricts: [sellerDistrict],
+          operatingTalukas: [sellerTaluka],
+          reraNumber: agentRera.trim(),
+          specialization: agentSpecialization.trim(),
+          notes: agentNotes.trim()
+        };
+      } else if (selectedRole === 'representative') {
+        inquiryPayload.representativeDetails = {
+          qualification: repQualification.trim(),
+          experience: repExperience.trim(),
+          preferredDistrict: repDistrict,
+          preferredTaluka: repTaluka,
+          bio: repBio.trim()
+        };
+      }
+
+      const result = await submitRoleInquiry(inquiryPayload);
+      setSubmittedSuccess(true);
+      if (result) {
+        setExistingInquiry(result);
+      }
+
+      try {
+        await refreshUser();
+      } catch (refErr) {
+        console.warn('refreshUser non-blocking warning:', refErr);
+      }
+
+      try {
+        const updatedInq = (await fetchUserRoleInquiry(uid, mobile.trim(), inquiryPayload.userEmail)) || result;
+        if (updatedInq) setExistingInquiry(updatedInq);
+      } catch (inqErr) {
+        console.warn('fetchUserRoleInquiry non-blocking warning:', inqErr);
+      }
+    } catch (err: any) {
+      console.error('Error submitting inquiry:', err);
+      setErrorMsg(err?.message || (isMr ? 'विनंती पाठवताना त्रुटी आली. कृपया पुन्हा प्रयत्न करा.' : 'Failed to submit inquiry. Please try again.'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // If loading authentication or checking existing inquiry
+  if (authLoading || checkingInquiry) {
+    return (
+      <div className="min-h-screen bg-slate-50 pt-28 pb-16 flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  // If user is not logged in
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-slate-50 pt-28 pb-16 px-4 flex items-center justify-center">
+        <Card className="max-w-md w-full p-8 text-center bg-white rounded-3xl shadow-xl border border-slate-100">
+          <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4">
+            <User className="w-8 h-8" />
+          </div>
+          <h2 className="text-2xl font-serif font-bold text-slate-900 mb-2">
+            {isMr ? 'कृपया प्रथम लॉगिन करा' : 'Please Sign In First'}
+          </h2>
+          <p className="text-sm text-slate-600 mb-6 leading-relaxed">
+            {isMr
+              ? 'खरेदीदार, विक्रेता, बिल्डर, एजंट किंवा सप्लायर बनण्यासाठी कृपया आपल्या खात्यात लॉगिन करा.'
+              : 'To select your role (Buyer, Seller, Builder, Agent, Supplier) and create your profile, please sign in to your account.'}
+          </p>
+          <div className="flex flex-col gap-3">
+            <Link to="/login?redirect=/role-inquiry">
+              <Button variant="primary" className="w-full py-3 rounded-xl font-bold">
+                {isMr ? 'लॉगिन करा' : 'Sign In'}
+              </Button>
+            </Link>
+            <Link to="/register">
+              <Button variant="outline" className="w-full py-3 rounded-xl font-bold">
+                {isMr ? 'नवीन खाते तयार करा' : 'Register New Account'}
+              </Button>
+            </Link>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  // Already approved state
+  if (user && user.role !== 'user' && user.role !== 'admin') {
+    const roleDashboardUrl =
+      user.role === 'seller'
+        ? '/seller/dashboard'
+        : user.role === 'buyer'
+        ? '/buyer/dashboard'
+        : user.role === 'builder'
+        ? '/builder/dashboard'
+        : user.role === 'agent'
+        ? '/agent/dashboard'
+        : user.role === 'supplier'
+        ? '/supplier/dashboard'
+        : '/admin/tasks';
+
+    const roleNameDisplay =
+      user.role === 'seller'
+        ? isMr ? 'मालमत्ता विक्रेता (Seller)' : 'Verified Property Seller'
+        : user.role === 'buyer'
+        ? isMr ? 'मालमत्ता खरेदीदार (Buyer)' : 'Verified Property Buyer'
+        : user.role === 'builder'
+        ? isMr ? 'बिल्डर व डेव्हलपर (Builder)' : 'Verified Builder & Developer'
+        : user.role === 'agent'
+        ? isMr ? 'अधिकृत एजंट (Agent)' : 'Authorized Real Estate Agent'
+        : user.role === 'supplier'
+        ? isMr ? 'साहित्य पुरवठादार (Supplier)' : 'Verified Material Supplier'
+        : isMr ? 'क्षेत्र प्रतिनिधी (Representative)' : 'Field Representative';
+
+    return (
+      <div className="min-h-screen bg-slate-50 pt-28 pb-16 px-4 sm:px-6 md:px-12 flex items-center justify-center">
+        <Card className="max-w-xl w-full p-8 sm:p-10 text-center bg-white rounded-3xl shadow-xl border border-emerald-100">
+          <div className="w-20 h-20 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-6 ring-8 ring-emerald-50/50">
+            <CheckCircle2 className="w-10 h-10" />
+          </div>
+          <span className="inline-block bg-emerald-100 text-emerald-800 text-xs font-bold uppercase tracking-wider px-3.5 py-1 rounded-full mb-3">
+            {isMr ? 'सक्रिय भूमिका' : 'Active Role'}
+          </span>
+          <h2 className="text-2xl sm:text-3xl font-serif font-extrabold text-slate-900 mb-3">
+            {roleNameDisplay}
+          </h2>
+          <p className="text-sm text-slate-600 mb-8 max-w-md mx-auto leading-relaxed">
+            {isMr
+              ? 'आपले खाते आधीच मंजूर झाले आहे. आपण आपल्या समर्पित डॅशबोर्डवर जाऊन सर्व वैशिष्ट्ये वापरू शकता.'
+              : 'Your account has already been approved for this role. You can access your dedicated role dashboard below to manage your activities.'}
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link to={roleDashboardUrl}>
+              <Button variant="primary" className="w-full sm:w-auto px-8 py-3.5 rounded-xl font-bold shadow-lg hover:scale-105 transition-all">
+                {isMr ? 'डॅशबोर्डवर जा' : 'Open My Dashboard'} <ArrowRight className="w-4 h-4 ml-2 inline" />
+              </Button>
+            </Link>
+            <Link to="/profile">
+              <Button variant="outline" className="w-full sm:w-auto px-6 py-3.5 rounded-xl font-bold">
+                {isMr ? 'माझे प्रोफाइल' : 'My Profile'}
+              </Button>
+            </Link>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-50/70 pt-24 sm:pt-28 pb-20 px-4 sm:px-6 md:px-12 text-left">
+      <div className="max-w-4xl mx-auto space-y-8">
+
+        {/* ── HEADER (MATCHING SCREENSHOT) ── */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-2">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight font-sans">
+              {isMr ? 'सुरुवात करा' : 'Get started with'}
+            </h1>
+            <p className="text-sm text-slate-500 mt-1">
+              {isMr ? 'तुमची भूमिका निवडा किंवा प्रोफाइल तयार करा' : 'Choose your role or create profile'}
+            </p>
+          </div>
+
+          {/* Pill Toggle [Roles] [Explore] */}
+          <div className="inline-flex items-center p-1 bg-slate-100 rounded-full border border-slate-200">
+            <button
+              type="button"
+              onClick={() => setViewMode('roles')}
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+                viewMode === 'roles'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              {isMr ? 'Roles' : 'Roles'}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setViewMode('explore');
+                navigate('/properties');
+              }}
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+                viewMode === 'explore'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              {isMr ? 'Explore' : 'Explore'}
+            </button>
+          </div>
+        </div>
+
+        {/* ── ROLE SELECTION CARDS (MATCHING USER SCREENSHOT) ── */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3.5 sm:gap-4">
+          {/* 1. BUYER */}
+          <button
+            type="button"
+            onClick={() => setSelectedRole('buyer')}
+            className={`p-5 rounded-2xl border bg-white flex flex-col items-center justify-center text-center transition-all cursor-pointer group ${
+              selectedRole === 'buyer'
+                ? 'border-blue-500 shadow-md ring-2 ring-blue-500/20'
+                : 'border-slate-200 hover:border-slate-300 hover:shadow-sm'
+            }`}
+          >
+            <div className="w-14 h-14 rounded-full bg-blue-50 flex items-center justify-center mb-3 transition-transform group-hover:scale-110">
+              <div className="relative text-blue-500 flex items-center justify-center">
+                <User className="w-6 h-6" />
+                <Search className="w-3.5 h-3.5 absolute -bottom-0.5 -right-1 text-blue-600 stroke-[3]" />
+              </div>
+            </div>
+            <span className="font-bold text-sm text-slate-800">
+              {isMr ? 'Buyer' : 'Buyer'}
+            </span>
+          </button>
+
+          {/* 2. SELLER */}
+          <button
+            type="button"
+            onClick={() => setSelectedRole('seller')}
+            className={`p-5 rounded-2xl border bg-white flex flex-col items-center justify-center text-center transition-all cursor-pointer group ${
+              selectedRole === 'seller'
+                ? 'border-amber-500 shadow-md ring-2 ring-amber-500/20'
+                : 'border-slate-200 hover:border-slate-300 hover:shadow-sm'
+            }`}
+          >
+            <div className="w-14 h-14 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mb-3 transition-transform group-hover:scale-110">
+              <Store className="w-6 h-6" />
+            </div>
+            <span className="font-bold text-sm text-slate-800">
+              {isMr ? 'Seller' : 'Seller'}
+            </span>
+          </button>
+
+          {/* 3. BUILDER */}
+          <button
+            type="button"
+            onClick={() => setSelectedRole('builder')}
+            className={`p-5 rounded-2xl border bg-white flex flex-col items-center justify-center text-center transition-all cursor-pointer group ${
+              selectedRole === 'builder'
+                ? 'border-purple-500 shadow-md ring-2 ring-purple-500/20'
+                : 'border-slate-200 hover:border-slate-300 hover:shadow-sm'
+            }`}
+          >
+            <div className="w-14 h-14 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center mb-3 transition-transform group-hover:scale-110">
+              <Building2 className="w-6 h-6" />
+            </div>
+            <span className="font-bold text-sm text-slate-800">
+              {isMr ? 'Builder' : 'Builder'}
+            </span>
+          </button>
+
+          {/* 4. AGENT */}
+          <button
+            type="button"
+            onClick={() => setSelectedRole('agent')}
+            className={`p-5 rounded-2xl border bg-white flex flex-col items-center justify-center text-center transition-all cursor-pointer group ${
+              selectedRole === 'agent'
+                ? 'border-emerald-500 shadow-md ring-2 ring-emerald-500/20'
+                : 'border-slate-200 hover:border-slate-300 hover:shadow-sm'
+            }`}
+          >
+            <div className="w-14 h-14 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-3 transition-transform group-hover:scale-110">
+              <Handshake className="w-6 h-6" />
+            </div>
+            <span className="font-bold text-sm text-slate-800">
+              {isMr ? 'Agent' : 'Agent'}
+            </span>
+          </button>
+
+          {/* 5. SUPPLIER */}
+          <button
+            type="button"
+            onClick={() => setSelectedRole('supplier')}
+            className={`p-5 rounded-2xl border bg-white flex flex-col items-center justify-center text-center transition-all cursor-pointer group ${
+              selectedRole === 'supplier'
+                ? 'border-orange-500 shadow-md ring-2 ring-orange-500/20'
+                : 'border-slate-200 hover:border-slate-300 hover:shadow-sm'
+            }`}
+          >
+            <div className="w-14 h-14 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center mb-3 transition-transform group-hover:scale-110">
+              <Wrench className="w-6 h-6" />
+            </div>
+            <span className="font-bold text-sm text-slate-800">
+              {isMr ? 'Supplier' : 'Supplier'}
+            </span>
+          </button>
+        </div>
+
+        {/* ── STATUS ALERT (If already submitted) ── */}
+        {existingInquiry && (
+          <div
+            className={`p-6 rounded-2xl border transition-all ${
+              existingInquiry.status === 'pending'
+                ? 'bg-amber-50/80 border-amber-200 text-amber-900'
+                : existingInquiry.status === 'approved'
+                ? 'bg-emerald-50/80 border-emerald-200 text-emerald-900'
+                : 'bg-rose-50/80 border-rose-200 text-rose-900'
+            }`}
+          >
+            <div className="flex items-start gap-4">
+              {existingInquiry.status === 'pending' ? (
+                <div className="p-2.5 bg-amber-100 rounded-xl text-amber-700 shrink-0">
+                  <Clock className="w-6 h-6 animate-pulse" />
+                </div>
+              ) : existingInquiry.status === 'approved' ? (
+                <div className="p-2.5 bg-emerald-100 rounded-xl text-emerald-700 shrink-0">
+                  <CheckCircle2 className="w-6 h-6" />
+                </div>
+              ) : (
+                <div className="p-2.5 bg-rose-100 rounded-xl text-rose-700 shrink-0">
+                  <AlertCircle className="w-6 h-6" />
+                </div>
+              )}
+
+              <div className="flex-1">
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
+                  <h3 className="font-bold text-base sm:text-lg">
+                    {existingInquiry.status === 'pending'
+                      ? isMr
+                        ? `आपली "${existingInquiry.requestedRole.toUpperCase()}" भूमिका विनंती ॲडमिनकडे प्रलंबित आहे`
+                        : `Your "${existingInquiry.requestedRole.toUpperCase()}" Application is Under Admin Review`
+                      : existingInquiry.status === 'approved'
+                      ? isMr
+                        ? `अभिनंदन! आपली "${existingInquiry.requestedRole.toUpperCase()}" विनंती मंजूर झाली आहे`
+                        : `Congratulations! Your "${existingInquiry.requestedRole.toUpperCase()}" Application is Approved`
+                      : isMr
+                      ? `आपली विनंती नाकारण्यात आली आहे: ${existingInquiry.rejectionReason || 'माहिती अपूर्ण'}`
+                      : `Application Rejected: ${existingInquiry.rejectionReason || 'Incomplete details'}`}
+                  </h3>
+                  <span className="text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-white/70 border">
+                    {existingInquiry.status}
+                  </span>
+                </div>
+                <p className="text-xs sm:text-sm opacity-90 leading-relaxed">
+                  {existingInquiry.status === 'pending'
+                    ? isMr
+                      ? 'सह्याद्री ॲडमिन टीम आपली माहिती पडताळत आहे. मंजुरीनंतर आपले खाते त्वरित अपग्रेड होईल आणि डॅशबोर्ड उपलब्ध होईल.'
+                      : 'Sahyadri Admin is reviewing your submitted details. Once approved, your role dashboard will activate automatically.'
+                    : existingInquiry.status === 'approved'
+                    ? isMr
+                      ? 'कृपया खालील बटणावर क्लिक करून आपल्या डॅशबोर्डवर जा.'
+                      : 'Click below to visit your dedicated dashboard.'
+                    : isMr
+                    ? 'आपण माहिती दुरुस्त करून खालील फॉर्मद्वारे पुन्हा विनंती पाठवू शकता.'
+                    : 'You may update your details below and resubmit your inquiry.'}
+                </p>
+
+                {/* Cloud Sync & Action Controls */}
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-4 pt-3 border-t border-slate-200/50">
+                  {existingInquiry.id && (
+                    <span className="text-[11px] font-mono bg-white/80 px-2.5 py-1 rounded-lg border text-slate-700 shadow-2xs">
+                      ID: {existingInquiry.id}
+                    </span>
+                  )}
+                  <span
+                    className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
+                      existingInquiry.sourceCollection === 'local' || existingInquiry.id?.startsWith('inq-local-')
+                        ? 'bg-blue-100 text-blue-800 border-blue-300'
+                        : 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                    }`}
+                  >
+                    {existingInquiry.sourceCollection === 'local' || existingInquiry.id?.startsWith('inq-local-')
+                      ? (isMr ? '✓ अर्ज यशस्वीरीत्या प्राप्त' : '✓ Application Received')
+                      : (isMr ? '✓ क्लाउड सिंक' : '✓ Cloud Firestore Synced')}
+                  </span>
+
+                  {/* Reapply / Clear button */}
+                  {existingInquiry.status !== 'approved' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (user?.uid) {
+                          localStorage.removeItem(`sahyadri_role_inquiry_${user.uid}`);
+                        }
+                        const cleanMob = String(user?.mobile || '').replace(/[^0-9]/g, '').slice(-10);
+                        if (cleanMob) {
+                          localStorage.removeItem(`sahyadri_role_inquiry_${cleanMob}`);
+                        }
+                        try {
+                          const raw = localStorage.getItem('sahyadri_local_role_inquiries');
+                          if (raw) {
+                            const parsed = JSON.parse(raw);
+                            if (Array.isArray(parsed)) {
+                              const filtered = parsed.filter(
+                                (it: any) =>
+                                  it &&
+                                  it.userId !== user?.uid &&
+                                  it.userMobile !== user?.mobile &&
+                                  it.id !== existingInquiry?.id
+                              );
+                              localStorage.setItem('sahyadri_local_role_inquiries', JSON.stringify(filtered));
+                            }
+                          }
+                          const rawSession = localStorage.getItem('sahyadri_user_session');
+                          if (rawSession) {
+                            const s = JSON.parse(rawSession);
+                            delete s.hasPendingInquiry;
+                            delete s.pendingRole;
+                            localStorage.setItem('sahyadri_user_session', JSON.stringify(s));
+                          }
+                        } catch {}
+                        setExistingInquiry(null);
+                        setSubmittedSuccess(false);
+                        window.dispatchEvent(new Event('storage'));
+                        window.dispatchEvent(new Event('role_inquiry_updated'));
+                      }}
+                      className="ml-auto text-xs font-bold text-slate-700 hover:text-slate-900 underline underline-offset-2 transition-colors cursor-pointer"
+                    >
+                      {isMr ? 'नवीन अर्ज करा / रीसेट करा' : 'Reset / Submit New Application'}
+                    </button>
+                  )}
+                </div>
+
+                {existingInquiry.status === 'approved' && (
+                  <div className="mt-4">
+                    <Link
+                      to={
+                        existingInquiry.requestedRole === 'seller'
+                          ? '/seller/dashboard'
+                          : existingInquiry.requestedRole === 'buyer'
+                          ? '/buyer/dashboard'
+                          : existingInquiry.requestedRole === 'builder'
+                          ? '/builder/dashboard'
+                          : existingInquiry.requestedRole === 'agent'
+                          ? '/agent/dashboard'
+                          : existingInquiry.requestedRole === 'supplier'
+                          ? '/supplier/dashboard'
+                          : '/profile'
+                      }
+                    >
+                      <Button variant="primary" className="py-2 px-6 rounded-xl font-bold text-xs sm:text-sm">
+                        {isMr ? 'डॅशबोर्डवर जा' : 'Go to Dashboard'} <ArrowRight className="w-4 h-4 ml-1 inline" />
+                      </Button>
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── SUCCESS MESSAGE AFTER SUBMIT ── */}
+        {submittedSuccess && (
+          <div className="p-6 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-900 flex items-center gap-4 animate-fadeIn">
+            <CheckCircle2 className="w-7 h-7 text-emerald-600 shrink-0" />
+            <div>
+              <h4 className="font-bold text-base">
+                {isMr ? 'चौकशी अर्ज यशस्वीरीत्या सादर केला!' : 'Inquiry Submitted Successfully!'}
+              </h4>
+              <p className="text-xs sm:text-sm text-emerald-800">
+                {isMr
+                  ? 'ॲडमिन पडताळणीनंतर आपली भूमिका त्वरित सक्रिय केली जाईल.'
+                  : 'Your request has been sent to Sahyadri Admin. Once approved, your role and dashboard will activate.'}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* ── FORM CONTAINER ── */}
+        <form onSubmit={handleSubmit} className="space-y-8">
+
+          {/* SECTION 1: Personal & Contact Information */}
+          <Card className="p-6 sm:p-8 bg-white border border-slate-200/80 rounded-3xl shadow-sm space-y-6">
+            <div className="border-b border-slate-100 pb-4">
+              <h2 className="text-xl font-bold font-serif text-slate-900 flex items-center gap-2">
+                <User className="w-5 h-5 text-primary" />
+                {isMr ? '१. आपली संपर्क माहिती' : '1. Your Contact Information'}
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {isMr ? 'ही माहिती ॲडमिन पडताळणीसाठी वापरली जाईल' : 'This information will be used for verification and client contacts'}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <Input
+                label={isMr ? 'पूर्ण नाव *' : 'Full Name *'}
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="उदा. राहुल कदम"
+                required
+              />
+
+              <Input
+                label={isMr ? 'मोबाईल नंबर *' : 'Mobile Number *'}
+                type="tel"
+                value={mobile}
+                onChange={(e) => setMobile(e.target.value)}
+                placeholder="10-digit mobile number"
+                maxLength={10}
+                required
+              />
+
+              <Input
+                label={isMr ? 'ईमेल पत्ता' : 'Email Address'}
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="name@example.com"
+              />
+            </div>
+          </Card>
+
+          {/* SECTION 2: SPECIFIC FIELDS FOR SELLER */}
+          {selectedRole === 'seller' && (
+            <Card className="p-6 sm:p-8 bg-white border border-slate-200/80 rounded-3xl shadow-sm space-y-6">
+              <div className="border-b border-slate-100 pb-4">
+                <h2 className="text-xl font-bold font-serif text-slate-900 flex items-center gap-2">
+                  <Store className="w-5 h-5 text-amber-600" />
+                  {isMr ? '२. पहिले घर / फ्लॅट सूची तपशील' : '2. List Your 1st Property (House/Flat/Plot)'}
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {isMr
+                    ? 'विक्रेता म्हणून मंजुरी मिळण्यासाठी आपल्या पहिल्या मालमत्तेचे तपशील देणे अनिवार्य आहे. मंजुरीनंतर ही मालमत्ता थेट पोर्टलवर लाईव्ह होईल.'
+                    : 'To register as a Seller, please provide your first property listing. On admin approval, this property will automatically be published.'}
+                </p>
+              </div>
+
+              {/* Seller Type & Locations */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
+                <Select
+                  label={isMr ? 'आपण कोण आहात? *' : 'Seller Type *'}
+                  value={sellerType}
+                  onChange={(e) => setSellerType(e.target.value as any)}
+                  options={[
+                    { value: 'owner', label: isMr ? 'मालमत्ता मालक (Individual Owner)' : 'Individual Owner' },
+                    { value: 'builder', label: isMr ? 'बिल्डर / डेव्हलपर (Builder)' : 'Builder' },
+                    { value: 'promoter', label: isMr ? 'प्रमोटर (Promoter)' : 'Promoter' }
+                  ]}
+                />
+
+                <Select
+                  label={isMr ? 'जिल्हा *' : 'District *'}
+                  value={sellerDistrict}
+                  onChange={(e) => setSellerDistrict(e.target.value)}
+                  options={districtsList}
+                />
+
+                <Select
+                  label={isMr ? 'तालुका *' : 'Taluka *'}
+                  value={sellerTaluka}
+                  onChange={(e) => setSellerTaluka(e.target.value)}
+                  options={talukasList}
+                />
+              </div>
+
+              {/* 1st Property Spec Box */}
+              <div className="p-5 sm:p-6 bg-slate-50/80 rounded-2xl border border-slate-200/80 space-y-6">
+                {/* Category & Listing Type cleanly aligned */}
+                <div className="space-y-5">
+                  <div>
+                    <label className="block text-xs uppercase tracking-widest font-bold text-slate-700 mb-2.5">
+                      {isMr ? 'मालमत्ता प्रकार *' : 'Property Category *'}
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
+                      {(['House', 'Flat', 'Bungalow', 'Plot', 'Land'] as const).map((cat) => (
+                        <button
+                          type="button"
+                          key={cat}
+                          onClick={() => {
+                            setPropCategory(cat);
+                            if (cat === 'Plot' || cat === 'Land') {
+                              setPropType('sale');
+                            }
+                          }}
+                          className={`py-3 px-3 text-xs font-bold rounded-xl border transition-all cursor-pointer text-center ${
+                            propCategory === cat
+                              ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                              : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
+                          }`}
+                        >
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs uppercase tracking-widest font-bold text-slate-700 mb-2.5">
+                      {isMr ? 'व्यवहार प्रकार *' : 'Listing Type *'}
+                    </label>
+                    {propCategory === 'Plot' || propCategory === 'Land' ? (
+                      <div className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-100 rounded-xl border border-slate-200 text-xs font-bold text-slate-800">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        <span>{isMr ? 'विक्रीसाठी (For Sale)' : 'For Sale'}</span>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-md">
+                        <button
+                          type="button"
+                          onClick={() => setPropType('sale')}
+                          className={`py-3 px-4 text-xs font-bold rounded-xl border transition-all cursor-pointer text-center ${
+                            propType === 'sale'
+                              ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                              : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
+                          }`}
+                        >
+                          {isMr ? 'विक्रीसाठी (For Sale)' : 'For Sale'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPropType('rent')}
+                          className={`py-3 px-4 text-xs font-bold rounded-xl border transition-all cursor-pointer text-center ${
+                            propType === 'rent'
+                              ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                              : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
+                          }`}
+                        >
+                          {isMr ? 'भाड्याने देणे (For Rent)' : 'For Rent'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Title & Price */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
+                  <div className="md:col-span-2">
+                    <Input
+                      label={isMr ? 'मालमत्तेचे शीर्षक / नाव *' : 'Property Title / Name *'}
+                      value={propTitle}
+                      onChange={(e) => setPropTitle(e.target.value)}
+                      placeholder={
+                        propCategory === 'Plot'
+                          ? (isMr ? 'उदा. विश्रामबाग येथे कलेक्टर एन.ए. प्लॉट' : 'e.g. Collector NA Plot in Vishrambag')
+                          : propCategory === 'Land'
+                          ? (isMr ? 'उदा. २.५ एकर बागायती शेतजमीन कडेगाव' : 'e.g. 2.5 Acres Irrigated Agricultural Land in Kadegaon')
+                          : (isMr ? 'उदा. विश्रामबाग येथे २ बीएचके स्वतंत्र घर' : 'e.g. 2 BHK Independent House in Vishrambag')
+                      }
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <Input
+                      label={
+                        propType === 'sale'
+                          ? (isMr ? 'अपेक्षित किंमत (₹) *' : 'Expected Price (₹) *')
+                          : (isMr ? 'मासिक भाडे (₹) *' : 'Monthly Rent (₹) *')
+                      }
+                      type="number"
+                      value={propType === 'sale' ? propPrice : propRent}
+                      onChange={(e) =>
+                        propType === 'sale'
+                          ? setPropPrice(e.target.value ? Number(e.target.value) : '')
+                          : setPropRent(e.target.value ? Number(e.target.value) : '')
+                      }
+                      placeholder={propType === 'sale' ? '4500000' : '15000'}
+                      required
+                    />
+                    <label className="flex items-center gap-2 mt-2 cursor-pointer text-xs font-semibold text-slate-700 select-none">
+                      <input
+                        type="checkbox"
+                        checked={isNegotiable}
+                        onChange={(e) => setIsNegotiable(e.target.checked)}
+                        className="rounded text-primary focus:ring-primary w-4 h-4 cursor-pointer accent-slate-900"
+                      />
+                      <span>{isMr ? 'किंमत वाटाघाटीयोग्य आहे (Negotiable)' : 'Price is Negotiable'}</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Location */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
+                  <Input
+                    label={isMr ? 'गाव / शहर / परिसर *' : 'City / Village / Locality *'}
+                    value={sellerCity}
+                    onChange={(e) => setSellerCity(e.target.value)}
+                    placeholder="उदा. विश्रामबाग / सांगली / जयसिंगपूर"
+                    required
+                  />
+
+                  <Input
+                    label={isMr ? 'संपूर्ण पत्ता / लँडमार्क *' : 'Full Address / Landmark *'}
+                    value={propAddress}
+                    onChange={(e) => setPropAddress(e.target.value)}
+                    placeholder="Near Ganpati Temple, Sangli"
+                    required
+                  />
+                </div>
+
+                {/* ── DYNAMIC CATEGORY-SPECIFIC FIELDS ── */}
+                
+                {/* 1. FLAT SPECIFICATIONS */}
+                {propCategory === 'Flat' && (
+                  <div className="space-y-5 p-5 bg-slate-50/70 rounded-2xl border border-slate-200">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-200/60">
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                        {isMr ? '🏢 फ्लॅट / अपार्टमेंट तपशील' : '🏢 Flat & Apartment Specifications'}
+                      </span>
+                    </div>
+
+                    {/* Row 1: Areas (2 columns) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 items-start">
+                      <Input
+                        label={isMr ? 'बांधकाम क्षेत्र (Built-up Sq.Ft) *' : 'Built-up Area (Sq.Ft) *'}
+                        type="number"
+                        value={propBuiltUp}
+                        onChange={(e) => setPropBuiltUp(e.target.value ? Number(e.target.value) : '')}
+                        placeholder="उदा. 950"
+                        required
+                      />
+
+                      <Input
+                        label={isMr ? 'कार्पेट क्षेत्र (Carpet Sq.Ft) *' : 'Carpet Area (Sq.Ft) *'}
+                        type="number"
+                        value={carpetArea}
+                        onChange={(e) => setCarpetArea(e.target.value ? Number(e.target.value) : '')}
+                        placeholder="उदा. 750"
+                        required
+                      />
+                    </div>
+
+                    {/* Row 2: Rooms & Floors (3 columns) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 items-start">
+                      <Select
+                        label={isMr ? 'बीएचके प्रकार *' : 'BHK Type *'}
+                        value={propFlatType}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setPropFlatType(val);
+                          const match = val.match(/\d+/);
+                          if (match) {
+                            const num = parseInt(match[0], 10);
+                            setPropBedrooms(num);
+                            setPropBathrooms(Math.max(1, num - 1));
+                          }
+                        }}
+                        options={[
+                          { value: '1BHK', label: '1 BHK' },
+                          { value: '2BHK', label: '2 BHK' },
+                          { value: '3BHK', label: '3 BHK' },
+                          { value: '4BHK', label: '4 BHK' },
+                          { value: '5+BHK', label: '5+ BHK' }
+                        ]}
+                      />
+
+                      <Select
+                        label={isMr ? 'बाथरूम संख्या *' : 'Bathrooms *'}
+                        value={String(propBathrooms)}
+                        onChange={(e) => setPropBathrooms(Number(e.target.value))}
+                        options={[
+                          { value: '1', label: '1 Bathroom' },
+                          { value: '2', label: '2 Bathrooms' },
+                          { value: '3', label: '3 Bathrooms' },
+                          { value: '4', label: '4+ Bathrooms' }
+                        ]}
+                      />
+
+                      <Input
+                        label={isMr ? 'मजला व एकूण मजले *' : 'Floor No. & Total Floors *'}
+                        value={floorNo}
+                        onChange={(e) => setFloorNo(e.target.value)}
+                        placeholder="उदा. 3rd of 7 Floors"
+                        required
+                      />
+                    </div>
+
+                    {/* Row 3: Furnishing & Parking (2 columns) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 items-start">
+                      <Select
+                        label={isMr ? 'फर्निचर स्थिती *' : 'Furnishing Status *'}
+                        value={propFurnishing}
+                        onChange={(e: any) => setPropFurnishing(e.target.value)}
+                        options={[
+                          { value: 'Unfurnished', label: isMr ? 'विना फर्निचर (Unfurnished)' : 'Unfurnished' },
+                          { value: 'Semi-Furnished', label: isMr ? 'सेमी-फर्निश्ड (Semi-Furnished)' : 'Semi-Furnished' },
+                          { value: 'Fully-Furnished', label: isMr ? 'पूर्ण फर्निश्ड (Fully-Furnished)' : 'Fully-Furnished' }
+                        ]}
+                      />
+
+                      <Select
+                        label={isMr ? 'कार पार्किंग *' : 'Car Parking *'}
+                        value={propCarParking ? 'yes' : 'no'}
+                        onChange={(e) => setPropCarParking(e.target.value === 'yes')}
+                        options={[
+                          { value: 'yes', label: isMr ? 'उपलब्ध (Covered / Open Parking)' : 'Available (Covered / Open)' },
+                          { value: 'no', label: isMr ? 'पार्किंग नाही (No Dedicated Parking)' : 'No Dedicated Parking' }
+                        ]}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. HOUSE / BUNGALOW SPECIFICATIONS */}
+                {(propCategory === 'House' || propCategory === 'Bungalow') && (
+                  <div className="space-y-5 p-5 bg-slate-50/70 rounded-2xl border border-slate-200">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-200/60">
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                        {isMr ? '🏠 स्वतंत्र घर / बंगला तपशील' : '🏠 Independent House & Bungalow Specifications'}
+                      </span>
+                    </div>
+
+                    {/* Row 1: Areas (2 columns) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 items-start">
+                      <Input
+                        label={isMr ? 'बांधकाम क्षेत्र (Built-up Sq.Ft) *' : 'Built-up Area (Sq.Ft) *'}
+                        type="number"
+                        value={propBuiltUp}
+                        onChange={(e) => setPropBuiltUp(e.target.value ? Number(e.target.value) : '')}
+                        placeholder="उदा. 1500"
+                        required
+                      />
+
+                      <Input
+                        label={isMr ? 'प्लॉट क्षेत्र (Plot Area Sq.Ft) *' : 'Plot Area (Sq.Ft) *'}
+                        type="number"
+                        value={plotAreaSqFt}
+                        onChange={(e) => setPlotAreaSqFt(e.target.value ? Number(e.target.value) : '')}
+                        placeholder="उदा. 2000"
+                        required
+                      />
+                    </div>
+
+                    {/* Row 2: Rooms & Floors (3 columns) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 items-start">
+                      <Select
+                        label={isMr ? 'बेडरूम / बीएचके *' : 'BHK / Bedrooms *'}
+                        value={propFlatType}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setPropFlatType(val);
+                          const match = val.match(/\d+/);
+                          if (match) {
+                            const num = parseInt(match[0], 10);
+                            setPropBedrooms(num);
+                            setPropBathrooms(Math.max(1, num - 1));
+                          }
+                        }}
+                        options={[
+                          { value: '1BHK', label: '1 BHK' },
+                          { value: '2BHK', label: '2 BHK' },
+                          { value: '3BHK', label: '3 BHK' },
+                          { value: '4BHK', label: '4 BHK' },
+                          { value: '5+BHK', label: '5+ BHK' }
+                        ]}
+                      />
+
+                      <Select
+                        label={isMr ? 'बाथरूम संख्या *' : 'Bathrooms *'}
+                        value={String(propBathrooms)}
+                        onChange={(e) => setPropBathrooms(Number(e.target.value))}
+                        options={[
+                          { value: '1', label: '1 Bathroom' },
+                          { value: '2', label: '2 Bathrooms' },
+                          { value: '3', label: '3 Bathrooms' },
+                          { value: '4', label: '4+ Bathrooms' }
+                        ]}
+                      />
+
+                      <Select
+                        label={isMr ? 'एकूण मजले *' : 'Total Floors *'}
+                        value={totalFloors}
+                        onChange={(e) => setTotalFloors(e.target.value)}
+                        options={[
+                          { value: 'Ground Floor Only', label: isMr ? 'फक्त तळमजला (Ground Floor Only)' : 'Ground Floor Only' },
+                          { value: 'G+1 Floor', label: isMr ? 'जी + १ मजला (Ground + 1 Floor)' : 'Ground + 1 Floor (G+1)' },
+                          { value: 'G+2 Floors', label: isMr ? 'जी + २ मजले (Ground + 2 Floors)' : 'Ground + 2 Floors (G+2)' },
+                          { value: 'G+3+ Floors', label: isMr ? 'जी + ३ किंवा अधिक (G+3+ Floors)' : 'G+3 or more Floors' }
+                        ]}
+                      />
+                    </div>
+
+                    {/* Row 3: Furnishing & Parking (2 columns) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 items-start">
+                      <Select
+                        label={isMr ? 'फर्निचर स्थिती *' : 'Furnishing Status *'}
+                        value={propFurnishing}
+                        onChange={(e: any) => setPropFurnishing(e.target.value)}
+                        options={[
+                          { value: 'Unfurnished', label: isMr ? 'विना फर्निचर (Unfurnished)' : 'Unfurnished' },
+                          { value: 'Semi-Furnished', label: isMr ? 'सेमी-फर्निश्ड (Semi-Furnished)' : 'Semi-Furnished' },
+                          { value: 'Fully-Furnished', label: isMr ? 'पूर्ण फर्निश्ड (Fully-Furnished)' : 'Fully-Furnished' }
+                        ]}
+                      />
+
+                      <Select
+                        label={isMr ? 'कार पार्किंग *' : 'Car Parking *'}
+                        value={propCarParking ? 'yes' : 'no'}
+                        onChange={(e) => setPropCarParking(e.target.value === 'yes')}
+                        options={[
+                          { value: 'yes', label: isMr ? 'उपलब्ध (Dedicated Parking)' : 'Available (Dedicated)' },
+                          { value: 'no', label: isMr ? 'नाही (No Dedicated Parking)' : 'No Dedicated Parking' }
+                        ]}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. PLOT SPECIFICATIONS */}
+                {propCategory === 'Plot' && (
+                  <div className="space-y-5 p-5 bg-slate-50/70 rounded-2xl border border-slate-200">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-200/60">
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                        {isMr ? '📐 प्लॉट तपशील व आकारमान' : '📐 Plot Specifications & Dimensions'}
+                      </span>
+                    </div>
+
+                    {/* Row 1: Dimensions & Area (3 balanced columns) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 items-start">
+                      <Input
+                        label={isMr ? 'प्लॉट क्षेत्र (Sq.Ft) *' : 'Plot Area (Sq.Ft) *'}
+                        type="number"
+                        value={plotAreaSqFt}
+                        onChange={(e) => setPlotAreaSqFt(e.target.value ? Number(e.target.value) : '')}
+                        placeholder="उदा. 1500"
+                        required
+                      />
+
+                      <Input
+                        label={isMr ? 'प्लॉट क्षेत्र (गुंठा) *' : 'Plot Area (Guntha) *'}
+                        type="number"
+                        value={plotAreaGuntha}
+                        onChange={(e) => setPlotAreaGuntha(e.target.value ? Number(e.target.value) : '')}
+                        placeholder="उदा. 1.5"
+                        step="0.01"
+                        required
+                      />
+
+                      <Input
+                        label={isMr ? 'प्लॉट आकारमान (लांबी × रुंदी) *' : 'Plot Dimensions (L × W Ft) *'}
+                        value={plotDimensions}
+                        onChange={(e) => setPlotDimensions(e.target.value)}
+                        placeholder="उदा. 30 x 50 Ft"
+                        required
+                      />
+                    </div>
+
+                    {/* Row 2: Facing & Road (2 columns for spacious, clean layout) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 items-start">
+                      <Select
+                        label={isMr ? 'प्लॉट दिशा (Facing) *' : 'Facing Direction *'}
+                        value={facingDirection}
+                        onChange={(e) => setFacingDirection(e.target.value)}
+                        options={[
+                          { value: 'East (पूर्व)', label: isMr ? 'पूर्व (East Facing)' : 'East Facing' },
+                          { value: 'West (पश्चिम)', label: isMr ? 'पश्चिम (West Facing)' : 'West Facing' },
+                          { value: 'North (उत्तर)', label: isMr ? 'उत्तर (North Facing)' : 'North Facing' },
+                          { value: 'South (दक्षिण)', label: isMr ? 'दक्षिण (South Facing)' : 'South Facing' },
+                          { value: 'North-East (ईशान्य)', label: isMr ? 'ईशान्य (North-East Facing)' : 'North-East Facing' },
+                          { value: 'Corner Plot', label: isMr ? 'कॉर्नर प्लॉट (Corner Plot - Two Sides Road)' : 'Corner Plot (2 Sides Road)' }
+                        ]}
+                      />
+
+                      <Select
+                        label={isMr ? 'समोरचा रस्ता रुंदी *' : 'Front Road Width *'}
+                        value={roadWidth}
+                        onChange={(e) => setRoadWidth(e.target.value)}
+                        options={[
+                          { value: '20 Ft', label: isMr ? '२० फूट रस्ता (20 Ft Road)' : '20 Ft Road' },
+                          { value: '30 Ft', label: isMr ? '३० फूट रस्ता (30 Ft Road)' : '30 Ft Road' },
+                          { value: '40 Ft', label: isMr ? '४० फूट रस्ता (40 Ft Road)' : '40 Ft Road' },
+                          { value: '50+ Ft', label: isMr ? '५०+ फूट मुख्य रस्ता (50+ Ft DP Road)' : '50+ Ft DP Road' }
+                        ]}
+                      />
+                    </div>
+
+                    {/* Row 3: Approvals & Boundaries (2 columns for spacious, clean layout) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 items-start">
+                      <Select
+                        label={isMr ? 'मंजुरी प्रकार (Sanction/NA) *' : 'NA / Sanction Status *'}
+                        value={plotSanctionType}
+                        onChange={(e) => setPlotSanctionType(e.target.value)}
+                        options={[
+                          { value: 'Collector NA (कलेक्टर एन.ए.)', label: 'Collector NA (कलेक्टर एन.ए.)' },
+                          { value: 'TP Sanctioned (टी.पी. मंजूर)', label: 'TP Sanctioned (टी.पी. मंजूर)' },
+                          { value: 'Grampanchayat Sanctioned', label: 'Grampanchayat Sanctioned (ग्रामपंचायत मंजूर)' },
+                          { value: 'Gunthewari Sanctioned (गुंठेवारी मंजूर)', label: 'Gunthewari Sanctioned (गुंठेवारी मंजूर)' },
+                          { value: 'Agricultural / Farm Plot', label: 'Agricultural / Farm Plot (शेती/फार्म प्लॉट)' }
+                        ]}
+                      />
+
+                      <Select
+                        label={isMr ? 'कंपाऊंड / कुंपण *' : 'Boundary Wall / Fencing *'}
+                        value={boundaryWall}
+                        onChange={(e) => setBoundaryWall(e.target.value)}
+                        options={[
+                          { value: 'Compound Wall (तार/भिंत कंपाऊंड)', label: isMr ? 'पक्के कंपाऊंड वॉल (Pucca Compound Wall)' : 'Pucca Compound Wall' },
+                          { value: 'Wire Fenced (तारेचे कुंपण)', label: isMr ? 'तारेचे कुंपण (Wire Fenced)' : 'Wire Fenced' },
+                          { value: 'Demarcated / Open (सीमांकन केलेले)', label: isMr ? 'सीमांकन केलेले / खुले (Demarcated / Open)' : 'Demarcated / Open' }
+                        ]}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* 4. LAND SPECIFICATIONS */}
+                {propCategory === 'Land' && (
+                  <div className="space-y-5 p-5 bg-slate-50/70 rounded-2xl border border-slate-200">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-200/60">
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                        {isMr ? '🌾 शेतजमीन तपशील व वैशिष्ट्ये' : '🌾 Agricultural Land Specifications'}
+                      </span>
+                    </div>
+
+                    {/* Row 1: Area & Zone (2 columns) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 items-start">
+                      <Input
+                        label={isMr ? 'एकूण जमीन क्षेत्र (एकर / गुंठा) *' : 'Total Land Area (Acres / Guntha) *'}
+                        value={landArea}
+                        onChange={(e) => setLandArea(e.target.value)}
+                        placeholder="उदा. 2.5 Acres / 30 Guntha"
+                        required
+                      />
+
+                      <Select
+                        label={isMr ? 'जमीन प्रकार / झोन *' : 'Land Category / Zone *'}
+                        value={landType}
+                        onChange={(e) => setLandType(e.target.value)}
+                        options={[
+                          { value: 'शेतजमीन बागायत (Irrigated Agriculture)', label: 'शेतजमीन बागायत (Irrigated Agriculture)' },
+                          { value: 'शेतजमीन जिरायती (Rainfed Jirayat)', label: 'शेतजमीन जिरायती (Rainfed Jirayat)' },
+                          { value: 'व्यावसायिक जमीन (Commercial Zone)', label: 'व्यावसायिक जमीन (Commercial Zone)' },
+                          { value: 'औद्योगिक जमीन (Industrial Zone)', label: 'औद्योगिक जमीन (Industrial Zone)' },
+                          { value: 'फार्म हाऊस लँड (Farmhouse Land)', label: 'फार्म हाऊस लँड (Farmhouse Land)' }
+                        ]}
+                      />
+                    </div>
+
+                    {/* Row 2: Title & Water (2 columns) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 items-start">
+                      <Select
+                        label={isMr ? '७/१२ मालकी व शीर्षक *' : '7/12 Title & Ownership *'}
+                        value={titleClear}
+                        onChange={(e) => setTitleClear(e.target.value)}
+                        options={[
+                          { value: 'होय - निर्वेध ७/१२ (Clear Title)', label: 'होय - निर्वेध ७/१२ (100% Clear Title)' },
+                          { value: 'एकल मालकी (Single Owner)', label: 'एकल मालकी (Single Owner Khata)' },
+                          { value: 'सामायिक खाते (Joint Family Khata)', label: 'सामायिक खाते (Joint Khata)' }
+                        ]}
+                      />
+
+                      <Select
+                        label={isMr ? 'पाण्याचा स्रोत *' : 'Water Source *'}
+                        value={waterSource}
+                        onChange={(e) => setWaterSource(e.target.value)}
+                        options={[
+                          { value: 'विहीर / कालवा (Well / Canal)', label: 'विहीर व कालवा (Well & Canal)' },
+                          { value: 'बोअरवेल (Borewell)', label: 'बोअरवेल पाणी (Borewell)' },
+                          { value: 'नदी / उपसा सिंचन (River Lift)', label: 'नदी / उपसा सिंचन (River Lift)' },
+                          { value: 'शेती पाईपलाईन (Pipeline Water)', label: 'शेती पाईपलाईन (Pipeline)' },
+                          { value: 'पाणी नाही - कोरडवाहू (Rainfed Only)', label: 'पाणी नाही - कोरडवाहू (Rainfed)' }
+                        ]}
+                      />
+                    </div>
+
+                    {/* Row 3: Road & Electricity (2 columns) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 items-start">
+                      <Select
+                        label={isMr ? 'रस्ता संपर्क *' : 'Road Access *'}
+                        value={roadAccess}
+                        onChange={(e) => setRoadAccess(e.target.value)}
+                        options={[
+                          { value: 'डांबरी रस्ता टच (Tar Road Touch)', label: 'डांबरी रस्ता टच (Tar Road Touch)' },
+                          { value: 'काँक्रीट रस्ता (Concrete Road)', label: 'काँक्रीट रस्ता (Concrete Road)' },
+                          { value: 'मुरुम / खडी रस्ता (WBM / Murrum Road)', label: 'मुरुम / खडी रस्ता (Murrum Road)' },
+                          { value: 'पाणंद रस्ता (Field Track / Cart Road)', label: 'पाणंद रस्ता (Field Track)' }
+                        ]}
+                      />
+
+                      <Select
+                        label={isMr ? 'विद्युत पुरवठा *' : 'Electricity Connection *'}
+                        value={electricity}
+                        onChange={(e) => setElectricity(e.target.value)}
+                        options={[
+                          { value: '३-फेज शेती वीज (3-Phase Ag Meter)', label: '३-फेज शेती वीज (3-Phase Ag Meter)' },
+                          { value: 'सिंगल फेज वीज (Single Phase)', label: 'सिंगल फेज वीज (Single Phase)' },
+                          { value: 'वीज जवळ उपलब्ध (Available Nearby)', label: 'वीज जवळ उपलब्ध (Available Nearby)' },
+                          { value: 'वीज कनेक्शन नाही (No Electricity)', label: 'वीज कनेक्शन नाही (No Electricity)' }
+                        ]}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Description */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                    {isMr ? 'वर्णन / प्रमुख वैशिष्ट्ये *' : 'Property Description / Key Features *'}
+                  </label>
+                  <Textarea
+                    value={propDescription}
+                    onChange={(e) => setPropDescription(e.target.value)}
+                    placeholder={
+                      propCategory === 'Plot'
+                        ? (isMr ? 'प्लॉटची वैशिष्ट्ये, रस्ता रुंदी, सीमांकन, आसपासच्या वसाहती, इ.' : 'Describe plot features, road width, neighborhood, vaastu, demarcations...')
+                        : propCategory === 'Land'
+                        ? (isMr ? 'जमिनीची सुपीकता, पाण्याचे नियोजन, पिके, डांबरी रस्ता, विहीर/बोअरवेल तपशील...' : 'Describe soil fertility, water source, crops, road connectivity, title details...')
+                        : (isMr ? 'सोलर वॉटर, मॉड्युलर किचन, बाग, पार्किंग, वास्तुशास्त्र, इ. वैशिष्ट्ये...' : 'Describe special features like solar water, modular kitchen, garden, road width, vaastu...')
+                    }
+                    rows={3}
+                    required
+                  />
+                </div>
+
+                {/* Image Upload Link */}
+                <div className="space-y-3">
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    {isMr ? 'मालमत्ता फोटो (इमेज URL जोडा)' : 'Property Photos (Add Image URLs)'}
+                  </label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={propImageUrl}
+                      onChange={(e) => setPropImageUrl(e.target.value)}
+                      placeholder="https://images.unsplash.com/... किंवा इमेज लिंक पेस्ट करा"
+                    />
+                    <Button
+                      type="button"
+                      onClick={handleAddImageUrl}
+                      variant="outline"
+                      className="shrink-0 font-bold"
+                    >
+                      <Plus className="w-4 h-4 mr-1" /> {isMr ? 'जोडा' : 'Add'}
+                    </Button>
+                  </div>
+                  {propImages.length > 0 && (
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      {propImages.map((img, i) => (
+                        <div key={i} className="relative w-20 h-20 rounded-xl overflow-hidden border border-slate-200 group">
+                          <img src={img} alt="Property" className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveImage(i)}
+                            className="absolute top-1 right-1 p-1 bg-red-600 text-white rounded-full opacity-80 hover:opacity-100 transition-opacity"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {/* SECTION 2: SPECIFIC FIELDS FOR BUILDER */}
+          {selectedRole === 'builder' && (
+            <Card className="p-6 sm:p-8 bg-white border border-slate-200/80 rounded-3xl shadow-sm space-y-6">
+              <div className="border-b border-slate-100 pb-4">
+                <h2 className="text-xl font-bold font-serif text-slate-900 flex items-center gap-2">
+                  <Building2 className="w-5 h-5 text-purple-600" />
+                  {isMr ? '२. बिल्डर फर्म व पहिला गृहप्रकल्प' : '2. Builder Profile & 1st Project Launch'}
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {isMr
+                    ? 'आपल्या कंपनीचे नाव, रेरा क्रमांक आणि पहिल्या गृहप्रकल्पाचे तपशील द्या. ॲडमिन मंजुरीनंतर आपला बिल्डर डॅशबोर्ड सक्रिय होईल.'
+                    : 'Provide your company details and your first apartment/housing project. On approval, your builder console will activate.'}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
+                <Input
+                  label={isMr ? 'डेव्हलपर / फर्मचे नाव *' : 'Company / Firm Name *'}
+                  value={builderCompany}
+                  onChange={(e) => setBuilderCompany(e.target.value)}
+                  placeholder="उदा. सह्याद्री इन्फ्रा प्रायव्हेट लिमिटेड"
+                  required
+                />
+
+                <Input
+                  label={isMr ? 'रेरा नोंदणी क्रमांक (RERA No)' : 'MahaRERA Registration No'}
+                  value={builderRera}
+                  onChange={(e) => setBuilderRera(e.target.value)}
+                  placeholder="P528000XXXXX"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5 items-start">
+                <Input
+                  label={isMr ? 'अनुभव (वर्षे)' : 'Years in Real Estate'}
+                  type="number"
+                  value={builderExp}
+                  onChange={(e) => setBuilderExp(e.target.value ? Number(e.target.value) : '')}
+                  placeholder="5"
+                />
+
+                <Select
+                  label={isMr ? 'जिल्हा' : 'Head Office District'}
+                  value={builderDistrict}
+                  onChange={(e) => setBuilderDistrict(e.target.value)}
+                  options={districtsList}
+                />
+
+                <Select
+                  label={isMr ? 'तालुका' : 'Taluka'}
+                  value={builderTaluka}
+                  onChange={(e) => setBuilderTaluka(e.target.value)}
+                  options={talukasList}
+                />
+
+                <Input
+                  label={isMr ? 'विशेषज्ञता' : 'Specialization'}
+                  value={builderSpecialization}
+                  onChange={(e) => setBuilderSpecialization(e.target.value)}
+                  placeholder="Residential Schemes"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
+                <Input
+                  label={isMr ? 'कार्यालय पत्ता' : 'Office Address'}
+                  value={builderAddress}
+                  onChange={(e) => setBuilderAddress(e.target.value)}
+                  placeholder="Office No 401, Central Plaza, Sangli"
+                />
+
+                <Input
+                  label={isMr ? 'वेबसाईट (पर्यायी)' : 'Website (Optional)'}
+                  value={builderWebsite}
+                  onChange={(e) => setBuilderWebsite(e.target.value)}
+                  placeholder="https://mybuilder.com"
+                />
+              </div>
+
+              {/* 1st Project Specs */}
+              <div className="p-5 sm:p-6 bg-slate-50/80 rounded-2xl border border-slate-200/80 space-y-6">
+                <h3 className="font-bold text-base text-slate-900 flex items-center justify-between">
+                  <span>🏢 {isMr ? 'पहिला प्रकल्प सूची (1st Project Listing)' : '1st Project / Scheme Details'}</span>
+                  <span className="text-xs bg-purple-100 text-purple-700 px-2.5 py-1 rounded-full font-bold">
+                    {isMr ? 'ॲडमिन मंजुरीनंतर थेट प्रसिद्ध होईल' : 'Auto-publishes on Approval'}
+                  </span>
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
+                  <Input
+                    label={isMr ? 'प्रकल्पाचे नाव *' : 'Project / Scheme Name *'}
+                    value={propTitle}
+                    onChange={(e) => setPropTitle(e.target.value)}
+                    placeholder="उदा. सह्याद्री हाइट्स"
+                    required
+                  />
+
+                  <Input
+                    label={isMr ? 'सुरुवातीची किंमत (₹) *' : 'Starting Price (₹) *'}
+                    type="number"
+                    value={propPrice}
+                    onChange={(e) => setPropPrice(e.target.value ? Number(e.target.value) : '')}
+                    placeholder="3500000"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
+                  <Input
+                    label={isMr ? 'शहर / परिसर *' : 'City / Locality *'}
+                    value={sellerCity}
+                    onChange={(e) => setSellerCity(e.target.value)}
+                    placeholder="उदा. विश्रामबाग / कोल्हापूर"
+                    required
+                  />
+
+                  <Select
+                    label={isMr ? 'फ्लॅट / युनिट प्रकार' : 'BHK / Configuration'}
+                    value={propFlatType}
+                    onChange={(e) => setPropFlatType(e.target.value)}
+                    options={[
+                      { value: '1BHK & 2BHK', label: '1 BHK & 2 BHK' },
+                      { value: '2BHK & 3BHK', label: '2 BHK & 3 BHK' },
+                      { value: '3BHK & 4BHK', label: '3 BHK & 4 BHK' },
+                      { value: 'Commercial Shops', label: 'Commercial Shops' },
+                      { value: 'Row Houses & Plots', label: 'Row Houses & Plots' }
+                    ]}
+                  />
+
+                  <Input
+                    label={isMr ? 'बांधकाम क्षेत्र (Sq.Ft)' : 'Built-up (Sq.Ft)'}
+                    type="number"
+                    value={propBuiltUp}
+                    onChange={(e) => setPropBuiltUp(e.target.value ? Number(e.target.value) : '')}
+                    placeholder="950"
+                  />
+                </div>
+
+                {/* Project Photos */}
+                <div className="space-y-2">
+                  <label className="block text-xs uppercase tracking-widest font-bold text-slate-700">
+                    {isMr ? 'प्रकल्प फोटो / ब्रोशर इमेज (URL)' : 'Project Elevation Photos (URL)'}
+                  </label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={propImageUrl}
+                      onChange={(e) => setPropImageUrl(e.target.value)}
+                      placeholder="https://example.com/project-image.jpg"
+                    />
+                    <Button type="button" onClick={handleAddImageUrl} variant="outline" className="shrink-0 font-bold h-12 px-5 rounded-xl">
+                      <Plus className="w-4 h-4 mr-1" /> {isMr ? 'जोडा' : 'Add'}
+                    </Button>
+                  </div>
+                  {propImages.length > 0 && (
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      {propImages.map((img, i) => (
+                        <div key={i} className="relative w-20 h-20 rounded-xl overflow-hidden border border-slate-200 group">
+                          <img src={img} alt="Project" className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveImage(i)}
+                            className="absolute top-1 right-1 p-1 bg-red-600 text-white rounded-full opacity-80 hover:opacity-100"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {/* SECTION 2: SPECIFIC FIELDS FOR SUPPLIER */}
+          {selectedRole === 'supplier' && (
+            <Card className="p-6 sm:p-8 bg-white border border-slate-200/80 rounded-3xl shadow-sm space-y-6">
+              <div className="border-b border-slate-100 pb-4">
+                <h2 className="text-xl font-bold font-serif text-slate-900 flex items-center gap-2">
+                  <Wrench className="w-5 h-5 text-orange-600" />
+                  {isMr ? '२. बांधकाम साहित्य पुरवठादार माहिती' : '2. Material Supplier Business Profile'}
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {isMr
+                    ? 'आपल्या दुकानाचे नाव, पुरवठा प्रवर्ग आणि सेवा कार्यक्षेत्र प्रविष्ट करा. बिल्डर्स व घरमालक थेट कोटेशन मागवतील.'
+                    : 'List your supplies, GST, and distribution coverage area to receive quote requests.'}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
+                <Input
+                  label={isMr ? 'व्यवसाय / दुकानाचे नाव *' : 'Business / Enterprise Name *'}
+                  value={supplierBusiness}
+                  onChange={(e) => setSupplierBusiness(e.target.value)}
+                  placeholder="उदा. सह्याद्री सिमेंट आणि स्टील ट्रेडर्स"
+                  required
+                />
+
+                <Select
+                  label={isMr ? 'मुख्य साहित्य प्रवर्ग *' : 'Primary Supply Category *'}
+                  value={supplierCategory}
+                  onChange={(e) => setSupplierCategory(e.target.value)}
+                  options={[
+                    { value: 'All', label: 'All (सर्व साहित्य प्रकार)' },
+                    { value: 'Cement & Steel', label: 'Cement & Steel (सिमेंट आणि लोखंड)' },
+                    { value: 'Sand & Aggregate', label: 'Sand & Aggregate (वाळू आणि खडी)' },
+                    { value: 'Bricks & Blocks', label: 'Bricks & AAC Blocks (विटा आणि ब्लॉक्स)' },
+                    { value: 'Tiles & Flooring', label: 'Tiles & Marble (टाईल्स आणि मार्बल)' },
+                    { value: 'Plumbing & Sanitary', label: 'Plumbing & Sanitaryware (प्लंबिंग)' },
+                    { value: 'Electrical & Lighting', label: 'Electrical & Lighting (इलेक्ट्रिकल)' },
+                    { value: 'Paints & Waterproofing', label: 'Paints & Waterproofing (रंगकाम)' },
+                    { value: 'Hardware & Tools', label: 'Hardware & Tools (हार्डवेअर)' }
+                  ]}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5 items-start">
+                <Input
+                  label={isMr ? 'जीएसटी नंबर (GST No)' : 'GSTIN Registration No'}
+                  value={supplierGst}
+                  onChange={(e) => setSupplierGst(e.target.value)}
+                  placeholder="27AAAAA0000A1Z5"
+                />
+
+                <Select
+                  label={isMr ? 'कार्यक्षेत्र जिल्हा' : 'Operating District'}
+                  value={supplierDistrict}
+                  onChange={(e) => setSupplierDistrict(e.target.value)}
+                  options={districtsList}
+                />
+
+                <Select
+                  label={isMr ? 'कार्यक्षेत्र तालुका' : 'Operating Taluka'}
+                  value={supplierTaluka}
+                  onChange={(e) => setSupplierTaluka(e.target.value)}
+                  options={talukasList}
+                />
+
+                <Select
+                  label={isMr ? 'साईट डिलिव्हरी उपलब्ध?' : 'Site Delivery Available?'}
+                  value={supplierDelivery ? 'yes' : 'no'}
+                  onChange={(e) => setSupplierDelivery(e.target.value === 'yes')}
+                  options={[
+                    { value: 'yes', label: isMr ? 'होय, डिलिव्हरी उपलब्ध आहे' : 'Yes, Delivery Provided' },
+                    { value: 'no', label: isMr ? 'नाही, फक्त पिकअप' : 'No, Pickup Only' }
+                  ]}
+                />
+              </div>
+
+              <div>
+                <Input
+                  label={isMr ? 'दुकान / गोडाऊन पत्ता' : 'Shop / Warehouse Address'}
+                  value={supplierAddress}
+                  onChange={(e) => setSupplierAddress(e.target.value)}
+                  placeholder="MIDC Kupwad Road, Sangli"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs uppercase tracking-widest font-bold text-slate-700 mb-2">
+                  {isMr ? 'उत्पादने व ब्रँड्स माहिती' : 'Available Brands & Notes'}
+                </label>
+                <Textarea
+                  value={supplierNotes}
+                  onChange={(e) => setSupplierNotes(e.target.value)}
+                  placeholder="Authorised dealer of UltraTech Cement, Tata Tiscon TMT, Asian Paints..."
+                  rows={3}
+                />
+              </div>
+            </Card>
+          )}
+
+          {/* SECTION 2: SPECIFIC FIELDS FOR BUYER */}
+          {selectedRole === 'buyer' && (
+            <Card className="p-6 sm:p-8 bg-white border border-slate-200/80 rounded-3xl shadow-sm space-y-6">
+              <div className="border-b border-slate-100 pb-4">
+                <h2 className="text-xl font-bold font-serif text-slate-900 flex items-center gap-2">
+                  <User className="w-5 h-5 text-blue-600" />
+                  {isMr ? '२. आपली खरेदी पसंती (Buyer Preferences)' : '2. Your Property Requirements'}
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {isMr
+                    ? 'आपल्या गरजेनुसार योग्य घर, फ्लॅट किंवा प्लॉट शोधण्यासाठी खालील माहिती भरा.'
+                    : 'Help us match you with verified houses, flats, and plots matching your exact budget.'}
+                </p>
+              </div>
+
+              {/* Requirement Type & Category */}
+              <div className="space-y-5">
+                <div>
+                  <label className="block text-xs uppercase tracking-widest font-bold text-slate-700 mb-2.5">
+                    {isMr ? 'मालमत्ता प्रकार *' : 'Property Category *'}
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
+                    {(['House', 'Flat', 'Bungalow', 'Plot', 'Land'] as const).map((cat) => (
+                      <button
+                        type="button"
+                        key={cat}
+                        onClick={() => setBuyerCategory(cat)}
+                        className={`py-3 px-3 text-xs font-bold rounded-xl border transition-all cursor-pointer text-center ${
+                          buyerCategory === cat
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                            : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs uppercase tracking-widest font-bold text-slate-700 mb-2.5">
+                    {isMr ? 'खरेदी किंवा भाड्याने? *' : 'Looking For *'}
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-md">
+                    <button
+                      type="button"
+                      onClick={() => setBuyerReqType('sale')}
+                      className={`py-3 px-4 text-xs font-bold rounded-xl border transition-all cursor-pointer text-center ${
+                        buyerReqType === 'sale'
+                          ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                          : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
+                      }`}
+                    >
+                      {isMr ? 'खरेदी करणे (Buy)' : 'Buy'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBuyerReqType('rent')}
+                      className={`py-3 px-4 text-xs font-bold rounded-xl border transition-all cursor-pointer text-center ${
+                        buyerReqType === 'rent'
+                          ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                          : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
+                      }`}
+                    >
+                      {isMr ? 'भाड्याने घेणे (Rent)' : 'Rent'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Budget Range */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
+                <Input
+                  label={isMr ? 'किमान बजेट (₹)' : 'Minimum Budget (₹)'}
+                  type="number"
+                  value={buyerBudgetMin}
+                  onChange={(e) => setBuyerBudgetMin(e.target.value ? Number(e.target.value) : '')}
+                  placeholder="2000000"
+                />
+
+                <Input
+                  label={isMr ? 'कमाल बजेट (₹)' : 'Maximum Budget (₹)'}
+                  type="number"
+                  value={buyerBudgetMax}
+                  onChange={(e) => setBuyerBudgetMax(e.target.value ? Number(e.target.value) : '')}
+                  placeholder="5000000"
+                />
+              </div>
+
+              {/* Location & Timeline */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5 items-start">
+                <Select
+                  label={isMr ? 'पसंतीचा जिल्हा' : 'Preferred District'}
+                  value={buyerDistrict}
+                  onChange={(e) => setBuyerDistrict(e.target.value)}
+                  options={districtsList}
+                />
+
+                <Select
+                  label={isMr ? 'पसंतीचा तालुका' : 'Preferred Taluka'}
+                  value={buyerTaluka}
+                  onChange={(e) => setBuyerTaluka(e.target.value)}
+                  options={talukasList}
+                />
+
+                <Input
+                  label={isMr ? 'पसंतीचे शहर / गाव' : 'Preferred City / Village'}
+                  value={buyerCity}
+                  onChange={(e) => setBuyerCity(e.target.value)}
+                  placeholder={isMr ? 'उदा. विश्रामबाग / कुपवाड' : 'e.g. Vishrambag'}
+                />
+
+                <Select
+                  label={isMr ? 'खरेदी वेळ (Timeline)' : 'Planning Timeline'}
+                  value={buyerTimeline}
+                  onChange={(e: any) => setBuyerTimeline(e.target.value)}
+                  options={[
+                    { value: 'immediate', label: isMr ? 'तातडीने (Immediate)' : 'Immediate' },
+                    { value: 'within_1_month', label: isMr ? '१ महिन्याच्या आत' : 'Within 1 Month' },
+                    { value: 'within_3_months', label: isMr ? '३ महिन्यांच्या आत' : 'Within 3 Months' },
+                    { value: 'exploring', label: isMr ? 'फक्त शोधत आहे' : 'Just Exploring' }
+                  ]}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs uppercase tracking-widest font-bold text-slate-700 mb-2">
+                  {isMr ? 'काही विशिष्ट आवश्यकता / नोंदी' : 'Specific Requirements / Notes'}
+                </label>
+                <Textarea
+                  value={buyerNotes}
+                  onChange={(e) => setBuyerNotes(e.target.value)}
+                  placeholder="उदा. रोड टच पाहिजे, वास्तूशास्त्रानुसार पूर्व दिशा हवी..."
+                  rows={2}
+                />
+              </div>
+            </Card>
+          )}
+
+          {/* SECTION 2: SPECIFIC FIELDS FOR AGENT */}
+          {selectedRole === 'agent' && (
+            <Card className="p-6 sm:p-8 bg-white border border-slate-200/80 rounded-3xl shadow-sm space-y-6">
+              <div className="border-b border-slate-100 pb-4">
+                <h2 className="text-xl font-bold font-serif text-slate-900 flex items-center gap-2">
+                  <Handshake className="w-5 h-5 text-emerald-600" />
+                  {isMr ? '२. एजंट व एजन्सी तपशील' : '2. Agent & Agency Credentials'}
+                </h2>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
+                <Input
+                  label={isMr ? 'एजन्सी / फर्म नाव' : 'Agency / Firm Name'}
+                  value={agencyName}
+                  onChange={(e) => setAgencyName(e.target.value)}
+                  placeholder="उदा. सह्याद्री रिअल्टी कन्सल्टंट"
+                />
+
+                <Input
+                  label={isMr ? 'अनुभव (वर्षे)' : 'Years of Experience'}
+                  type="number"
+                  value={agentExperience}
+                  onChange={(e) => setAgentExperience(e.target.value ? Number(e.target.value) : '')}
+                  placeholder="3"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
+                <Input
+                  label={isMr ? 'रेरा नोंदणी क्रमांक (पर्यायी)' : 'RERA Registration No (Optional)'}
+                  value={agentRera}
+                  onChange={(e) => setAgentRera(e.target.value)}
+                  placeholder="A528000XXXXX"
+                />
+
+                <Input
+                  label={isMr ? 'विशेषज्ञता' : 'Specialization'}
+                  value={agentSpecialization}
+                  onChange={(e) => setAgentSpecialization(e.target.value)}
+                  placeholder="Residential Flats & Commercial Plots"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs uppercase tracking-widest font-bold text-slate-700 mb-2">
+                  {isMr ? 'परिचय व अनुभव माहिती' : 'Brief Bio & Working Area'}
+                </label>
+                <Textarea
+                  value={agentNotes}
+                  onChange={(e) => setAgentNotes(e.target.value)}
+                  placeholder="Tell us about the areas you operate in and clients handled..."
+                  rows={3}
+                />
+              </div>
+            </Card>
+          )}
+
+          {/* SECTION 2: SPECIFIC FIELDS FOR REPRESENTATIVE */}
+          {selectedRole === 'representative' && (
+            <Card className="p-6 sm:p-8 bg-white border border-slate-200/80 rounded-3xl shadow-sm space-y-6">
+              <div className="border-b border-slate-100 pb-4">
+                <h2 className="text-xl font-bold font-serif text-slate-900 flex items-center gap-2">
+                  <UserCheck className="w-5 h-5 text-emerald-600" />
+                  {isMr ? '२. प्रतिनिधी पात्रता व कार्यक्षेत्र' : '2. Representative Qualification & Area'}
+                </h2>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
+                <Input
+                  label={isMr ? 'शैक्षणिक पात्रता' : 'Education Qualification'}
+                  value={repQualification}
+                  onChange={(e) => setRepQualification(e.target.value)}
+                  placeholder="Graduate / Diploma"
+                />
+
+                <Input
+                  label={isMr ? 'पूर्व अनुभव' : 'Previous Experience'}
+                  value={repExperience}
+                  onChange={(e) => setRepExperience(e.target.value)}
+                  placeholder="2 years in Field Marketing"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
+                <Select
+                  label={isMr ? 'कार्यक्षेत्र जिल्हा' : 'Operating District'}
+                  value={repDistrict}
+                  onChange={(e) => setRepDistrict(e.target.value)}
+                  options={districtsList}
+                />
+
+                <Select
+                  label={isMr ? 'कार्यक्षेत्र तालुका' : 'Operating Taluka'}
+                  value={repTaluka}
+                  onChange={(e) => setRepTaluka(e.target.value)}
+                  options={talukasList}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs uppercase tracking-widest font-bold text-slate-700 mb-2">
+                  {isMr ? 'थोडक्यात परिचय (Bio)' : 'Short Bio'}
+                </label>
+                <Textarea
+                  value={repBio}
+                  onChange={(e) => setRepBio(e.target.value)}
+                  placeholder="Tell us about yourself..."
+                  rows={3}
+                />
+              </div>
+            </Card>
+          )}
+
+          {/* Error Message */}
+          {errorMsg && (
+            <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl text-rose-800 text-sm font-medium flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 shrink-0 text-rose-600" />
+              <span>{errorMsg}</span>
+            </div>
+          )}
+
+          {/* Submit Button */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
+            <p className="text-xs text-slate-500">
+              {isMr
+                ? '* अर्जाची पडताळणी सह्याद्री ॲडमिनद्वारे २४ तासांच्या आत केली जाते.'
+                : '* Applications are reviewed by Sahyadri Land Developer within 24 hours.'}
+            </p>
+
+            <Button
+              type="submit"
+              disabled={submitting}
+              className={`w-full sm:w-auto px-8 py-3.5 rounded-2xl font-bold shadow-lg hover:scale-105 transition-all text-white ${
+                selectedRole === 'buyer'
+                  ? 'bg-blue-600 hover:bg-blue-700'
+                  : selectedRole === 'seller'
+                  ? 'bg-amber-600 hover:bg-amber-700'
+                  : selectedRole === 'builder'
+                  ? 'bg-purple-600 hover:bg-purple-700'
+                  : selectedRole === 'supplier'
+                  ? 'bg-orange-600 hover:bg-orange-700'
+                  : 'bg-emerald-600 hover:bg-emerald-700'
+              }`}
+            >
+              {submitting ? (
+                <span>{isMr ? 'सादर करत आहे...' : 'Submitting...'}</span>
+              ) : selectedRole === 'buyer' ? (
+                <span>{isMr ? 'खरेदीदार पसंती सादर करा' : 'Submit Buyer Preferences'}</span>
+              ) : selectedRole === 'seller' ? (
+                <span>{isMr ? 'विक्रेता अर्ज व मालमत्ता सादर करा' : 'Submit Seller Application & List Property'}</span>
+              ) : selectedRole === 'builder' ? (
+                <span>{isMr ? 'बिल्डर नोंदणी व पहिला प्रकल्प सादर करा' : 'Submit Builder & Launch 1st Project'}</span>
+              ) : selectedRole === 'supplier' ? (
+                <span>{isMr ? 'सप्लायर नोंदणी अर्ज सादर करा' : 'Submit Supplier Application'}</span>
+              ) : (
+                <span>{isMr ? 'प्रतिनिधी अर्ज सादर करा' : 'Submit Representative Application'}</span>
+              )}
+            </Button>
+          </div>
+        </form>
+
+      </div>
+    </div>
+  );
+};
