@@ -105,14 +105,14 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
         </select>
 
         {label && (
-          <label className="text-xs uppercase tracking-widest font-bold text-slate-700">
+          <label className="text-xs uppercase tracking-wider font-bold text-slate-800">
             {label}
           </label>
         )}
 
         <div className="relative flex items-center w-full">
           {Icon && (
-            <div className="absolute left-4 text-slate-400 flex items-center justify-center pointer-events-none z-10">
+            <div className="absolute left-4 text-slate-500 flex items-center justify-center pointer-events-none z-10">
               <Icon className="w-5 h-5" />
             </div>
           )}
@@ -124,19 +124,19 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
             title={displayText}
             className={twMerge(
               clsx(
-                "w-full min-w-0 rounded-xl bg-white border border-slate-200 py-3.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-primary transition-all duration-300 flex items-center justify-between text-left font-semibold cursor-pointer disabled:opacity-50 disabled:pointer-events-none shadow-xs",
+                "w-full min-w-0 rounded-xl bg-white border border-slate-300 hover:border-slate-400 py-3.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all duration-200 flex items-center justify-between text-left font-semibold cursor-pointer disabled:opacity-50 disabled:pointer-events-none shadow-2xs",
                 { 
                   "border-yellow-400 bg-yellow-50/50 focus:border-yellow-500": !!error,
                   "pl-12 pr-10": !!Icon,
                   "px-4 pr-10": !Icon,
-                  "border-primary ring-2 ring-primary/10": isOpen && !error
+                  "border-slate-900 ring-2 ring-slate-900/10": isOpen && !error
                 }
               ),
               className
             )}
           >
             <span className="truncate pr-2">{displayText}</span>
-            <div className="absolute right-4 pointer-events-none text-slate-400 flex items-center justify-center">
+            <div className="absolute right-4 pointer-events-none text-slate-500 flex items-center justify-center">
               <svg 
                 xmlns="http://www.w3.org/2000/svg" 
                 width="16" 
@@ -144,10 +144,10 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
                 viewBox="0 0 24 24" 
                 fill="none" 
                 stroke="currentColor" 
-                strokeWidth="2" 
+                strokeWidth="2.5" 
                 strokeLinecap="round" 
                 strokeLinejoin="round"
-                className={twMerge("transition-transform duration-200", isOpen && "rotate-180 text-slate-800")}
+                className={twMerge("transition-transform duration-200", isOpen && "rotate-180 text-slate-950")}
               >
                 <path d="m6 9 6 6 6-6"/>
               </svg>
@@ -156,7 +156,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
 
           {/* Styled Dropdown List matching theme */}
           {isOpen && (
-            <div className="absolute z-50 top-full left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-2xl shadow-xl shadow-slate-900/10 overflow-hidden max-h-64 overflow-y-auto divide-y divide-slate-100 min-w-full">
+            <div className="absolute z-50 top-full left-0 right-0 mt-1.5 bg-white border border-slate-300 rounded-2xl shadow-2xl shadow-slate-900/15 ring-1 ring-slate-900/5 overflow-hidden max-h-64 overflow-y-auto divide-y divide-slate-100 min-w-full">
               {normalizedOptions.length === 0 ? (
                 <div className="px-4 py-3 text-sm text-slate-400 font-medium">No options available</div>
               ) : (
@@ -171,7 +171,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
                         "w-full text-left px-4 py-3 text-sm font-semibold transition-colors cursor-pointer flex items-center justify-between gap-3",
                         isSelected
                           ? "bg-slate-900 text-white font-bold"
-                          : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+                          : "text-slate-800 hover:bg-slate-100/80 hover:text-slate-950"
                       )}
                     >
                       <span className="text-left whitespace-normal break-words leading-snug flex-1">{opt.label}</span>

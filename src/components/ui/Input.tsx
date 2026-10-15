@@ -82,13 +82,13 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="w-full flex flex-col gap-1.5 text-left">
         {label && (
-          <label className="text-xs uppercase tracking-widest font-bold text-black">
+          <label className="text-xs uppercase tracking-wider font-bold text-slate-800">
             {label}
           </label>
         )}
         <div className="relative flex items-center">
           {Icon && (
-            <div className="absolute left-4 text-slate-400 flex items-center justify-center">
+            <div className="absolute left-4 text-slate-500 flex items-center justify-center">
               <Icon className="w-5 h-5" />
             </div>
           )}
@@ -101,7 +101,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             onChange={handleChange}
             className={twMerge(
               clsx(
-                "w-full rounded-xl bg-white border border-slate-200 py-3.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-primary transition-all duration-300",
+                "w-full rounded-xl bg-white border border-slate-300 hover:border-slate-400 py-3.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 shadow-2xs transition-all duration-200",
                 { 
                   "border-yellow-400 bg-yellow-50/50 focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500": !!error,
                   "pl-12": !!Icon,

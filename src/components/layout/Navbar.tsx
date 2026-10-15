@@ -153,7 +153,7 @@ export const Navbar: React.FC = () => {
 
   return (
     <header
-      className={`fixed top-0 w-full z-50 bg-white transition-all duration-300 ${scrolled ? 'shadow-md border-b border-slate-200' : 'border-b border-slate-100'
+      className={`fixed top-0 w-full z-50 bg-white transition-all duration-300 ${scrolled ? 'shadow-sm border-b border-slate-200' : 'border-b border-slate-200'
         }`}
       style={{ height: '64px' }}
     >

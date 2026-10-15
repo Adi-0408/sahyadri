@@ -168,7 +168,7 @@ export const PostProperty: React.FC = () => {
 
   if (success) {
     return (
-      <div className="min-h-screen text-slate-900 bg-slate-50/50 pt-24 sm:pt-28 pb-16 px-4 sm:px-6 md:px-12 relative overflow-hidden text-left">
+      <div className="min-h-screen text-slate-900 bg-slate-50 pt-24 sm:pt-28 pb-16 px-4 sm:px-6 md:px-12 relative overflow-hidden text-left">
         {/* Background Colorful Blurs */}
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
           <div className="absolute top-[-10%] right-[-5%] w-[50%] h-[50%] bg-orange-400/30 rounded-full blur-[140px]"></div>
@@ -223,7 +223,7 @@ export const PostProperty: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen text-slate-900 bg-slate-50/50 pt-24 sm:pt-28 pb-16 px-4 sm:px-6 md:px-12 relative overflow-hidden text-left">
+    <div className="min-h-screen text-slate-900 bg-slate-50 pt-24 sm:pt-28 pb-16 px-4 sm:px-6 md:px-12 relative overflow-hidden text-left">
       {/* Background Colorful Blurs */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
         <div className="absolute top-[-10%] right-[-5%] w-[50%] h-[50%] bg-orange-400/30 rounded-full blur-[140px]"></div>

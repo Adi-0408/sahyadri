@@ -441,7 +441,7 @@ export const Materials: React.FC = () => {
 
 
   return (
-    <div className="min-h-screen bg-slate-50/70 pt-20 sm:pt-24 pb-24 text-left">
+    <div className="min-h-screen bg-slate-50 pt-20 sm:pt-24 pb-24 text-left">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
 
         {/* ── TOP HERO BANNER ── */}

@@ -16,7 +16,7 @@ export const Card: React.FC<CardProps> = ({
   return (
     <div
       className={twMerge(
-          "rounded-2xl transition-all duration-300 bg-white shadow-sm border border-slate-200",
+        "rounded-2xl transition-all duration-300 bg-white shadow-xs border border-slate-200/90 hover:border-slate-300",
         className
       )}
       {...props}

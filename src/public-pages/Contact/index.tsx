@@ -77,7 +77,7 @@ export const Contact: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen text-slate-900 bg-slate-50/50 pt-36 sm:pt-44 pb-20 px-4 sm:px-6 md:px-12 relative overflow-hidden text-left font-sans">
+    <div className="min-h-screen text-slate-900 bg-slate-50 pt-36 sm:pt-44 pb-20 px-4 sm:px-6 md:px-12 relative overflow-hidden text-left font-sans">
       {/* Background Decorative Gradient Blurs */}
       <div className="absolute top-0 right-0 w-[45%] h-[45%] bg-gradient-to-b from-orange-500/5 to-transparent rounded-full blur-[140px] pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-[50%] h-[50%] bg-gradient-to-t from-slate-900/5 to-transparent rounded-full blur-[160px] pointer-events-none" />

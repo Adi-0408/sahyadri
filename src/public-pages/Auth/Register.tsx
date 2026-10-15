@@ -111,17 +111,15 @@ export const Register: React.FC = () => {
         <div
           className="w-full h-full bg-cover bg-center"
           style={{
-            backgroundImage: 'url(/hero-background.jpg)',
-            filter: 'blur(8px)',
-            transform: 'scale(1.05)'
+            backgroundImage: 'url(/hero-background.jpg)'
           }}
         />
-        <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-[2px]" />
+        <div className="absolute inset-0 bg-slate-950/65" />
       </div>
 
       {/* ── Overlay backdrop ── */}
       <div
-        className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm z-10 transition-opacity duration-300"
+        className="absolute inset-0 bg-black/40 z-10 transition-opacity duration-300"
         style={{ opacity: panelVisible ? 1 : 0 }}
         onClick={handleClose}
       />

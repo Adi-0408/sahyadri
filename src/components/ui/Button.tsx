@@ -22,11 +22,11 @@ export const Button: React.FC<ButtonProps> = ({
         clsx(
           "inline-flex items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold tracking-wider transition-all duration-300 active:scale-98 cursor-pointer disabled:opacity-50 disabled:pointer-events-none",
           {
-            "bg-primary hover:bg-primary-dark text-white shadow hover:shadow-md": variant === 'primary',
-            "bg-slate-800 hover:bg-slate-900 text-white shadow hover:shadow-md": variant === 'secondary',
-            "border-2 border-slate-200 bg-transparent hover:border-primary hover:text-primary text-slate-700": variant === 'outline' || variant === 'glass',
-            "bg-transparent hover:bg-slate-100 text-slate-700": variant === 'ghost',
-            "bg-red-500 hover:bg-red-600 text-white shadow hover:shadow-md": variant === 'danger'
+            "bg-primary hover:bg-primary-dark text-white shadow-sm hover:shadow": variant === 'primary',
+            "bg-slate-800 hover:bg-slate-900 text-white shadow-sm hover:shadow": variant === 'secondary',
+            "border border-slate-300 hover:border-slate-800 bg-white hover:bg-slate-50 text-slate-800 shadow-2xs font-semibold": variant === 'outline' || variant === 'glass',
+            "bg-transparent hover:bg-slate-100 text-slate-800 font-semibold": variant === 'ghost',
+            "bg-red-600 hover:bg-red-700 text-white shadow-sm hover:shadow": variant === 'danger'
           }
         ),
         className
