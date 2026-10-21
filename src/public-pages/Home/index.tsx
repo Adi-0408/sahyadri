@@ -1,247 +1,109 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-// Trigger HMR rebuild to clear dev server cache
-import { useNavigate, Link } from 'react-router-dom';
-import { fetchCollection, fetchRecentProperties, fetchSoldOutProperties, getStorageCache, getCachedCollection } from '../../services/firebase';
-import { optimizeCloudinaryUrl, getValidImageUrl } from '../../utils/cloudinary';
-import {
-  MapPin, BedDouble, ArrowRight, Heart,
-  ShieldCheck, Star,
-  Map, Ruler, Armchair, MessageSquare, Shield
-} from 'lucide-react';
-import { Button } from '../../components/ui/Button';
-import { Card } from '../../components/ui/Card';
-import { Dialog } from '../../components/ui/Dialog';
-import { MobileAutoScroll } from '../../components/ui/MobileAutoScroll';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { AdvertisementsBanner } from '../../components/home/AdvertisementsBanner';
-import { ShotsReelsSection } from '../../components/home/ShotsReelsSection';
+import {
+  ShieldCheck,
+  CheckCircle2,
+  MapPin,
+  Phone,
+  MessageCircle,
+  ExternalLink,
+  Download,
+  Building2,
+  Trees,
+  Truck,
+  FileCheck2,
+  Compass,
+  FileText,
+  BadgeCheck,
+  Clock,
+  Sparkles,
+  Layers,
+  ChevronDown,
+  Droplets,
+  Zap,
+  Fence,
+  TreePine,
+  SunMedium,
+  HelpCircle,
+  Ruler,
+  Landmark
+} from 'lucide-react';
+import { WaveDivider } from '../../components/ui/WaveDivider';
 
-const formatPrice = (price: any) => {
-  if (price === undefined || price === null) return 'Contact for Price';
-  const num = typeof price === 'number' ? price : parseFloat(price);
-  if (isNaN(num)) return 'Contact for Price';
-  return `₹${num.toLocaleString('en-IN')}`;
-};
+const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.spark.sahyadrilanddeveloper";
 
 export const Home: React.FC = () => {
-  const { t, i18n } = useTranslation();
+  const { i18n } = useTranslation();
   const isMr = Boolean(i18n.language?.startsWith('mr'));
-  const navigate = useNavigate();
 
-  // Instant Cache Rehydration: Pre-populate from storage cache so home properties never flash empty
-  const [rentProperties, setRentProperties] = useState<any[]>(() => {
-    if (typeof window !== 'undefined') {
-      const cached = getStorageCache<any[]>('session', 'sahyadri_cache_recent_rent_4', 24 * 60 * 60 * 1000)
-        || getStorageCache<any[]>('local', 'sahyadri_cache_recent_rent_4', 24 * 60 * 60 * 1000);
-      if (Array.isArray(cached) && cached.length > 0) return cached;
-    }
-    return [];
-  });
-  const [saleProperties, setSaleProperties] = useState<any[]>(() => {
-    if (typeof window !== 'undefined') {
-      const cached = getStorageCache<any[]>('session', 'sahyadri_cache_recent_sale_4', 24 * 60 * 60 * 1000)
-        || getStorageCache<any[]>('local', 'sahyadri_cache_recent_sale_4', 24 * 60 * 60 * 1000);
-      if (Array.isArray(cached) && cached.length > 0) return cached;
-    }
-    return [];
-  });
-  const [soldOutProperties, setSoldOutProperties] = useState<any[]>(() => {
-    if (typeof window !== 'undefined') {
-      const cached = getStorageCache<any[]>('session', 'sahyadri_cache_soldout_4', 24 * 60 * 60 * 1000)
-        || getStorageCache<any[]>('local', 'sahyadri_cache_soldout_4', 24 * 60 * 60 * 1000);
-      if (Array.isArray(cached) && cached.length > 0) return cached;
-    }
-    return [];
-  });
-  const [projects, setProjects] = useState<any[]>(() => {
-    if (typeof window !== 'undefined') {
-      const cached = getCachedCollection('projects');
-      if (Array.isArray(cached) && cached.length > 0) {
-        return cached.filter((p: any) => p.isVisible !== false).slice(0, 3);
-      }
-    }
-    return [];
-  });
-  const [selectedProject, setSelectedProject] = useState<any>(null);
+  // FAQ accordion active state
+  const [activeFaq, setActiveFaq] = useState<number | null>(0);
 
-  const [savedIds, setSavedIds] = useState<string[]>([]);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
-  const [activeTestimonial, setActiveTestimonial] = useState(0);
-  const [touchStart, setTouchStart] = useState<number | null>(null);
-  const [touchEnd, setTouchEnd] = useState<number | null>(null);
-
-  // 4. Load projects, properties and perform storage sync on mount
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        // Optimized: Fetch only the recent required properties without downloading the entire DB
-        const [rentProps, saleProps, soldOutProps] = await Promise.all([
-          fetchRecentProperties('rent', 4),
-          fetchRecentProperties('sale', 4),
-          fetchSoldOutProperties(4)
-        ]);
-        
-        setRentProperties(rentProps);
-        setSaleProperties(saleProps);
-        setSoldOutProperties(soldOutProps);
-
-        // Filter projects (cached)
-        const projs = await fetchCollection('projects');
-        const activeProjs = projs.filter((p: any) => p.isVisible !== false);
-        setProjects(activeProjs.slice(0, 3));
-
-      } catch (error) {
-        console.error("Failed to load home page data:", error);
-      }
-    };
-    loadData();
-
-    // Re-fetch immediately when properties are updated/approved in admin or mobile
-    const handleUpdate = () => {
-      loadData();
-    };
-    window.addEventListener('sahyadri_content_updated', handleUpdate);
-    return () => {
-      window.removeEventListener('sahyadri_content_updated', handleUpdate);
-    };
-  }, []);
-
-  useEffect(() => {
-    const saved = localStorage.getItem('luminous_saved_properties');
-    if (saved) {
-      try {
-        setSavedIds(JSON.parse(saved));
-      } catch {
-        setSavedIds([]);
-      }
-    }
-    const handleStorageChange = () => {
-      const updated = localStorage.getItem('luminous_saved_properties');
-      if (updated) setSavedIds(JSON.parse(updated));
-    };
-    window.addEventListener('saved_properties_changed', handleStorageChange);
-    return () => window.removeEventListener('saved_properties_changed', handleStorageChange);
-  }, []);
-
-  // Monitor screen size
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 640);
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  // Auto-scroll testimonials on mobile view
-  useEffect(() => {
-    if (!isMobile) return;
-    const interval = setInterval(() => {
-      setActiveTestimonial((prev) => (prev + 1) % 3);
-    }, 4000);
-    return () => clearInterval(interval);
-  }, [isMobile, activeTestimonial]);
-
-  const handleTestimonialTouchStart = (e: React.TouchEvent) => {
-    setTouchEnd(null);
-    setTouchStart(e.targetTouches[0].clientX);
+  const toggleFaq = (index: number) => {
+    setActiveFaq(activeFaq === index ? null : index);
   };
 
-  const handleTestimonialTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
-
-  const handleTestimonialTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > 50;
-    const isRightSwipe = distance < -50;
-    if (isLeftSwipe) {
-      setActiveTestimonial((prev) => (prev + 1) % 3);
-    } else if (isRightSwipe) {
-      setActiveTestimonial((prev) => (prev - 1 + 3) % 3);
+  const scrollToSection = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
-  const handleSavedToggle = (e: React.MouseEvent, propId: string) => {
-    e.stopPropagation();
-    let currentSaved = [...savedIds];
-    if (currentSaved.includes(propId)) {
-      currentSaved = currentSaved.filter((id) => id !== propId);
-    } else {
-      currentSaved.push(propId);
+  const faqs = [
+    {
+      q: isMr ? 'प्लॉटचे टायटल १००% क्लिअर आणि निर्वेध आहे का?' : 'Is the land title 100% clear and legally verified?',
+      a: isMr
+        ? 'होय, सह्याद्री लँड डेव्हलपरच्या प्रत्येक प्रकल्पाचा नामांकित वकिलांमार्फत ३० वर्षांचा सर्च रिपोर्ट काढलेला असतो. मूळ ७/१२, फेरफार नोंदी आणि एन.ए. आदेश पूर्णपणे निर्वेध असतात.'
+        : 'Yes, every project developed by Sahyadri Land Developer is backed by an exhaustive 30-year title search certificate by legal counsel. Revenue records, 7/12 extracts, and NA orders are 100% encumbrance-free.'
+    },
+    {
+      q: isMr ? 'प्लॉट्सवर राष्ट्रीयीकृत बँकेचे कर्ज मिळते का?' : 'Are bank loans available on NA plots?',
+      a: isMr
+        ? 'होय, आमचे सर्व एन.ए. रेसिडेन्शियल लेआऊट्स रेरा व कलेक्टर संमत असल्यामुळे नामांकित राष्ट्रीयीकृत व खाजगी बँकांकडून ७०% ते ८०% पर्यंत कर्ज सुविधा उपलब्ध आहे.'
+        : 'Yes, since our residential layouts are RERA & Collector approved with individual PR cards, leading nationalized and private banks readily approve up to 70%–80% housing plot loans.'
+    },
+    {
+      q: isMr ? 'खरेदीनंतर माझ्या नावावर स्वतंत्र ७/१२ किती दिवसांत होतो?' : 'How long does mutation (Ferfar) to individual 7/12 take?',
+      a: isMr
+        ? 'दुय्यम निबंधक कार्यालयात अधिकृत खरेदीखत (Registry) झाल्यानंतर तात्काळ महसूल विभागाकडे फेरफारची नोंद केली जाते आणि साधारण १५ ते ३० दिवसांत स्वतंत्र ७/१२ आपल्या नावे मिळतो.'
+        : 'Immediately upon registered sale deed execution at the Sub-Registrar office, the online mutation entry is triggered. Individual 7/12 and PR cards are officially updated in your name within 15 to 30 days.'
+    },
+    {
+      q: isMr ? 'जागेवर प्रत्यक्ष कोणत्या सोयी-सुविधा उपलब्ध आहेत?' : 'What physical infrastructure is developed on-site?',
+      a: isMr
+        ? 'केवळ कागदावर नाही, तर प्रत्यक्ष जागेवर पक्के डांबरी/काँक्रीट रस्ते, स्वतंत्र पाणी लाईन, महावितरण वीज ट्रान्सफॉर्मर, स्ट्रीट लाईट, तारेचे कुंपण व प्रवेशद्वार तयार असते.'
+        : 'We deliver complete on-ground development: internal asphalt tar roads, underground stormwater drains, borewell water pipelines, MSEB electric lines, security boundary fencing, and avenue tree plantation.'
+    },
+    {
+      q: isMr ? 'शेतकरी नसलेली व्यक्ती शेतजमीन किंवा फार्महाऊस घेऊ शकते का?' : 'Can a non-farmer purchase agricultural or farmhouse land?',
+      a: isMr
+        ? 'रेसिडेन्शियल एन.ए. प्लॉट्स कोणीही थेट खरेदी करू शकते. फार्महाऊस किंवा शेतजमिनीसाठी आवश्यक शेतकरी प्रमाणपत्राबाबत आमची कायदेशीर टीम संपूर्ण कायदेशीर मार्गदर्शन करते.'
+        : 'Anyone can purchase our Residential NA plots without any farmer status. For agricultural or farmhouse plots, our legal advisory team provides complete guidance on legal compliance under Maharashtra land revenue laws.'
+    },
+    {
+      q: isMr ? 'प्लॉट्सचे लाइव्ह नकाशे व उपलब्ध जागा मोबाईल ॲपवर कशा पहाव्यात?' : 'How can I view live plots and layout maps on the mobile app?',
+      a: isMr
+        ? 'आमचे अधिकृत "Sahyadri Land Developer" ॲन्ड्रॉइड ॲप गुगल प्ले वरून डाउनलोड करा. तेथे सर्व उपलब्ध प्लॉट्सचे जीपीएस नकाशे, फोटो, दर व कागदपत्रे एका क्लिकवर उपलब्ध आहेत.'
+        : 'Simply install our official "Sahyadri Land Developer" Android app from the Google Play Store. You can browse all active layouts, inspect GPS boundaries, view 7/12 records, and schedule site inspections directly.'
     }
-    setSavedIds(currentSaved);
-    localStorage.setItem('luminous_saved_properties', JSON.stringify(currentSaved));
-
-    // Dispatch event to Navbar
-    window.dispatchEvent(new Event('saved_properties_changed'));
-  };
-
-  const renderSoldOutCard = (prop: any) => (
-    <Card
-      className="group/card relative overflow-hidden flex flex-col h-full bg-slate-50/50 border border-slate-200 rounded-3xl shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer"
-      onClick={() => navigate(`/property/${prop.id}`)}
-    >
-      <div className="aspect-[4/3] w-full overflow-hidden relative">
-        <img
-          src={getValidImageUrl(prop.images?.[0])}
-          alt={prop.title}
-          className="w-full h-full object-cover grayscale-[40%] transition-transform duration-700 group-hover/card:scale-105"
-        />
-        {prop.propertyCode && (
-          <div className="absolute top-3.5 left-3.5 bg-[#111c2e] text-white text-[10px] font-mono font-black px-2.5 py-1 rounded-lg uppercase tracking-wider shadow-sm z-10">
-            {prop.propertyCode}
-          </div>
-        )}
-        {prop.isSoldOut && (
-          <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none overflow-hidden">
-            <div className="bg-red-600/90 text-white w-[120%] py-2 text-center transform -rotate-12 shadow-xl border-y-2 border-red-500 backdrop-blur-sm shadow-red-500/30">
-              <span className="text-sm font-black uppercase tracking-[0.3em] flex items-center justify-center gap-2 drop-shadow-md">
-                <span className="text-[10px]">🔴</span>
-                {isMr ? 'विकले' : 'SOLD OUT'}
-                <span className="text-[10px]">🔴</span>
-              </span>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="p-5 flex flex-col justify-between flex-grow">
-        <div className="space-y-1.5 text-left">
-          <div className="text-slate-500 font-extrabold text-base line-through">
-            {formatPrice(prop.price)}
-          </div>
-          <h3 className="text-sm font-bold text-slate-700 line-clamp-1 flex items-center gap-1.5 flex-wrap">
-            <span>{isMr ? prop.titleMr || prop.title : prop.title}</span>
-          </h3>
-          <div className="flex items-center gap-1.5 text-slate-500 text-xs mt-1">
-            <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
-            <span className="truncate">{isMr ? prop.locationMr || prop.location : prop.location}</span>
-          </div>
-        </div>
-
-        <div className="mt-3 pt-3 border-t border-slate-200 flex gap-4 text-slate-500 text-[11px] font-medium justify-between">
-          <span className="flex items-center gap-1"><BedDouble className="w-3.5 h-3.5 text-slate-400" /> {prop.beds || 3} BHK</span>
-          <span className="flex items-center gap-1"><Ruler className="w-3.5 h-3.5 text-slate-400" /> {prop.area || 1450} sqft</span>
-          <span className="flex items-center gap-1"><Armchair className="w-3.5 h-3.5 text-slate-400" /> {prop.furnishing || 'Semi Furnished'}</span>
-        </div>
-      </div>
-    </Card>
-  );
+  ];
 
   return (
-    <div className="relative min-h-screen text-slate-900 bg-slate-50 pb-16 overflow-x-hidden">
+    <div className="w-full bg-slate-50 text-slate-900 font-sans selection:bg-[#b81414] selection:text-white">
 
-
-      {/* 1. Cinematic Hero Video Banner with Centered Brand Logo */}
-      <section className="relative mt-16 w-full h-[65vh] sm:h-[75vh] lg:h-[82vh] min-h-[500px] max-h-[850px] bg-[#0b0f19] overflow-hidden flex flex-col justify-between items-center">
-        {/* Hero Background Video - Visible on all devices (Mobile & Desktop) */}
+      {/* ─────────────────────────────────────────────────────────────
+          SECTION 1: CINEMATIC HERO VIDEO BANNER (#overview)
+      ───────────────────────────────────────────────────────────── */}
+      <section id="overview" className="relative w-full h-[65vh] sm:h-[75vh] lg:h-[82vh] min-h-[520px] max-h-[860px] bg-[#0b0f19] overflow-hidden flex flex-col justify-between items-center text-center">
+        
+        {/* Background Video */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.9, ease: 'easeOut' }}
-          className="hero-video-container absolute inset-0 z-0 overflow-hidden block"
+          className="absolute inset-0 z-0 overflow-hidden block"
         >
           <video
             autoPlay
@@ -253,721 +115,963 @@ export const Home: React.FC = () => {
           >
             <source src="/videos/sahyadri-hero-video.mp4" type="video/mp4" />
           </video>
-          {/* Bottom gradient to blend video smoothly into waves below */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-[#0b0f19]/70 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/20 to-[#0b0f19]/80 pointer-events-none" />
         </motion.div>
 
-        {/* Centered Brand Logo with Premium Cinematic Animation */}
-        <div className="relative z-20 w-full max-w-5xl mx-auto px-4 flex flex-col items-center justify-center my-auto pt-6 sm:pt-10">
-          {/* Subtle Ambient Back-Glow matching Sahyadri green & warm amber */}
+        {/* Ambient Back Glow */}
+        <div className="relative z-10 w-full max-w-5xl mx-auto px-4 flex flex-col items-center justify-center my-auto pt-16 sm:pt-20">
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: [0.2, 0.45, 0.2], scale: [0.95, 1.06, 0.95] }}
+            animate={{ opacity: [0.25, 0.5, 0.25], scale: [0.95, 1.05, 0.95] }}
             transition={{
               duration: 5,
               repeat: Infinity,
               ease: "easeInOut",
               delay: 0.5
             }}
-            className="absolute w-80 sm:w-[32rem] h-56 sm:h-80 rounded-full bg-gradient-to-tr from-emerald-600/35 via-green-500/25 to-amber-500/30 blur-3xl pointer-events-none will-change-[opacity,transform] transform-gpu"
+            className="absolute w-72 sm:w-[30rem] h-52 sm:h-72 rounded-full bg-gradient-to-tr from-emerald-600/30 via-[#b81414]/25 to-amber-500/30 blur-3xl pointer-events-none"
           />
 
+          {/* Centered Breathing Sahyadri Logo */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.88, y: 25 }}
+            initial={{ opacity: 0, scale: 0.88, y: 20 }}
             animate={{ 
               opacity: 1, 
               scale: 1, 
-              y: [0, -8, 0] 
+              y: [0, -6, 0] 
             }}
             transition={{ 
-              opacity: { duration: 1.2, ease: [0.16, 1, 0.3, 1] },
-              scale: { duration: 1.2, ease: [0.16, 1, 0.3, 1] },
+              opacity: { duration: 1, ease: 'easeOut' },
+              scale: { duration: 1, ease: 'easeOut' },
               y: { 
                 duration: 4.5, 
                 repeat: Infinity, 
                 ease: 'easeInOut', 
-                delay: 1.2 
+                delay: 1 
               }
             }}
-            whileHover={{ scale: 1.04, transition: { duration: 0.35 } }}
-            className="relative z-10 flex flex-col items-center text-center select-none cursor-pointer will-change-transform"
+            whileHover={{ scale: 1.04, transition: { duration: 0.3 } }}
+            className="relative z-10 flex flex-col items-center text-center select-none cursor-pointer"
           >
             <img
               src="/sahyadri-logo.png"
               alt="Sahyadri Land Developer"
-              className="h-44 sm:h-60 md:h-76 lg:h-84 xl:h-[350px] w-auto object-contain transition-transform duration-500 animate-logo-breathe will-change-transform"
+              className="h-36 sm:h-52 md:h-64 lg:h-72 w-auto object-contain drop-shadow-2xl"
             />
+          </motion.div>
+
+          {/* Verification Badge */}
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="mt-4 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900/85 border border-white/20 text-white text-xs sm:text-sm font-semibold backdrop-blur-md shadow-xl"
+          >
+            <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>{isMr ? '१००% निर्वेध ७/१२ • रेरा व कलेक्टर संमत लेआऊट्स' : '100% CLEAR TITLE • RERA & COLLECTOR APPROVED'}</span>
+          </motion.div>
+
+          {/* Action CTAs Over Video */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.5 }}
+            className="mt-6 flex flex-wrap items-center justify-center gap-3.5"
+          >
+            <a
+              href={PLAY_STORE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2.5 px-6 py-3 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs sm:text-sm shadow-xl shadow-emerald-900/50 transition-all transform hover:scale-105 active:scale-95 cursor-pointer"
+            >
+              <Download className="w-4 h-4" />
+              <span>{isMr ? 'गुगल प्ले वरून ॲप मिळवा' : 'Download Android App'}</span>
+              <ExternalLink className="w-3.5 h-3.5 text-white/80" />
+            </a>
+
+            <button
+              type="button"
+              onClick={() => scrollToSection('developments')}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-slate-950/80 hover:bg-slate-900 text-white border border-white/20 backdrop-blur-md text-xs sm:text-sm font-bold transition-all hover:scale-105 cursor-pointer"
+            >
+              <span>{isMr ? 'प्रकल्प माहिती पहा' : 'Explore Projects'}</span>
+              <ChevronDown className="w-4 h-4 text-amber-400" />
+            </button>
           </motion.div>
         </div>
 
-        {/* Floating Scroll Cue to Properties */}
-        <div className="relative z-20 pb-16 sm:pb-22 flex flex-col items-center pointer-events-none">
-          <Link
-            to="/properties"
-            className="pointer-events-auto inline-flex items-center gap-2 bg-slate-950/75 hover:bg-slate-900 text-white border border-white/20 backdrop-blur-md px-5 py-2.5 rounded-full text-xs font-bold tracking-wider uppercase transition-all shadow-xl hover:scale-105 cursor-pointer group"
-          >
-            <span>{t('hero.search', 'मालमत्ता शोधा')}</span>
-            <ArrowRight className="w-4 h-4 text-orange-400 group-hover:text-orange-300 transition-colors" />
-          </Link>
-        </div>
-
-        {/* Sea Waves Divider - seamlessly merging hero video into search section */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.35, ease: 'easeOut' }}
-          className="absolute -bottom-1 left-0 right-0 w-full overflow-hidden leading-none pointer-events-none z-10"
-        >
-          <svg
-            className="relative block w-full h-[45px] sm:h-[65px] md:h-[85px] lg:h-[110px]"
-            viewBox="0 0 1440 120"
-            preserveAspectRatio="none"
-          >
-            {/* Deep ocean back wave */}
-            <path
-              d="M0,28 C180,82 360,10 540,50 C720,90 900,22 1080,64 C1260,106 1380,38 1440,52 L1440,120 L0,120 Z"
-              className="fill-slate-50/25"
-            />
-            {/* Middle rolling wave */}
-            <path
-              d="M0,52 C220,108 440,30 660,74 C880,118 1100,46 1280,80 C1360,94 1410,66 1440,60 L1440,120 L0,120 Z"
-              className="fill-slate-50/55"
-            />
-            {/* Front sea wave - seamlessly blends directly into bg-slate-50 */}
-            <path
-              d="M0,74 C140,116 290,56 450,92 C620,126 790,64 950,98 C1120,132 1290,76 1440,90 L1440,120 L0,120 Z"
-              className="fill-slate-50"
-            />
-          </svg>
-        </motion.div>
+        {/* Multi-layered Wave Divider to Section 2 (slate-50) */}
+        <WaveDivider to="slate-50" variant="forward" />
       </section>
 
-      {/* Mobile & Web App Advertisements / Promotional Posters Banner */}
-      <AdvertisementsBanner />
 
-      {/* 99. Shots - Short Property Video Reels Section & Fullscreen Player */}
-      <ShotsReelsSection />
+      {/* ─────────────────────────────────────────────────────────────
+          SECTION 2: ABOUT THE PROJECT & CORE VALUES
+      ───────────────────────────────────────────────────────────── */}
+      <section className="relative bg-slate-50 pt-14 sm:pt-20 pb-0 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 pb-14 sm:pb-20">
+          
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+            
+            <div className="lg:col-span-7 text-left space-y-5">
+              <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#b81414] bg-red-50 px-3.5 py-1 rounded-full border border-red-200">
+                <Sparkles className="w-3.5 h-3.5 text-[#b81414]" />
+                <span>{isMr ? 'सह्याद्रीचा वारसा व विश्वास' : 'The Sahyadri Legacy'}</span>
+              </div>
 
-      {/* Interactive Map Section */}
-      <section id="map-section" className="max-w-7xl mx-auto px-4 sm:px-6 md:px-12 mt-4 sm:mt-8 md:mt-10 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center text-left">
-        {/* Call to Action */}
-        <div className="lg:col-span-5 bg-slate-900 rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between text-white shadow-xl relative overflow-hidden gap-6 max-w-md sm:max-w-xl lg:max-w-none w-full mx-auto">
-          <div className="flex-grow flex flex-col gap-3.5">
-            <h3 className="text-lg font-bold text-white font-sans">{t('home.propertiesNearYou', 'Properties Near You')}</h3>
-            <p className="text-slate-300 text-xs leading-relaxed max-w-[280px]">
-              {t('home.mapSearchDesc', 'Find verified local apartments, plots, and homes directly on the map.')}
-            </p>
-            <button
-              onClick={() => {
-                window.open("https://www.google.com/maps/place/Sangli,+Maharashtra", "_blank");
-              }}
-              className="w-fit bg-[#f97316] hover:bg-orange-600 text-white py-2.5 px-6 rounded-xl font-bold uppercase tracking-wider text-xs flex items-center gap-2 shadow-lg shadow-orange-500/25 transition-all hover:scale-105 cursor-pointer mt-1"
-            >
-              {t('home.exploreMap', 'Explore Map')}
-            </button>
-          </div>
-          <div className="w-14 h-14 rounded-full bg-slate-800 flex items-center justify-center flex-shrink-0 border border-slate-700 self-end sm:self-center">
-            <Map className="w-7 h-7 text-orange-500" />
-          </div>
-        </div>
+              <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black text-slate-900 leading-tight">
+                {isMr ? (
+                  <>
+                    पश्चिम महाराष्ट्रातील{' '}
+                    <span className="text-[#b81414]">विश्वासार्ह</span> जमीन विकासक
+                  </>
+                ) : (
+                  <>
+                    Building Trust & Legal Security in{' '}
+                    <span className="text-[#b81414]">Land Investments</span>
+                  </>
+                )}
+              </h2>
 
-        {/* Map Visual */}
-        <div className="hidden lg:block lg:col-span-7 w-full">
-          <Card className="relative w-full h-[280px] sm:h-[300px] overflow-hidden border border-slate-200 shadow-2xl rounded-[32px]" >
-            {/* Google Map Iframe */}
-            <iframe
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d122177.34863339077!2d74.51264426562502!3d16.850400037803328!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bc123b1a10c7bf7%3A0xd705bc032c57f20e!2sSangli%2C%20Maharashtra!5e0!3m2!1sen!2sin!4v1717800000000!5m2!1sen!2sin"
-              width="100%"
-              height="100%"
-              style={{ border: 0 }}
-              allowFullScreen={true}
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              className="absolute inset-0 w-full h-full border-none"
-            ></iframe>
-          </Card>
-        </div>
-      </section>
+              <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
+                {isMr
+                  ? 'सह्याद्री लँड डेव्हलपर ही केवळ जमीन खरेदी-विक्री करणारी संस्था नसून, प्रत्येक ग्राहकाला निर्वेध मालकी हक्क आणि प्रत्यक्ष पायाभूत सुविधा देणारे अग्रगण्य नाव आहे. सातारा, सांगली, पुणे व पश्चिम महाराष्ट्रातील निसर्गरम्य ठिकाणी आम्ही पारदर्शकपणे भूखंड विकसित करतो.'
+                  : 'Sahyadri Land Developer is dedicated to transforming real estate land ownership into a transparent, secure, and legally bulletproof journey. Operating across Satara, Sangli, Pune, and the Sahyadri belt, we develop clear-title, sanction-backed layouts with complete on-ground infrastructure.'}
+              </p>
 
-      {/* New Projects Section (Screenshot 1) */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 md:px-12 mt-12 sm:mt-20 md:mt-28 text-left">
-        <div className="flex flex-wrap justify-between items-end gap-4 mb-8">
-          <div className="min-w-0">
-            <span className="text-xs uppercase tracking-[0.2em] font-semibold text-primary font-serif">{t('home.verifiedDevelopments')}</span>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mt-1 text-slate-900">{t('home.newProjects')}</h2>
-            <p className="text-slate-600 text-xs md:text-sm mt-1">{t('home.newProjectsDesc')}</p>
-          </div>
-          <Link to="/projects" className="flex items-center gap-1.5 text-xs uppercase tracking-widest font-semibold text-primary hover:text-primary/80 transition-colors border-b border-primary/20 hover:border-primary pb-0.5 shrink-0">
-            {t('home.viewAll')} <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-
-        {projects.length === 0 ? (
-          <div className="text-slate-600 py-12">{t('home.noProjects')}</div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-            {projects.slice(0, 4).map((proj) => (
-              <div
-                key={proj.id}
-                className="group bg-white border border-slate-100 rounded-3xl overflow-hidden flex flex-col shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer"
-                onClick={() => navigate(`/project/${proj.id}`)}
-              >
-                {/* Image */}
-                <div className="aspect-[4/3] w-full overflow-hidden relative">
-                  <img
-                    src={optimizeCloudinaryUrl(getValidImageUrl(proj.images?.[0]), 600)}
-                    alt={proj.title}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                  {/* Status badge */}
-                  <div className="absolute top-3.5 left-3.5 bg-emerald-800 text-white text-[9px] font-bold px-2.5 py-1 rounded uppercase tracking-wider shadow-sm">
-                    {t('properties.reraApproved', 'RERA Approved')}
-                  </div>
-                  {/* Action icons */}
-                  <div className="absolute top-3.5 right-3.5">
-                    <button
-                      type="button"
-                      onClick={(e) => handleSavedToggle(e, proj.id)}
-                      className="p-2 bg-white/95 hover:bg-white rounded-full text-slate-400 hover:text-red-500 shadow-sm transition-colors cursor-pointer flex items-center justify-center"
-                    >
-                      <Heart className={`w-3.5 h-3.5 ${savedIds.includes(proj.id) ? 'fill-red-500 text-red-500' : ''}`} />
-                    </button>
-                  </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4">
+                <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-xs hover:shadow-md transition-shadow text-center">
+                  <div className="text-2xl sm:text-3xl font-extrabold text-[#b81414] font-serif">500+</div>
+                  <div className="text-xs text-slate-500 mt-1 font-bold">{isMr ? 'समाधानी ग्राहक' : 'Plot Owners'}</div>
                 </div>
-
-                {/* Card Body */}
-                <div className="p-5 flex-1 flex flex-col justify-between">
-                  <div className="space-y-1.5 text-left">
-                    <div className="text-slate-900 font-extrabold text-base">
-                      {proj.priceRange === 'Contact for Price' ? (
-                        <span className="text-blue-500 text-xs">{t('contactForPrice')}</span>
-                      ) : proj.priceRange}
-                    </div>
-                    <h3 className="text-sm font-bold text-slate-900 group-hover:text-primary transition-colors line-clamp-1">
-                      {isMr ? proj.titleMr || proj.title : proj.title}
-                    </h3>
-                    <div className="flex items-center gap-1 text-slate-500 text-xs mt-1">
-                      <MapPin className="w-3.5 h-3.5 text-orange-500 flex-shrink-0" />
-                      <span className="line-clamp-1">{isMr ? proj.locationMr || proj.location : proj.location}</span>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 pt-3.5 border-t border-slate-100 flex justify-between items-center text-xs text-slate-400 font-medium">
-                    <span>{proj.developerName}</span>
-                    <span className="font-bold text-slate-700">{proj.areaRange || '1050 sqft'}</span>
-                  </div>
+                <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-xs hover:shadow-md transition-shadow text-center">
+                  <div className="text-2xl sm:text-3xl font-extrabold text-emerald-700 font-serif">100%</div>
+                  <div className="text-xs text-slate-500 mt-1 font-bold">{isMr ? 'क्लिअर टायटल' : 'Clear Titles'}</div>
+                </div>
+                <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-xs hover:shadow-md transition-shadow text-center">
+                  <div className="text-2xl sm:text-3xl font-extrabold text-amber-600 font-serif">15+</div>
+                  <div className="text-xs text-slate-500 mt-1 font-bold">{isMr ? 'पूर्ण प्रकल्प' : 'Layouts'}</div>
+                </div>
+                <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-xs hover:shadow-md transition-shadow text-center">
+                  <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-serif">10+</div>
+                  <div className="text-xs text-slate-500 mt-1 font-bold">{isMr ? 'वर्षे अनुभव' : 'Years Exp.'}</div>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* Properties for Rent Section (Screenshot 2) */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 md:px-12 mt-12 sm:mt-20 md:mt-28 text-left">
-        <div className="flex flex-wrap justify-between items-end gap-4 mb-8">
-          <div className="min-w-0">
-            <span className="text-xs uppercase tracking-[0.2em] font-semibold text-primary font-serif">{t('home.rentalsCuration')}</span>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mt-1 text-slate-900">{t('home.propertiesForRent')}</h2>
-            <p className="text-slate-600 text-xs md:text-sm mt-1">{t('home.propertiesForRentDesc')}</p>
-          </div>
-          <Link to="/properties?type=rent" className="flex items-center gap-1.5 text-xs uppercase tracking-widest font-semibold text-primary hover:text-primary/80 transition-colors border-b border-primary/20 hover:border-primary pb-0.5 shrink-0">
-            {t('home.viewAll')} <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-
-        {rentProperties.length === 0 ? (
-          <div className="text-slate-600 py-12">{t('home.noRentals')}</div>
-        ) : (
-          <MobileAutoScroll autoScrollInterval={3000}>
-            {rentProperties.slice(0, 4).map((prop) => (
-              <Card
-                key={prop.id}
-                className="group relative overflow-hidden flex flex-col h-full bg-white border border-slate-100 rounded-3xl shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer"
-                onClick={() => navigate(`/property/${prop.id}`)}
-              >
-                <div className="aspect-[4/3] w-full overflow-hidden relative">
-                  <img
-                    src={getValidImageUrl(prop.images?.[0])}
-                    alt={prop.title}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                  />
-                  {prop.propertyCode && (
-                    <div className="absolute top-3.5 left-3.5 bg-[#111c2e] text-white text-[10px] font-mono font-black px-2.5 py-1 rounded-lg uppercase tracking-wider shadow-sm z-10">
-                      {prop.propertyCode}
-                    </div>
-                  )}
-
-                  <div className="absolute top-3.5 right-3.5">
-                    <button
-                      type="button"
-                      onClick={(e) => handleSavedToggle(e, prop.id)}
-                      className="p-2 bg-white/95 hover:bg-white rounded-full text-slate-400 hover:text-red-500 shadow-sm transition-colors cursor-pointer flex items-center justify-center"
-                      title={savedIds.includes(prop.id) ? "Remove from Favorites" : "Add to Favorites"}
-                    >
-                      <Heart className={`w-3.5 h-3.5 ${savedIds.includes(prop.id) ? 'fill-red-500 text-red-500' : ''}`} />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="p-5 flex flex-col justify-between flex-grow">
-                  <div className="space-y-1.5 text-left">
-                    <div className="text-slate-900 font-extrabold text-base">
-                      {formatPrice(prop.price)}<span className="text-[10px] text-slate-500 font-normal">/mo</span>
-                    </div>
-                    <h3 className="text-sm font-bold text-slate-900 group-hover:text-primary transition-colors line-clamp-1 flex items-center gap-1.5 flex-wrap">
-                      <span>{isMr ? prop.titleMr || prop.title : prop.title}</span>
-                    </h3>
-                    <div className="flex items-center gap-1.5 text-slate-500 text-xs mt-1">
-                      <MapPin className="w-3.5 h-3.5 text-orange-500 flex-shrink-0" />
-                      <span className="truncate">{isMr ? prop.locationMr || prop.location : prop.location}</span>
-                    </div>
-                  </div>
-
-                  <div className="mt-auto pt-3 border-t border-slate-100 flex justify-between items-center text-xs text-slate-400 font-medium">
-                    <span>{prop.isBuilder ? 'Developer Listing' : 'Owner Direct'}</span>
-                    <span className="font-bold text-slate-700">{prop.area} sqft</span>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </MobileAutoScroll>
-        )}
-      </section>
-      {/* Properties for Sale Section (Screenshot 3) */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 md:px-12 mt-12 sm:mt-20 md:mt-28 text-left">
-        <div className="flex flex-wrap justify-between items-end gap-4 mb-8">
-          <div className="min-w-0">
-            {/* Asset Portfolios text removed per request */}
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mt-1 text-slate-900">{t('home.propertiesForSale')}</h2>
-            <p className="text-slate-600 text-xs md:text-sm mt-1">{t('home.propertiesForSaleDesc')}</p>
-          </div>
-          <Link to="/properties?type=sale" className="flex items-center gap-1.5 text-xs uppercase tracking-widest font-semibold text-primary hover:text-primary/80 transition-colors border-b border-primary/20 hover:border-primary pb-0.5 shrink-0">
-            {t('home.viewAll')} <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-
-        {saleProperties.length === 0 ? (
-          <div className="text-slate-600 py-12">{t('home.noSales')}</div>
-        ) : (
-          <MobileAutoScroll autoScrollInterval={3000}>
-            {saleProperties.slice(0, 4).map((prop) => (
-              <Card
-                key={prop.id}
-                className="group relative overflow-hidden flex flex-col h-full bg-white border border-slate-100 rounded-3xl shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer"
-                onClick={() => navigate(`/property/${prop.id}`)}
-              >
-                <div className="aspect-[4/3] w-full overflow-hidden relative">
-                  <img
-                    src={getValidImageUrl(prop.images?.[0])}
-                    alt={prop.title}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                  />
-
-                  {prop.propertyCode && (
-                    <div className="absolute top-3.5 left-3.5 bg-[#111c2e] text-white text-[10px] font-mono font-black px-2.5 py-1 rounded-lg uppercase tracking-wider shadow-sm z-10">
-                      {prop.propertyCode}
-                    </div>
-                  )}
-
-
-
-                  <div className="absolute top-3.5 right-3.5 z-10">
-                    <button
-                      type="button"
-                      onClick={(e) => handleSavedToggle(e, prop.id)}
-                      className="p-2 bg-white/95 hover:bg-white rounded-full text-slate-400 hover:text-red-500 shadow-sm transition-colors cursor-pointer flex items-center justify-center"
-                      title={savedIds.includes(prop.id) ? "Remove from Favorites" : "Add to Favorites"}
-                    >
-                      <Heart className={`w-3.5 h-3.5 ${savedIds.includes(prop.id) ? 'fill-red-500 text-red-500' : ''}`} />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="p-5 flex flex-col justify-between flex-grow">
-                  <div className="space-y-1.5 text-left">
-                    <div className="text-slate-900 font-extrabold text-base">
-                      {formatPrice(prop.price)}
-                    </div>
-                    <h3 className="text-sm font-bold text-slate-900 group-hover:text-primary transition-colors line-clamp-1 flex items-center gap-1.5 flex-wrap">
-                      <span>{isMr ? prop.titleMr || prop.title : prop.title}</span>
-                    </h3>
-                    <div className="flex items-center gap-1.5 text-slate-500 text-xs mt-1">
-                      <MapPin className="w-3.5 h-3.5 text-orange-500 flex-shrink-0" />
-                      <span className="truncate">{isMr ? prop.locationMr || prop.location : prop.location}</span>
-                    </div>
-                  </div>
-
-                  <div className="mt-3 pt-3 border-t border-slate-100 flex gap-4 text-slate-500 text-[11px] font-medium justify-between">
-                    <span className="flex items-center gap-1"><BedDouble className="w-3.5 h-3.5 text-slate-400" /> {prop.beds || 3} BHK</span>
-                    <span className="flex items-center gap-1"><Ruler className="w-3.5 h-3.5 text-slate-400" /> {prop.area || 1450} sqft</span>
-                    <span className="flex items-center gap-1"><Armchair className="w-3.5 h-3.5 text-slate-400" /> {prop.furnishing || 'Semi Furnished'}</span>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </MobileAutoScroll>
-        )}
-      </section>
-
-      {/* Sold Out Properties Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 md:px-12 mt-12 sm:mt-20 md:mt-28 text-left">
-        <div className="flex flex-wrap justify-between items-end gap-4 mb-8">
-          <div className="min-w-0">
-            <span className="text-xs uppercase tracking-[0.2em] font-semibold text-purple-600 font-serif">{t('home.recentlySold', 'Recently Sold')}</span>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mt-1 text-slate-900">{t('home.soldOutProperties', 'Sold Out Properties')}</h2>
-            {/* Subtitle removed per request */}
-          </div>
-          <Link to="/properties?status=sold" className="flex items-center gap-1.5 text-xs uppercase tracking-widest font-semibold text-purple-600 hover:text-purple-500 transition-colors border-b border-purple-600/20 hover:border-purple-600 pb-0.5 shrink-0">
-            {t('home.viewAll', 'View All')} <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-
-        {soldOutProperties.length === 0 ? (
-          <div className="text-slate-600 py-12">{t('home.noSoldOut', 'No sold out properties at the moment.')}</div>
-        ) : soldOutProperties.length <= 3 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-            {soldOutProperties.map((prop) => (
-              <div key={prop.id} className="w-full">
-                {renderSoldOutCard(prop)}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="relative overflow-hidden group -mx-4 px-4 sm:mx-0 sm:px-0">
-            <div className="flex gap-4 sm:gap-6 w-max animate-marquee pb-4">
-              {[...soldOutProperties.slice(0, 8), ...soldOutProperties.slice(0, 8)].map((prop, idx) => (
-                <div key={`${prop.id}-${idx}`} className="w-[280px] sm:w-[320px] shrink-0">
-                  {renderSoldOutCard(prop)}
-                </div>
-              ))}
             </div>
+
+            <div className="lg:col-span-5">
+              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-sm space-y-4 text-left">
+                <h3 className="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3">
+                  {isMr ? 'सह्याद्रीची ४ प्रमुख तत्त्वे' : 'Our 4 Core Pillars'}
+                </h3>
+                
+                <div className="space-y-3.5 text-xs sm:text-sm text-slate-700">
+                  <div className="flex items-start gap-3">
+                    <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 font-bold">1</div>
+                    <div>
+                      <strong className="text-slate-900 block">{isMr ? '१००% कायदेशीर निर्वेधता' : '100% Legal Clearance'}</strong>
+                      <span className="text-slate-500 text-xs">{isMr ? '३० वर्षांचा सर्च रिपोर्ट व मूळ महसूल नोंदी' : '30-year search history & clean revenue records'}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center shrink-0 font-bold">2</div>
+                    <div>
+                      <strong className="text-slate-900 block">{isMr ? 'प्रत्यक्ष जागेवर विकास' : 'Physical On-Ground Delivery'}</strong>
+                      <span className="text-slate-500 text-xs">{isMr ? 'डांबरी रस्ते, पाणी, वीज आणि कंपाउंड' : 'Tar roads, drainage, water lines & gated entry'}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center shrink-0 font-bold">3</div>
+                    <div>
+                      <strong className="text-slate-900 block">{isMr ? 'थेट डेव्हलपर व्यवहार' : 'Direct Developer Pricing'}</strong>
+                      <span className="text-slate-500 text-xs">{isMr ? 'कोणतेही मध्यस्थ अथवा छुपा खर्च नाही' : 'Zero brokerage, no surprise surcharges'}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="w-7 h-7 rounded-lg bg-purple-50 text-purple-700 flex items-center justify-center shrink-0 font-bold">4</div>
+                    <div>
+                      <strong className="text-slate-900 block">{isMr ? 'नोंदणी व फेरफार सहाय्य' : 'Deed & Mutation Assistance'}</strong>
+                      <span className="text-slate-500 text-xs">{isMr ? 'खरेदीखत ते नावावर ७/१२ पर्यंत पूर्ण पाठपुरावा' : 'Sub-registrar registry to 7/12 Ferfar handover'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
-        )}
+
+        </div>
+
+        {/* Multi-layered Wave Divider to Section 3 (white) */}
+        <WaveDivider to="white" variant="forward" />
       </section>
 
-      {/* How Astitva Realty Works Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 md:px-12 mt-12 sm:mt-20 md:mt-28 relative text-center animate-fadeIn">
-        <div className="bg-[#f4f6fa] rounded-[32px] py-10 px-4 sm:py-14 sm:px-12 relative overflow-hidden text-center border border-slate-200/40">
-          <div className="flex flex-col items-center gap-2 mb-10 sm:mb-12">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#0f172a] font-serif">{t('home.notBrokers')}</h2>
-            <p className="text-slate-500 text-xs sm:text-sm max-w-xl px-2 leading-relaxed">
-              {t('home.notBrokersDesc')}
+
+      {/* ─────────────────────────────────────────────────────────────
+          SECTION 3: WHAT WE OFFER - CORE DEVELOPMENTS (#developments)
+      ───────────────────────────────────────────────────────────── */}
+      <section id="developments" className="relative bg-white pt-16 sm:pt-24 pb-0 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 pb-16 sm:pb-24">
+          
+          <div className="text-center max-w-3xl mx-auto mb-14">
+            <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-emerald-700 bg-emerald-50 px-3.5 py-1 rounded-full border border-emerald-200 mb-3">
+              <Layers className="w-3.5 h-3.5" />
+              <span>{isMr ? 'प्लॉट्स व सेवा' : 'Our Developments'}</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+              {isMr ? 'सह्याद्री लँड डेव्हलपरचे प्रमुख प्रकल्प' : 'Comprehensive Land Solutions Tailored for You'}
+            </h2>
+            <p className="mt-3 text-sm sm:text-base text-slate-600">
+              {isMr
+                ? 'प्रत्येक जागेची कायदेशीर तपासणी करून, प्रत्यक्ष पायाभूत सुविधांसह विकसित केलेले खात्रीशीर भूखंड.'
+                : 'Every property is hand-picked, legally audited, and physically developed to guarantee generational wealth and peace of mind.'}
             </p>
           </div>
 
-          <div className="relative">
-            <div className="grid grid-cols-3 gap-2 sm:gap-8 w-full relative z-10 max-w-4xl mx-auto">
-              {/* Step 1 */}
-              <div className="flex flex-col items-center text-center group">
-                <div className="w-12 h-12 xs:w-14 h-14 sm:w-16 h-16 bg-white text-[#c2410c] rounded-full flex items-center justify-center font-extrabold text-base xs:text-lg sm:text-2xl shadow-md shadow-slate-200/50 group-hover:scale-105 transition-transform duration-300 border border-slate-100/50">
-                  %
-                </div>
-                <div>
-                  <h4 className="text-xs sm:text-sm md:text-base font-extrabold text-[#0f172a] mt-3 sm:mt-4 tracking-tight">{t('home.zeroBrokerage')}</h4>
-                  <p className="text-slate-600 text-[10px] sm:text-xs md:text-sm leading-tight sm:leading-relaxed mt-1 sm:mt-2 max-w-[100px] min-[400px]:max-w-[125px] sm:max-w-[280px] mx-auto text-center font-medium">
-                    {t('home.zeroBrokerageDesc')}
-                  </p>
-                </div>
-              </div>
-
-              {/* Step 2 */}
-              <div className="flex flex-col items-center text-center group">
-                <div className="w-12 h-12 xs:w-14 h-14 sm:w-16 h-16 bg-white text-[#c2410c] rounded-full flex items-center justify-center shadow-md shadow-slate-200/50 group-hover:scale-105 transition-transform duration-300 border border-slate-100/50">
-                  <MessageSquare className="w-5 h-5 xs:w-6 h-6 sm:w-7 h-7 text-[#c2410c] fill-[#c2410c]" />
-                </div>
-                <div>
-                  <h4 className="text-xs sm:text-sm md:text-base font-extrabold text-[#0f172a] mt-3 sm:mt-4 tracking-tight">{t('home.directChat')}</h4>
-                  <p className="text-slate-600 text-[10px] sm:text-xs md:text-sm leading-tight sm:leading-relaxed mt-1 sm:mt-2 max-w-[100px] min-[400px]:max-w-[125px] sm:max-w-[280px] mx-auto text-center font-medium">
-                    {t('home.directChatDesc')}
-                  </p>
-                </div>
-              </div>
-
-              {/* Step 3 */}
-              <div className="flex flex-col items-center text-center group">
-                <div className="w-12 h-12 xs:w-14 h-14 sm:w-16 h-16 bg-white text-[#c2410c] rounded-full flex items-center justify-center shadow-md shadow-slate-200/50 group-hover:scale-105 transition-transform duration-300 border border-slate-100/50">
-                  <Shield className="w-5 h-5 xs:w-6 h-6 sm:w-7 h-7 text-[#c2410c] fill-[#c2410c]" />
-                </div>
-                <div>
-                  <h4 className="text-xs sm:text-sm md:text-base font-extrabold text-[#0f172a] mt-3 sm:mt-4 tracking-tight">{t('home.zeroInterference')}</h4>
-                  <p className="text-slate-600 text-[10px] sm:text-xs md:text-sm leading-tight sm:leading-relaxed mt-1 sm:mt-2 max-w-[100px] min-[400px]:max-w-[125px] sm:max-w-[280px] mx-auto text-center font-medium">
-                    {t('home.zeroInterferenceDesc')}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Commission Callout box */}
-        <div className="mt-12 sm:mt-16 md:mt-20 max-w-4xl mx-auto">
-          <Card className="w-full p-5 sm:p-10 bg-white border border-slate-200 rounded-3xl flex flex-col md:flex-row items-center gap-6 sm:gap-10 overflow-hidden shadow-xl shadow-slate-200/50 relative">
-            <div className="absolute -right-20 -top-20 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none"></div>
-
-            <div className="flex-shrink-0 w-20 h-20 bg-green-50 rounded-2xl flex items-center justify-center">
-              <ShieldCheck className="w-10 h-10 text-green-500" />
-            </div>
-
-            <div className="flex-grow text-center md:text-left space-y-3 z-10">
-              <h3 className="text-2xl font-serif font-bold text-slate-900 tracking-tight">
-                {t('home.zeroCommissionTitle')}
-              </h3>
-              <p className="text-slate-600 text-sm leading-relaxed">
-                {t('home.zeroCommissionDesc')}
-              </p>
-            </div>
-
-            <div className="flex-shrink-0 z-10">
-              <Link to="/post-property">
-                <Button variant="primary" className="py-3 px-6 rounded-xl text-sm font-bold shadow-lg shadow-primary/20">
-                  {t('home.listForFree')}
-                </Button>
-              </Link>
-            </div>
-          </Card>
-        </div>
-      </section>
-
-      {/* Testimonials Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 md:px-12 mt-12 sm:mt-20 md:mt-28 text-center flex flex-col items-center gap-8 sm:gap-12 overflow-hidden">
-        <div className="max-w-xl flex flex-col gap-2 text-center">
-          <span className="text-xs uppercase tracking-[0.2em] font-semibold text-primary font-serif">{t('home.successStories')}</span>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900">{t('home.whatClientsSay')}</h2>
-          <p className="text-slate-600 text-xs md:text-sm">{t('home.happyHomeowners')}</p>
-        </div>
-
-        {isMobile ? (
-          <div className="w-full overflow-hidden relative px-1">
-            <div
-              className="flex transition-transform duration-500 ease-in-out"
-              style={{ transform: `translateX(-${activeTestimonial * 100}%)` }}
-              onTouchStart={handleTestimonialTouchStart}
-              onTouchMove={handleTestimonialTouchMove}
-              onTouchEnd={handleTestimonialTouchEnd}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            
+            {/* Card 1: NA Plots */}
+            <motion.div
+              whileHover={{ y: -6, transition: { duration: 0.25 } }}
+              className="bg-slate-50 rounded-3xl p-6 sm:p-7 border border-slate-200/90 hover:border-emerald-500 hover:shadow-lg transition-all duration-300 flex flex-col justify-between text-left"
             >
-              {/* Testimonial 1 */}
-              <div className="w-full flex-shrink-0 px-3">
-                <Card className="p-6 bg-white border border-slate-100 rounded-3xl shadow-md flex flex-col gap-4 text-left h-full">
-                  <div className="flex justify-between items-center">
-                    <div className="flex gap-0.5">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
-                      ))}
-                    </div>
-                    <span className="text-[10px] font-extrabold text-green-700 uppercase tracking-wider">
-                      {t('home.locationVerified')}
-                    </span>
-                  </div>
-                  <p className="text-slate-700 text-sm leading-relaxed font-medium">
-                    {t('testimonials.t1Text')}
-                  </p>
-                  <div className="mt-auto text-xs text-slate-900 font-bold">
-                    — {t('testimonials.t1Author')}, {t('testimonials.t1Role')}
-                  </div>
-                </Card>
+              <div>
+                <div className="w-13 h-13 rounded-2xl bg-emerald-100/80 text-emerald-800 flex items-center justify-center mb-5">
+                  <Building2 className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 mb-2.5">
+                  {isMr ? 'कलेक्टर व रेरा एन.ए. प्लॉट्स' : 'RERA & Collector NA Plots'}
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mb-6">
+                  {isMr
+                    ? 'स्वतंत्र सातबारा, भव्य प्रवेशद्वार, अंतर्गत डांबरी रस्ते, गटार लाईन आणि महावितरण वीज पुरवठ्यासह हक्काचे घर बांधण्यासाठी योग्य जागा.'
+                    : 'Individual 7/12 land titles, internal asphalt roads, drainage, water supply, and MSEB electricity for immediate bungalow construction.'}
+                </p>
               </div>
+              <ul className="space-y-2 text-xs text-slate-700 border-t border-slate-200 pt-4 font-medium">
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>{isMr ? 'स्वतंत्र पी.आर. कार्ड व ७/१२' : 'Individual 7/12 & PR Card'}</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>{isMr ? 'कंपाउंड व डिमार्केशन पूर्ण' : 'Demarcated & Fenced'}</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>{isMr ? 'बँक कर्ज सुविधा उपलब्ध' : 'Bank Loan Approved'}</span>
+                </li>
+              </ul>
+            </motion.div>
 
-              {/* Testimonial 2 */}
-              <div className="w-full flex-shrink-0 px-3">
-                <Card className="p-6 bg-white border border-slate-100 rounded-3xl shadow-md flex flex-col gap-4 text-left h-full">
-                  <div className="flex justify-between items-center">
-                    <div className="flex gap-0.5">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
-                      ))}
-                    </div>
-                    <span className="text-[10px] font-extrabold text-green-700 uppercase tracking-wider">
-                      {t('home.directOwner')}
-                    </span>
-                  </div>
-                  <p className="text-slate-700 text-sm leading-relaxed font-medium">
-                    {t('testimonials.t2Text')}
-                  </p>
-                  <div className="mt-auto text-xs text-slate-900 font-bold">
-                    — {t('testimonials.t2Author')}, {t('testimonials.t2Role')}
-                  </div>
-                </Card>
+            {/* Card 2: Farmhouse */}
+            <motion.div
+              whileHover={{ y: -6, transition: { duration: 0.25 } }}
+              className="bg-slate-50 rounded-3xl p-6 sm:p-7 border border-slate-200/90 hover:border-teal-500 hover:shadow-lg transition-all duration-300 flex flex-col justify-between text-left"
+            >
+              <div>
+                <div className="w-13 h-13 rounded-2xl bg-teal-100/80 text-teal-800 flex items-center justify-center mb-5">
+                  <Trees className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 mb-2.5">
+                  {isMr ? 'फार्महाऊस व शेतजमीन प्रकल्प' : 'Farmhouse & Agro Parcels'}
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mb-6">
+                  {isMr
+                    ? 'सह्याद्रीच्या नयनरम्य निसर्गात, पाण्याच्या खात्रीसह वीकेंड फार्महाऊस, सेंद्रिय शेती किंवा दीर्घकालीन गुंतवणुकीसाठी उत्तम शेतजमीन.'
+                    : 'Picturesque hill-view parcels with rich black soil, abundant water sources, and legal road approach. Perfect for weekend villas & agro-investments.'}
+                </p>
               </div>
+              <ul className="space-y-2 text-xs text-slate-700 border-t border-slate-200 pt-4 font-medium">
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-teal-600 shrink-0" />
+                  <span>{isMr ? 'कायदेशीर रस्ता व वहिवाट' : 'Sanctioned Road Approach'}</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-teal-600 shrink-0" />
+                  <span>{isMr ? 'मुबलक पाणी व वीज स्त्रोत' : 'Abundant Water & Power'}</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-teal-600 shrink-0" />
+                  <span>{isMr ? '११ गुंठ्यांपासून एकरापर्यंत' : 'From 11 Guntha to Acres'}</span>
+                </li>
+              </ul>
+            </motion.div>
 
-              {/* Testimonial 3 */}
-              <div className="w-full flex-shrink-0 px-3">
-                <Card className="p-6 bg-white border border-slate-100 rounded-3xl shadow-md flex flex-col gap-4 text-left h-full">
-                  <div className="flex justify-between items-center">
-                    <div className="flex gap-0.5">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
-                      ))}
-                    </div>
-                    <span className="text-[10px] font-extrabold text-green-700 uppercase tracking-wider">
-                      {t('home.locationVerified')}
-                    </span>
-                  </div>
-                  <p className="text-slate-700 text-sm leading-relaxed font-medium">
-                    {t('testimonials.t3Text')}
-                  </p>
-                  <div className="mt-auto text-xs text-slate-900 font-bold">
-                    — {t('testimonials.t3Author')}, {t('testimonials.t3Role')}
-                  </div>
-                </Card>
+            {/* Card 3: Highway Commercial */}
+            <motion.div
+              whileHover={{ y: -6, transition: { duration: 0.25 } }}
+              className="bg-slate-50 rounded-3xl p-6 sm:p-7 border border-slate-200/90 hover:border-amber-500 hover:shadow-lg transition-all duration-300 flex flex-col justify-between text-left"
+            >
+              <div>
+                <div className="w-13 h-13 rounded-2xl bg-amber-100/80 text-amber-800 flex items-center justify-center mb-5">
+                  <Truck className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 mb-2.5">
+                  {isMr ? 'हायवे-टच कमर्शियल जागा' : 'Highway Commercial Land'}
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mb-6">
+                  {isMr
+                    ? 'राष्ट्रीय व राज्य महामार्गांलगत वेअरहाऊस, हॉटेल, रिसॉर्ट, पेट्रोल पंप अथवा व्यावसायिक केंद्रांसाठी मोक्याच्या कमर्शियल जागा.'
+                    : 'High-visibility frontage on major national & state highways. Ideal for logistics parks, resorts, petrol stations, and commercial complexes.'}
+                </p>
               </div>
-            </div>
+              <ul className="space-y-2 text-xs text-slate-700 border-t border-slate-200 pt-4 font-medium">
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                  <span>{isMr ? 'मोठा फ्रंट व मोक्याचे लोकेशन' : 'Prime High-Traffic Frontage'}</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                  <span>{isMr ? 'कमर्शियल झोन एनओसी सहाय्य' : 'Commercial Zone & NOC Support'}</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                  <span>{isMr ? 'उत्कृष्ट भाडे परतावा क्षमता' : 'High Appreciation & Yield'}</span>
+                </li>
+              </ul>
+            </motion.div>
 
-            {/* Dots Indicators */}
-            <div className="flex gap-2 justify-center mt-5">
-              {[0, 1, 2].map((idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => setActiveTestimonial(idx)}
-                  className={`w-2 h-2 rounded-full transition-all duration-300 ${activeTestimonial === idx ? 'bg-[#f97316] w-5' : 'bg-slate-300'
-                    }`}
-                  aria-label={`Go to testimonial ${idx + 1}`}
-                />
-              ))}
-            </div>
+            {/* Card 4: Turnkey Infrastructure */}
+            <motion.div
+              whileHover={{ y: -6, transition: { duration: 0.25 } }}
+              className="bg-slate-50 rounded-3xl p-6 sm:p-7 border border-slate-200/90 hover:border-blue-500 hover:shadow-lg transition-all duration-300 flex flex-col justify-between text-left"
+            >
+              <div>
+                <div className="w-13 h-13 rounded-2xl bg-blue-100/80 text-blue-800 flex items-center justify-center mb-5">
+                  <Compass className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 mb-2.5">
+                  {isMr ? 'पायाभूत सुविधा विकास' : 'Turnkey Infrastructure'}
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mb-6">
+                  {isMr
+                    ? 'केवळ कागदावर नाही तर प्रत्यक्ष जागेवर सीमांकन, तारेचे कुंपण, वृक्षारोपण, पथदिवे व सुरक्षा व्यवस्था आम्ही प्रत्यक्ष उभी करतो.'
+                    : 'Complete physical development on the ground: boundary stone planting, chain-link security fencing, streetlights, and arboriculture.'}
+                </p>
+              </div>
+              <ul className="space-y-2 text-xs text-slate-700 border-t border-slate-200 pt-4 font-medium">
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                  <span>{isMr ? 'पक्के सीमांकन व दगडी खांब' : 'RCC Boundary Demarcation'}</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                  <span>{isMr ? 'मुख्य प्रवेशद्वार व सुरक्षा' : 'Gated Compound & Security'}</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                  <span>{isMr ? 'तात्काळ प्रत्यक्ष ताबा' : 'Instant Handover & Possession'}</span>
+                </li>
+              </ul>
+            </motion.div>
+
           </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 sm:gap-6 w-full text-left">
-            {/* Testimonial 1 */}
-            <Card className="p-6 sm:p-8 bg-white border border-slate-100 rounded-3xl shadow-md flex flex-col gap-4 text-left">
-              <div className="flex justify-between items-center">
-                <div className="flex gap-0.5">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
-                  ))}
-                </div>
-                <span className="text-[10px] font-extrabold text-green-700 uppercase tracking-wider">
-                  {t('home.locationVerified')}
-                </span>
-              </div>
-              <p className="text-slate-700 text-sm leading-relaxed font-medium">
-                {t('testimonials.t1Text')}
-              </p>
-              <div className="mt-auto text-xs text-slate-900 font-bold">
-                — {t('testimonials.t1Author')}, {t('testimonials.t1Role')}
-              </div>
-            </Card>
 
-            {/* Testimonial 2 */}
-            <Card className="p-6 sm:p-8 bg-white border border-slate-100 rounded-3xl shadow-md flex flex-col gap-4 text-left">
-              <div className="flex justify-between items-center">
-                <div className="flex gap-0.5">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
-                  ))}
-                </div>
-                <span className="text-[10px] font-extrabold text-green-700 uppercase tracking-wider">
-                  {t('home.directOwner')}
-                </span>
-              </div>
-              <p className="text-slate-700 text-sm leading-relaxed font-medium">
-                {t('testimonials.t2Text')}
-              </p>
-              <div className="mt-auto text-xs text-slate-900 font-bold">
-                — {t('testimonials.t2Author')}, {t('testimonials.t2Role')}
-              </div>
-            </Card>
+        </div>
 
-            {/* Testimonial 3 */}
-            <Card className="p-6 sm:p-8 bg-white border border-slate-100 rounded-3xl shadow-md flex flex-col gap-4 text-left">
-              <div className="flex justify-between items-center">
-                <div className="flex gap-0.5">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
-                  ))}
-                </div>
-                <span className="text-[10px] font-extrabold text-green-700 uppercase tracking-wider">
-                  {t('home.locationVerified')}
-                </span>
-              </div>
-              <p className="text-slate-700 text-sm leading-relaxed font-medium">
-                {t('testimonials.t3Text')}
-              </p>
-              <div className="mt-auto text-xs text-slate-900 font-bold">
-                — {t('testimonials.t3Author')}, {t('testimonials.t3Role')}
-              </div>
-            </Card>
-          </div>
-        )}
+        {/* Multi-layered Wave Divider to Section 4 (slate-50) */}
+        <WaveDivider to="slate-50" variant="reverse" />
       </section>
 
 
-
-
-
-
-      {selectedProject && (
-        <Dialog
-          isOpen={!!selectedProject}
-          onClose={() => setSelectedProject(null)}
-          title={isMr ? selectedProject.titleMr || selectedProject.title : selectedProject.title}
-        >
-          <div className="flex flex-col gap-6 text-left">
-            {/* Image Gallery */}
-            {selectedProject.images && selectedProject.images.length > 0 && (
-              <div className="aspect-[16/10] w-full rounded-2xl overflow-hidden border border-slate-200 relative shadow-sm">
-                <img src={selectedProject.images[0]} alt="" className="w-full h-full object-cover" />
-                <div className="absolute top-4 left-4 bg-emerald-800 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg uppercase tracking-wider shadow-md">
-                  {selectedProject.status}
-                </div>
-              </div>
-            )}
-
-            {/* Project Specifications */}
-            <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100 text-sm">
-              <div className="flex flex-col">
-                <span className="text-[10px] font-bold text-slate-400 uppercase">{isMr ? 'किंमत श्रेणी' : 'Price Range'}</span>
-                <span className="font-extrabold text-slate-800 mt-0.5">{selectedProject.priceRange}</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] font-bold text-slate-400 uppercase">{isMr ? 'लक्ष्य वर्ष' : 'Target Year'}</span>
-                <span className="font-extrabold text-slate-800 mt-0.5">{selectedProject.targetYear || '2027'}</span>
-              </div>
-              <div className="flex flex-col col-span-2 border-t border-slate-200/60 pt-2.5 mt-1">
-                <span className="text-[10px] font-bold text-slate-400 uppercase">{isMr ? 'स्थान' : 'Location'}</span>
-                <div className="flex items-center gap-1 mt-0.5">
-                  <MapPin className="w-3.5 h-3.5 text-orange-500 fill-orange-500/20" />
-                  <span className="font-bold text-slate-800">
-                    {isMr ? selectedProject.locationMr || selectedProject.location : selectedProject.location}
-                  </span>
-                </div>
-              </div>
+      {/* ─────────────────────────────────────────────────────────────
+          SECTION 4: AMENITIES & INFRASTRUCTURE GALLERY (#amenities)
+      ───────────────────────────────────────────────────────────── */}
+      <section id="amenities" className="relative bg-slate-50 pt-16 sm:pt-24 pb-0 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 pb-16 sm:pb-24">
+          
+          <div className="text-center max-w-3xl mx-auto mb-14">
+            <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-[#b81414] bg-red-50 px-3.5 py-1 rounded-full border border-red-200 mb-3">
+              <Landmark className="w-3.5 h-3.5" />
+              <span>{isMr ? 'सुविधा व विकास' : 'Project Amenities'}</span>
             </div>
+            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+              {isMr ? 'प्रत्यक्ष जागेवरील जागतिक दर्जाच्या पायाभूत सुविधा' : 'On-Ground World-Class Infrastructure'}
+            </h2>
+            <p className="mt-3 text-sm sm:text-base text-slate-600">
+              {isMr
+                ? 'सह्याद्री लँड डेव्हलपरच्या प्रत्येक लेआऊटमध्ये नागरिकांच्या सुखकर जीवनासाठी परिपूर्ण सुविधांची खात्री.'
+                : 'Every project layout is engineered for lifelong comfort, accessibility, and high capital appreciation.'}
+            </p>
+          </div>
 
-            {/* Developer Details */}
-            <div className="p-4 rounded-2xl border border-slate-100 bg-white flex items-center gap-3 shadow-sm">
-              <div className="w-10 h-10 rounded-xl bg-orange-600/10 text-orange-700 flex items-center justify-center font-extrabold text-sm tracking-wider shrink-0 border border-orange-500/10">
-                {selectedProject.developerName ? selectedProject.developerName.slice(0, 2).toUpperCase() : 'DV'}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            
+            {/* 1. Tar Roads */}
+            <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs hover:shadow-md transition-shadow flex items-start gap-4 text-left">
+              <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-800 flex items-center justify-center shrink-0">
+                <Truck className="w-6 h-6 text-[#b81414]" />
               </div>
               <div>
-                <h4 className="text-sm font-bold text-slate-900">{selectedProject.developerName || (isMr ? 'थेट डेव्हलपर' : 'Direct Developer')}</h4>
-                <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">{isMr ? 'अधिकृत रिअल इस्टेट डेव्हलपर' : 'Authorized Real Estate Developer'}</p>
+                <h4 className="font-bold text-slate-900 text-base mb-1">
+                  {isMr ? '९ ते १२ मीटर रुंद अंतर्गत रस्ते' : '9m & 12m Wide Internal Tar Roads'}
+                </h4>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  {isMr ? 'दर्जेदार डांबरीकरण, मजबूत खडीकरण आणि पावसाळी पाण्याचा निचरा होणारी गटार व्यवस्था.' : 'High-grade asphalt paving with structured storm-water drainage for year-round durability.'}
+                </p>
               </div>
             </div>
 
-            {/* Description */}
-            <div>
-              <h4 className="text-sm font-bold text-slate-900 mb-1.5">{isMr ? 'प्रकल्प विहंगावलोकन' : 'Project Overview'}</h4>
-              <p className="text-xs text-slate-600 leading-relaxed font-sans whitespace-pre-line">
-                {isMr ? selectedProject.descriptionMr || selectedProject.description : selectedProject.description}
-              </p>
+            {/* 2. Water */}
+            <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs hover:shadow-md transition-shadow flex items-start gap-4 text-left">
+              <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-700 flex items-center justify-center shrink-0">
+                <Droplets className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="font-bold text-slate-900 text-base mb-1">
+                  {isMr ? 'स्वतंत्र पाणी पुरवठा लाईन' : 'Dedicated Water Pipeline'}
+                </h4>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  {isMr ? 'प्रत्येक प्लॉटपर्यंत भूमिगत पाणी पाईपलाईन आणि साठवणुकीसाठी ओव्हरहेड पाण्याची टाकी.' : 'Underground water connection pipeline to each plot boundary with overhead storage reservoir.'}
+                </p>
+              </div>
             </div>
 
-            {/* Footer Actions */}
-            <div className="flex gap-3 justify-end pt-4 border-t border-slate-100">
-              <Button type="button" variant="glass" onClick={() => setSelectedProject(null)} className="py-2.5 px-4 rounded-xl text-xs border-slate-200">
-                {isMr ? 'बंद करा' : 'Close'}
-              </Button>
-              <a href={`https://wa.me/918328712712?text=${encodeURIComponent(`I would like to inquire about the project: ${selectedProject.title}`)}`} target="_blank" rel="noreferrer">
-                <Button variant="primary" className="py-2.5 px-5 rounded-xl text-xs text-white font-bold bg-emerald-700 hover:bg-emerald-800 border-none flex items-center gap-1.5">
-                  <MessageSquare className="w-3.5 h-3.5 text-white" /> {isMr ? 'व्हॉट्सॲपवर चौकशी करा' : 'Inquire via WhatsApp'}
-                </Button>
-              </a>
+            {/* 3. MSEB Electricity */}
+            <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs hover:shadow-md transition-shadow flex items-start gap-4 text-left">
+              <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center shrink-0">
+                <Zap className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="font-bold text-slate-900 text-base mb-1">
+                  {isMr ? 'महावितरण वीज व ट्रान्सफॉर्मर' : 'MSEB Power Sub-Station'}
+                </h4>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  {isMr ? 'स्वतंत्र वीज खांब, ट्रान्सफॉर्मर आणि तात्काळ घरगुती वीज मीटर जोडणीची कायदेशीर सोय.' : 'Sanctioned electric poles, transformers, and fast-track domestic meter connection approval.'}
+                </p>
+              </div>
+            </div>
+
+            {/* 4. Gated Security */}
+            <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs hover:shadow-md transition-shadow flex items-start gap-4 text-left">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
+                <Fence className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="font-bold text-slate-900 text-base mb-1">
+                  {isMr ? 'प्रवेशद्वार व सुरक्षा कुंपण' : 'Grand Entrance Gate & Fencing'}
+                </h4>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  {isMr ? 'भव्य कमानदार प्रवेशद्वार, सुरक्षा रक्षक केबिन आणि संपूर्ण लेआऊटला चेनलिंक कुंपण.' : 'Architectural entrance arch, security cabin, and complete perimeter chain-link security fencing.'}
+                </p>
+              </div>
+            </div>
+
+            {/* 5. Tree Plantation */}
+            <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs hover:shadow-md transition-shadow flex items-start gap-4 text-left">
+              <div className="w-12 h-12 rounded-2xl bg-teal-50 text-teal-700 flex items-center justify-center shrink-0">
+                <TreePine className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="font-bold text-slate-900 text-base mb-1">
+                  {isMr ? 'रस्त्यालगत हरित वृक्षारोपण' : 'Avenue Tree Plantation'}
+                </h4>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  {isMr ? 'रस्त्याच्या दोन्ही बाजूंना फळे व सावली देणाऱ्या झाडांची लागवड आणि हिरवेगार वातावरण.' : 'Lush avenue trees planted along road buffers to promote clean, green, oxygenated living.'}
+                </p>
+              </div>
+            </div>
+
+            {/* 6. Street Lighting */}
+            <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs hover:shadow-md transition-shadow flex items-start gap-4 text-left">
+              <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-700 flex items-center justify-center shrink-0">
+                <SunMedium className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="font-bold text-slate-900 text-base mb-1">
+                  {isMr ? 'सौर व एलईडी पथदिवे' : 'Solar & LED Street Lighting'}
+                </h4>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  {isMr ? 'लेआऊटमधील सर्व रस्त्यांवर अखंड प्रकाशासाठी आधुनिक सौर व एलईडी पथदिव्यांची सोय.' : 'Continuous night illumination across all internal roads via energy-efficient LED streetlamps.'}
+                </p>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        {/* Multi-layered Wave Divider to Section 5 (white) */}
+        <WaveDivider to="white" variant="forward" />
+      </section>
+
+
+      {/* ─────────────────────────────────────────────────────────────
+          SECTION 5: GUNTHA & LAND MEASUREMENT BUYER'S GUIDE
+      ───────────────────────────────────────────────────────────── */}
+      <section className="relative bg-white pt-16 sm:pt-20 pb-0 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 pb-16 sm:pb-20">
+          
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+            
+            <div className="lg:col-span-6 text-left space-y-4">
+              <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-3.5 py-1 rounded-full border border-emerald-200">
+                <Ruler className="w-3.5 h-3.5" />
+                <span>{isMr ? 'जमीन मोजमाप मार्गदर्शक' : 'Land Measurement Guide'}</span>
+              </div>
+
+              <h2 className="text-2xl sm:text-4xl font-black text-slate-900 leading-tight">
+                {isMr
+                  ? 'गुंठा व एकराचे सोपे गणित समजून घ्या'
+                  : 'Understanding Guntha & Acre Plot Dimensions'}
+              </h2>
+
+              <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
+                {isMr
+                  ? 'महाराष्ट्रात जमीन खरेदी करताना क्षेत्रफळाची अचूक माहिती असणे महत्त्वाचे असते. सह्याद्री लँड डेव्हलपरकडे १ गुंठ्यापासून ते एकरापर्यंत स्वतंत्र डिमार्केशन असलेले प्लॉट्स उपलब्ध आहेत.'
+                  : 'When buying land in Maharashtra, understanding exact Guntha conversion ensures complete transparency. We offer certified demarcated plots from 1 Guntha up to multi-acre parcels.'}
+              </p>
+
+              <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200/70 text-xs text-amber-900 flex items-start gap-2.5">
+                <BadgeCheck className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                <span>
+                  {isMr
+                    ? 'सर्व प्लॉट्स वास्तुशास्त्रानुसार योग्य दिशा, प्रशस्त फ्रंट आणि ९ ते १२ मीटर रस्त्यांच्या नियोजनासह उपलब्ध आहेत.'
+                    : 'All layout plots feature Vastu-compliant road facing, generous road frontage, and standardized geometric demarcations.'}
+                </span>
+              </div>
+            </div>
+
+            <div className="lg:col-span-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+                
+                {/* 1 Guntha */}
+                <div className="bg-slate-50 p-6 rounded-3xl border border-slate-200 shadow-xs hover:border-emerald-500 transition-colors">
+                  <div className="text-xs uppercase font-extrabold text-emerald-700 tracking-wider">
+                    {isMr ? '१ गुंठा' : '1 Guntha'}
+                  </div>
+                  <div className="text-2xl sm:text-3xl font-black text-slate-900 my-2 font-serif">
+                    1,089
+                  </div>
+                  <div className="text-xs text-slate-500 font-medium">{isMr ? 'चौरस फूट (Sq.Ft)' : 'Square Feet'}</div>
+                  <div className="mt-3 pt-3 border-t border-slate-200 text-[11px] text-slate-400">
+                    ~ 101.17 sq.m
+                  </div>
+                </div>
+
+                {/* 11 Guntha */}
+                <div className="bg-slate-50 p-6 rounded-3xl border border-slate-200 shadow-xs hover:border-teal-500 transition-colors">
+                  <div className="text-xs uppercase font-extrabold text-teal-700 tracking-wider">
+                    {isMr ? '११ गुंठे' : '11 Guntha'}
+                  </div>
+                  <div className="text-2xl sm:text-3xl font-black text-slate-900 my-2 font-serif">
+                    11,979
+                  </div>
+                  <div className="text-xs text-slate-500 font-medium">{isMr ? 'फार्महाऊस प्लॉट' : 'Farmhouse Plot'}</div>
+                  <div className="mt-3 pt-3 border-t border-slate-200 text-[11px] text-slate-400">
+                    ~ 1,113 sq.m
+                  </div>
+                </div>
+
+                {/* 1 Acre */}
+                <div className="bg-slate-50 p-6 rounded-3xl border border-slate-200 shadow-xs hover:border-[#b81414] transition-colors">
+                  <div className="text-xs uppercase font-extrabold text-[#b81414] tracking-wider">
+                    {isMr ? '१ एकर' : '1 Acre'}
+                  </div>
+                  <div className="text-2xl sm:text-3xl font-black text-slate-900 my-2 font-serif">
+                    43,560
+                  </div>
+                  <div className="text-xs text-slate-500 font-medium">{isMr ? '४० गुंठे क्षेत्र' : '40 Guntha Total'}</div>
+                  <div className="mt-3 pt-3 border-t border-slate-200 text-[11px] text-slate-400">
+                    ~ 4,047 sq.m
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        {/* Multi-layered Wave Divider to Section 6 (slate-900) */}
+        <WaveDivider to="slate-900" variant="reverse" />
+      </section>
+
+
+      {/* ─────────────────────────────────────────────────────────────
+          SECTION 6: OFFICIAL ANDROID APP SHOWCASE (#app)
+      ───────────────────────────────────────────────────────────── */}
+      <section id="app" className="relative bg-slate-900 text-white pt-16 sm:pt-24 pb-0 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 pb-16 sm:pb-24">
+          
+          <div className="bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 text-white rounded-3xl p-8 sm:p-12 lg:p-16 border border-slate-800 shadow-2xl grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+            
+            <div className="lg:col-span-7 text-left space-y-6">
+              <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-3.5 py-1 rounded-full border border-emerald-500/20">
+                <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                <span>{isMr ? 'सह्याद्री अधिकृत ॲन्ड्रॉइड ॲप' : 'Official Android App'}</span>
+              </div>
+
+              <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black text-white leading-tight">
+                {isMr
+                  ? 'सर्व उपलब्ध प्लॉट्स, नकाशे व ७/१२ आता मोबाईल ॲपवर!'
+                  : 'Inspect Plots, GPS Boundaries & 7/12 Records on Mobile'}
+              </h2>
+
+              <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
+                {isMr
+                  ? 'आमच्या मोफत ॲन्ड्रॉइड ॲप्लिकेशनद्वारे आपण घरबसल्या प्रत्येक प्रकल्पाचे सॅटेलाईट नकाशे, उपलब्ध जागांचे क्षेत्रफळ, मंजूर लेआऊट ऑर्डर आणि दर तपासू शकता. कोणत्याही दलालाशिवाय थेट विकासकांशी संवाद साधा!'
+                  : 'Download the official Sahyadri Land Developer app from Google Play. Explore active layouts with real-time GPS dimensions, revenue 7/12 records, approved layout sanctions, and schedule personal site inspections.'}
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+                <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-950/70 border border-slate-800">
+                  <Compass className="w-5 h-5 text-emerald-400 shrink-0" />
+                  <span className="text-xs font-semibold text-slate-200">{isMr ? 'जीपीएस सॅटेलाईट मॅपिंग' : 'GPS Satellite Plot Maps'}</span>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-950/70 border border-slate-800">
+                  <FileText className="w-5 h-5 text-teal-400 shrink-0" />
+                  <span className="text-xs font-semibold text-slate-200">{isMr ? 'डिजिटल ७/१२ व फेरफार' : 'Verified 7/12 & PR Cards'}</span>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-950/70 border border-slate-800">
+                  <MessageCircle className="w-5 h-5 text-amber-400 shrink-0" />
+                  <span className="text-xs font-semibold text-slate-200">{isMr ? 'थेट डेव्हलपरशी संवाद' : 'Zero Brokerage Direct Deal'}</span>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-950/70 border border-slate-800">
+                  <Clock className="w-5 h-5 text-purple-400 shrink-0" />
+                  <span className="text-xs font-semibold text-slate-200">{isMr ? 'लाईव्ह नवीन प्रकल्प अपडेट्स' : 'Instant Layout Launch Alerts'}</span>
+                </div>
+              </div>
+
+              <div className="pt-2 flex flex-wrap items-center gap-4">
+                <a
+                  href={PLAY_STORE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-sm shadow-xl shadow-emerald-500/25 transition-all transform hover:scale-105 cursor-pointer"
+                >
+                  <Download className="w-4 h-4 text-slate-950" />
+                  <span>{isMr ? 'गुगल प्ले वरून इन्स्टॉल करा' : 'Get it on Google Play'}</span>
+                  <ExternalLink className="w-3.5 h-3.5 text-slate-950/70" />
+                </a>
+
+                <span className="text-xs text-slate-400 font-mono">
+                  com.spark.sahyadrilanddeveloper
+                </span>
+              </div>
+            </div>
+
+            {/* Right Mockup Display */}
+            <div className="lg:col-span-5 flex justify-center">
+              <div className="w-full max-w-xs rounded-3xl bg-slate-950 border-2 border-slate-800 p-5 shadow-2xl text-left space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <img src="/sahyadri-emblem.png" alt="" className="w-5 h-5 object-contain" />
+                    <span className="text-xs font-bold text-white">Sahyadri Mobile App</span>
+                  </div>
+                  <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                    PLAY STORE
+                  </span>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 space-y-1.5">
+                  <span className="text-[9px] uppercase font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md">
+                    Collector NA Plot
+                  </span>
+                  <div className="text-xs font-bold text-white">Sahyadri Valley Greens Layout</div>
+                  <div className="text-[11px] text-slate-400 flex items-center gap-1">
+                    <MapPin className="w-3 h-3 text-red-400" />
+                    <span>Satara Highway Belt</span>
+                  </div>
+                  <div className="text-xs font-bold text-amber-300 pt-1">₹ 12,50,000*</div>
+                </div>
+
+                <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-center space-y-2">
+                  <p className="text-[11px] text-slate-300">
+                    {isMr ? 'प्रत्येक प्लॉटचे तपशील व नकाशे ॲपमध्ये पहा' : 'View all plot listings and site maps on app'}
+                  </p>
+                  <a
+                    href={PLAY_STORE_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block w-full py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition-colors"
+                  >
+                    {isMr ? 'ॲप उघडा' : 'Install on Android'}
+                  </a>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        {/* Multi-layered Wave Divider to Section 7 (white) */}
+        <WaveDivider to="white" variant="forward" />
+      </section>
+
+
+      {/* ─────────────────────────────────────────────────────────────
+          SECTION 7: 4-STEP PROCESS JOURNEY (#process)
+      ───────────────────────────────────────────────────────────── */}
+      <section id="process" className="relative bg-white pt-16 sm:pt-24 pb-0 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 pb-16 sm:pb-24">
+          
+          <div className="text-center max-w-3xl mx-auto mb-14">
+            <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-[#b81414] bg-red-50 px-3.5 py-1 rounded-full border border-red-200 mb-3">
+              <BadgeCheck className="w-3.5 h-3.5" />
+              <span>{isMr ? 'सोपी व पारदर्शक पद्धत' : 'The Sahyadri Standard'}</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+              {isMr ? 'प्लॉट खरेदीची ४ सोपी व सुरक्षित पावले' : 'Your 4-Step Seamless Land Buying Journey'}
+            </h2>
+            <p className="mt-3 text-sm sm:text-base text-slate-600">
+              {isMr
+                ? 'जमिनीच्या निवडीपासून ते नोंदणीकृत दस्त आणि नावावर स्वतंत्र ७/१२ होईपर्यंत संपूर्ण कायदेशीर प्रक्रिया आम्ही स्वतः पूर्ण करतो.'
+                : 'From the initial site visit to legal search verification and the final registered deed with mutation (Ferfar) entry.'}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            
+            <div className="bg-slate-50 rounded-3xl p-6 sm:p-7 border border-slate-200 text-left flex flex-col justify-between hover:border-emerald-500 transition-colors shadow-xs">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-3xl font-black text-emerald-700 font-serif">01</span>
+                  <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
+                    <MapPin className="w-5 h-5" />
+                  </div>
+                </div>
+                <h3 className="text-base font-bold text-slate-900 mb-2">
+                  {isMr ? '१. प्रत्यक्ष जागा पाहणी' : '1. On-Site Inspection'}
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                  {isMr
+                    ? 'आमच्या प्रतिनिधींसोबत प्रत्यक्ष जागेची पाहणी करा, पक्के डिमार्केशन, रस्ते, पाणी व विजेची सोय स्वतः खात्री करून निवडा.'
+                    : 'Personal escorted site tour to inspect physical boundary stones, access roads, connectivity, and surrounding developments.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 rounded-3xl p-6 sm:p-7 border border-slate-200 text-left flex flex-col justify-between hover:border-teal-500 transition-colors shadow-xs">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-3xl font-black text-teal-700 font-serif">02</span>
+                  <div className="w-10 h-10 rounded-xl bg-teal-100 text-teal-800 flex items-center justify-center font-bold">
+                    <FileCheck2 className="w-5 h-5" />
+                  </div>
+                </div>
+                <h3 className="text-base font-bold text-slate-900 mb-2">
+                  {isMr ? '२. कायदेशीर कागदपत्र तपासणी' : '2. 30-Year Legal Verification'}
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                  {isMr
+                    ? 'अ‍ॅडव्होकेटद्वारे ३० वर्षांचा सर्च रिपोर्ट, मूळ ७/१२, बिनशेती (NA) आदेश व झोन सर्टिफिकेटची संपूर्ण पारदर्शक तपासणी.'
+                    : 'Review the 30-year title search certificate, non-agricultural sanctions, approved layout order, and encumbrance-free records.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 rounded-3xl p-6 sm:p-7 border border-slate-200 text-left flex flex-col justify-between hover:border-amber-500 transition-colors shadow-xs">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-3xl font-black text-amber-700 font-serif">03</span>
+                  <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold">
+                    <CheckCircle2 className="w-5 h-5" />
+                  </div>
+                </div>
+                <h3 className="text-base font-bold text-slate-900 mb-2">
+                  {isMr ? '३. पारदर्शक करार व दर' : '3. Transparent Booking'}
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                  {isMr
+                    ? 'थेट डेव्हलपरसोबत स्पष्ट व्यवहार. कोणताही छुप्या खर्चाचा धोका नाही. सुलभ हप्ते व बँक कर्ज सहाय्य उपलब्ध.'
+                    : 'Clear developer-direct pricing with zero hidden surcharges. Transparent booking agreement and bank loan processing assistance.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 rounded-3xl p-6 sm:p-7 border border-slate-200 text-left flex flex-col justify-between hover:border-[#b81414] transition-colors shadow-xs">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-3xl font-black text-[#b81414] font-serif">04</span>
+                  <div className="w-10 h-10 rounded-xl bg-red-100 text-red-800 flex items-center justify-center font-bold">
+                    <BadgeCheck className="w-5 h-5" />
+                  </div>
+                </div>
+                <h3 className="text-base font-bold text-slate-900 mb-2">
+                  {isMr ? '४. नोंदणीकृत खरेदीखत व फेरफार' : '4. Registry & Mutation'}
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                  {isMr
+                    ? 'दुय्यम निबंधक कार्यालयात कायदेशीर खरेदीखत (Registry) आणि महसूल दप्तरी आपल्या नावे स्वतंत्र ७/१२ फेरफार हस्तांतरण.'
+                    : 'Sub-registrar office registered sale deed execution, official key handover, and government mutation entry (Ferfar) on 7/12.'}
+                </p>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        {/* Multi-layered Wave Divider to Section 8 (slate-50) */}
+        <WaveDivider to="slate-50" variant="reverse" />
+      </section>
+
+
+      {/* ─────────────────────────────────────────────────────────────
+          SECTION 8: INTERACTIVE FREQUENTLY ASKED QUESTIONS (#faq)
+      ───────────────────────────────────────────────────────────── */}
+      <section id="faq" className="relative bg-slate-50 pt-16 sm:pt-24 pb-0 overflow-hidden">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-12 pb-16 sm:pb-24">
+          
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-[#b81414] bg-red-50 px-3.5 py-1 rounded-full border border-red-200 mb-3">
+              <HelpCircle className="w-3.5 h-3.5" />
+              <span>{isMr ? 'सतत विचारले जाणारे प्रश्न' : 'Buyer Questions'}</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+              {isMr ? 'नेहमी विचारले जाणारे महत्त्वाचे प्रश्न' : 'Frequently Asked Questions'}
+            </h2>
+            <p className="mt-3 text-sm text-slate-600">
+              {isMr
+                ? 'जमीन खरेदीसंबंधी सामान्य प्रश्न आणि कायदेशीर स्पष्टीकरण खालीलप्रमाणे आहे.'
+                : 'Clear answers on legal verification, sanctions, loans, and registry procedures.'}
+            </p>
+          </div>
+
+          <div className="space-y-3.5 text-left">
+            {faqs.map((faq, idx) => (
+              <div
+                key={idx}
+                className="bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-xs transition-colors"
+              >
+                <button
+                  type="button"
+                  onClick={() => toggleFaq(idx)}
+                  className="w-full p-5 sm:p-6 text-left flex items-center justify-between gap-4 font-bold text-slate-900 hover:text-[#b81414] transition-colors cursor-pointer"
+                >
+                  <span className="text-sm sm:text-base">{faq.q}</span>
+                  <ChevronDown
+                    className={`w-5 h-5 text-slate-400 shrink-0 transition-transform duration-300 ${
+                      activeFaq === idx ? 'rotate-180 text-[#b81414]' : ''
+                    }`}
+                  />
+                </button>
+
+                <AnimatePresence>
+                  {activeFaq === idx && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.25 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-5 pb-5 sm:px-6 sm:pb-6 text-xs sm:text-sm text-slate-600 border-t border-slate-100 pt-3 leading-relaxed">
+                        {faq.a}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ))}
+          </div>
+
+        </div>
+
+        {/* Multi-layered Wave Divider to Section 9 (white) */}
+        <WaveDivider to="white" variant="forward" />
+      </section>
+
+
+      {/* ─────────────────────────────────────────────────────────────
+          SECTION 9: CONTACT ADVISORY & OFFICE HUB (#contact)
+      ───────────────────────────────────────────────────────────── */}
+      <section id="contact" className="relative bg-white pt-16 sm:pt-24 pb-0 overflow-hidden">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-12 pb-16 sm:pb-24 text-center space-y-8">
+          
+          <div className="space-y-3 max-w-2xl mx-auto">
+            <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-emerald-700 bg-emerald-50 px-3.5 py-1 rounded-full border border-emerald-200">
+              <Phone className="w-3.5 h-3.5" />
+              <span>{isMr ? 'थेट संपर्क केंद्र' : 'Direct Advisory Hub'}</span>
+            </div>
+
+            <h2 className="text-3xl sm:text-4xl font-black text-slate-900">
+              {isMr ? 'आमच्या प्रतिनिधींशी थेट बोला किंवा भेटा' : 'Connect Directly With Our Development Team'}
+            </h2>
+
+            <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
+              {isMr
+                ? 'प्लॉटचे उपलब्ध नकाशे पाहण्यासाठी आमच्या अधिकृत मोबाईल ॲपचा वापर करा किंवा प्रत्यक्ष साईट व्हिजिटसाठी आमच्याशी थेट संपर्क साधा.'
+                : 'Browse all available properties, live GPS maps, and approved layouts on our official Android app, or connect directly with our advisory office for escorted site visits.'}
+            </p>
+          </div>
+
+          {/* Direct Connect Buttons (Call + WhatsApp + App) */}
+          <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
+            
+            {/* Primary Phone */}
+            <a
+              href="tel:8328712712"
+              className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm shadow-md transition-all cursor-pointer"
+            >
+              <Phone className="w-4 h-4 text-emerald-400" />
+              <span>8328-712-712</span>
+            </a>
+
+            {/* Secondary Phone */}
+            <a
+              href="tel:7788993712"
+              className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-2xl bg-white hover:bg-slate-50 text-slate-800 font-bold text-sm border border-slate-200 shadow-xs transition-all cursor-pointer"
+            >
+              <Phone className="w-4 h-4 text-[#b81414]" />
+              <span>778899-3-712</span>
+            </a>
+
+            {/* WhatsApp */}
+            <a
+              href="https://wa.me/918328712712?text=Hello%20Sahyadri%20Land%20Developer,%20I%20am%20interested%20in%20your%20land%20plots."
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-2xl bg-[#25D366] hover:bg-[#20ba59] text-slate-950 font-bold text-sm shadow-md transition-all cursor-pointer"
+            >
+              <MessageCircle className="w-4 h-4" />
+              <span>{isMr ? 'व्हॉट्सॲपवर बोला' : 'Chat on WhatsApp'}</span>
+            </a>
+
+            {/* App CTA */}
+            <a
+              href={PLAY_STORE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-md transition-all cursor-pointer"
+            >
+              <Download className="w-4 h-4" />
+              <span>{isMr ? 'मोबाईल ॲप डाउनलोड करा' : 'Get Android App'}</span>
+            </a>
+
+          </div>
+
+          {/* Office Address Card */}
+          <div className="max-w-2xl mx-auto p-6 sm:p-7 rounded-3xl bg-slate-50 border border-slate-200/90 text-left space-y-3.5 shadow-xs">
+            <div className="flex items-start gap-3 text-sm text-slate-700">
+              <MapPin className="w-5 h-5 text-[#b81414] shrink-0 mt-0.5" />
+              <div>
+                <strong className="text-slate-900 block">{isMr ? 'मुख्य कार्यालय:' : 'Project Head Office:'}</strong>
+                <span className="text-slate-600">Sahyadri Land Developer, Satara / Karad Belt, Maharashtra, India.</span>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3 text-sm text-slate-700 border-t border-slate-200 pt-3">
+              <Clock className="w-5 h-5 text-emerald-700 shrink-0 mt-0.5" />
+              <div>
+                <strong className="text-slate-900 block">{isMr ? 'कार्यालयीन वेळ:' : 'Office & Site Visit Hours:'}</strong>
+                <span className="text-slate-600">{isMr ? 'सोमवार ते रविवार: सकाळी ९:०० ते संध्याकाळी ७:३० (आठवड्याचे ७ दिवस साईट व्हिजिट सुरू)' : 'Monday to Sunday: 9:00 AM – 7:30 PM (Site inspections open all 7 days)'}</span>
+              </div>
             </div>
           </div>
-        </Dialog>
-      )}
+
+        </div>
+
+        {/* Multi-layered Wave Divider to Footer (slate-950) */}
+        <WaveDivider to="slate-950" variant="reverse" />
+      </section>
 
     </div>
   );

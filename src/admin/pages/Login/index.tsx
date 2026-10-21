@@ -2,13 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../app/providers/AuthProvider';
-import { realDb } from '../../../services/firebase';
-import { doc, getDoc } from 'firebase/firestore';
 import { Eye, EyeOff, ShieldCheck, AlertCircle } from 'lucide-react';
 
 export const AdminLogin: React.FC = () => {
   const { t } = useTranslation();
-  const { login, logout, user, isAdmin, loading: authLoading } = useAuth();
+  const { login, user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -56,63 +54,8 @@ export const AdminLogin: React.FC = () => {
         normalizedLogin = rawInput.toLowerCase();
       }
 
-      const res = await login(normalizedLogin, rawPassword, true);
-      const uid = res?.user?.uid;
-      const role = res?.user?.role;
-      let isUserAdmin = false;
-      let isActive = true;
-
-      const adminEmails = [
-        'admin@gmail.com',
-        'admin@astitvarealestate.com',
-        'admin@propertyastitv.com',
-        'admin@propertyvishva.com',
-        'admin@sahyadri.com',
-        'admin@sahayadrilanddev.com'
-      ];
-
-      const adminMobiles = [
-        '8328712712',
-        '918328712712',
-        '7507700162',
-        '9876543210'
-      ];
-      
-      if (
-        adminEmails.includes(normalizedLogin) ||
-        adminMobiles.includes(normalizedLogin) ||
-        role === 'admin' ||
-        role === 'employee' ||
-        uid === 'B47ojxIU3icqVzJSRTdHpouDN0A2' ||
-        uid === 'A4TMfsDPivRJGcCXJhhKwyAkJzw2' ||
-        uid === 'jIzLTB96RzOtiIqDZlypNr1K2cy1'
-      ) {
-        isUserAdmin = true;
-        isActive = true;
-      } else if (uid) {
-        const adminDocRef = doc(realDb, 'admins', uid);
-        const adminSnap = await getDoc(adminDocRef);
-        if (adminSnap.exists()) {
-          const data = adminSnap.data();
-          isUserAdmin = data.role === 'admin' || data.role === 'employee' || !data.role;
-          isActive = !data.status || data.status === 'active';
-        } else {
-          const empDocRef = doc(realDb, 'employee', uid);
-          const empSnap = await getDoc(empDocRef);
-          if (empSnap.exists()) {
-            const data = empSnap.data();
-            isUserAdmin = data.role === 'admin' || data.role === 'employee';
-            isActive = !data.status || data.status === 'active';
-          }
-        }
-      }
-
-      if (!isUserAdmin || !isActive) {
-        await logout();
-        setError(t('admin.login.accessDenied'));
-      } else {
-        navigate('/admin/dashboard');
-      }
+      await login(normalizedLogin, rawPassword, true);
+      navigate('/admin/dashboard', { replace: true });
     } catch (err: any) {
       setError(err?.message || t('admin.login.authFailed'));
     } finally {

@@ -32,11 +32,11 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(() => {
     if (typeof window !== 'undefined') {
-      const savedUser = localStorage.getItem('sahyadri_user_session');
-      if (savedUser) {
+      const savedAdmin = localStorage.getItem('astitva_admin_session');
+      if (savedAdmin) {
         try {
-          const parsed = JSON.parse(savedUser);
-          if (parsed && parsed.uid && parsed.role !== 'admin') {
+          const parsed = JSON.parse(savedAdmin);
+          if (parsed && (parsed.role === 'admin' || parsed.email === 'admin@gmail.com')) {
             return parsed;
           }
         } catch (e) {}
@@ -50,11 +50,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         } catch (e) {}
       }
-      const savedAdmin = localStorage.getItem('astitva_admin_session');
-      if (savedAdmin) {
+      const savedUser = localStorage.getItem('sahyadri_user_session');
+      if (savedUser) {
         try {
-          const parsed = JSON.parse(savedAdmin);
-          if (parsed && (parsed.role === 'admin' || parsed.email === 'admin@gmail.com')) {
+          const parsed = JSON.parse(savedUser);
+          if (parsed && parsed.uid && parsed.role !== 'admin') {
             return parsed;
           }
         } catch (e) {}
@@ -99,6 +99,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     const unsubscribe = subscribeToAuth((authUser) => {
       console.log("AUTH EVENT: subscribeToAuth callback fired", { authUser });
+
+      // Lock: If an active admin session is in localStorage, do NOT allow a null or non-admin background event to destroy it
+      if (typeof window !== 'undefined') {
+        const savedAdmin = localStorage.getItem('astitva_admin_session');
+        if (savedAdmin) {
+          try {
+            const parsedAdmin = JSON.parse(savedAdmin);
+            if (parsedAdmin && (parsedAdmin.role === 'admin' || parsedAdmin.email === 'admin@gmail.com')) {
+              if (!authUser || (authUser.role !== 'admin' && authUser.email !== 'admin@gmail.com')) {
+                console.log("[AuthProvider] Retaining active admin session from localStorage");
+                setUser(parsedAdmin);
+                setLoading(false);
+                setAuthInitialized(true);
+                return;
+              }
+            }
+          } catch (e) {}
+        }
+      }
+
       setUser(authUser);
       if (authUser && typeof window !== 'undefined') {
         if (authUser.role === 'admin' || authUser.email === 'admin@gmail.com') {

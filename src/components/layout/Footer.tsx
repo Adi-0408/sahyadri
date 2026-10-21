@@ -1,17 +1,20 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, Phone, MapPin } from 'lucide-react';
+import { Mail, Phone, MapPin, Shield, Download, ExternalLink } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.spark.sahyadrilanddeveloper";
+
 export const Footer: React.FC = () => {
-  const { t } = useTranslation();
+  const { i18n } = useTranslation();
+  const isMr = Boolean(i18n.language?.startsWith('mr'));
 
   return (
-    <footer className="bg-slate-950 text-slate-300 border-t border-slate-900 py-6 sm:py-16 px-4 sm:px-6 md:px-12 transition-all">
-      <div className="max-w-7xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-10">
+    <footer className="bg-slate-950 text-slate-300 border-t border-slate-900 py-12 px-4 sm:px-6 md:px-12 transition-all">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-10">
 
         {/* Branding Column */}
-        <div className="flex flex-col gap-4 text-left col-span-2 lg:col-span-1">
+        <div className="flex flex-col gap-4 text-left">
           <Link to="/" className="flex items-center gap-3 select-none">
             <img
               src="/sahyadri-logo.png"
@@ -22,71 +25,91 @@ export const Footer: React.FC = () => {
               Sahyadri Land Developer
             </span>
           </Link>
-          <p className="text-sm text-slate-400 leading-relaxed max-w-xs">
-            {t('footer.about')}
+          <p className="text-sm text-slate-400 leading-relaxed max-w-sm">
+            {isMr
+              ? 'पश्चिम महाराष्ट्रातील विश्वासार्ह जमीन विकासक. १००% निर्वेध ७/१२, कलेक्टर व रेरा मंजूर एन.ए. प्लॉट्स, फार्महाऊस आणि कमर्शियल प्रकल्पांची खात्रीशीर उपलब्धता.'
+              : 'Maharashtra’s trusted land development partner. Specializing in verified 7/12 RERA Collector NA plots, fertile agro-parcels, and turnkey infrastructure.'}
           </p>
-          <div className="flex gap-4 mt-2">
-            <a href="https://instagram.com" aria-label="Instagram" className="hover:text-white text-slate-400 transition-colors">
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
-                <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
-                <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
-              </svg>
-            </a>
-            <a href="https://facebook.com" aria-label="Facebook" className="hover:text-white text-slate-400 transition-colors">
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
-              </svg>
-            </a>
-            <a href="https://twitter.com" aria-label="Twitter" className="hover:text-white text-slate-400 transition-colors">
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path>
-              </svg>
+
+          <div className="pt-1">
+            <a
+              href={PLAY_STORE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-850 border border-slate-800 text-emerald-400 text-xs font-bold transition-all hover:border-emerald-500/40"
+            >
+              <Download className="w-4 h-4 shrink-0" />
+              <span>{isMr ? 'गुगल प्ले वरून ॲप मिळवा' : 'Download Android App'}</span>
+              <ExternalLink className="w-3 h-3 text-slate-500 shrink-0" />
             </a>
           </div>
         </div>
 
         {/* Quick Links */}
-        <div className="flex flex-col gap-3 text-left col-span-1">
-          <h4 className="text-xs uppercase tracking-widest text-white font-bold mb-1">{t('footer.navigation')}</h4>
-          <Link to="/" className="text-sm hover:text-white transition-colors">{t('footer.home')}</Link>
-          <Link to="/projects" className="text-sm hover:text-white transition-colors">{t('footer.projects')}</Link>
+        <div className="flex flex-col gap-3 text-left">
+          <h4 className="text-xs uppercase tracking-widest text-[#b81414] font-bold mb-1">
+            {isMr ? 'प्रकल्प विभाग' : 'Project Sections'}
+          </h4>
+          <a href="/#overview" className="text-sm hover:text-white transition-colors">{isMr ? 'प्रकल्प विहंगावलोकन' : 'Project Overview'}</a>
+          <a href="/#developments" className="text-sm hover:text-white transition-colors">{isMr ? 'प्लॉट्स व सेवा' : 'Our Developments'}</a>
+          <a href="/#amenities" className="text-sm hover:text-white transition-colors">{isMr ? 'पायाभूत सुविधा' : 'Amenities'}</a>
+          <a href="/#app" className="text-sm hover:text-white transition-colors">{isMr ? 'मोबाईल ॲप' : 'Official Android App'}</a>
+          <a href="/#process" className="text-sm hover:text-white transition-colors">{isMr ? '४ पायऱ्यांची पद्धत' : '4-Step Process'}</a>
+          <a href="/#faq" className="text-sm hover:text-white transition-colors">{isMr ? 'नेहमीचे प्रश्न' : 'FAQ'}</a>
+          <a href="/#contact" className="text-sm hover:text-white transition-colors">{isMr ? 'थेट संपर्क' : 'Contact Advisory'}</a>
         </div>
 
-        {/* Company Info */}
-        <div className="flex flex-col gap-3 text-left col-span-1">
-          <h4 className="text-xs uppercase tracking-widest text-white font-bold mb-1">{t('footer.company')}</h4>
-          <Link to="/contact" className="text-sm hover:text-white transition-colors">{t('footer.getInTouch')}</Link>
-          <Link to="/post-property" className="text-sm hover:text-white transition-colors">{t('footer.submitProperty')}</Link>
+        {/* Trust & Transparency */}
+        <div className="flex flex-col gap-3 text-left">
+          <h4 className="text-xs uppercase tracking-widest text-emerald-400 font-bold mb-1">
+            {isMr ? 'कायदेशीर पारदर्शकता' : 'Legal Transparency'}
+          </h4>
+          <div className="text-sm text-slate-400 space-y-2">
+            <p>✓ {isMr ? '३० वर्षांचा सर्च रिपोर्ट' : '30-Year Title Search Reports'}</p>
+            <p>✓ {isMr ? 'कलेक्टर व रेरा संमत लेआऊट' : 'Collector & RERA Sanctioned'}</p>
+            <p>✓ {isMr ? 'थेट डेव्हलपरकडून व्यवहार' : 'Zero Middleman Commission'}</p>
+            <p>✓ {isMr ? 'स्वतंत्र ७/१२ पी.आर. कार्ड' : 'Individual 7/12 & PR Cards'}</p>
+          </div>
         </div>
 
         {/* Contact Details */}
-        <div className="flex flex-col gap-3 text-left col-span-2 lg:col-span-1">
-          <h4 className="text-xs uppercase tracking-widest text-white font-bold mb-1">{t('footer.contactUs')}</h4>
+        <div className="flex flex-col gap-3 text-left">
+          <h4 className="text-xs uppercase tracking-widest text-emerald-400 font-bold mb-1">
+            {isMr ? 'कार्यालय संपर्क' : 'Project Office'}
+          </h4>
           <div className="flex items-center gap-2.5 text-sm">
-            <Mail className="w-4 h-4 text-primary" />
-            <span>contact@astitvarealestate.com</span>
+            <Mail className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span className="truncate">contact@astitvarealestate.com</span>
           </div>
           <div className="flex items-start gap-2.5 text-sm">
-            <Phone className="w-4 h-4 text-primary mt-1" />
+            <Phone className="w-4 h-4 text-emerald-400 mt-1 shrink-0" />
             <div className="flex flex-col">
-              <span>8328-712-712</span>
-              <span>778899-3-712</span>
+              <a href="tel:8328712712" className="hover:text-emerald-400 transition-colors">8328-712-712</a>
+              <a href="tel:7788993712" className="hover:text-emerald-400 transition-colors">778899-3-712</a>
             </div>
           </div>
           <div className="flex items-start gap-2.5 text-sm leading-relaxed">
-            <MapPin className="w-4 h-4 text-primary mt-0.5" />
-            <span>{t('footer.addressLine1')}<br />{t('footer.addressLine2')}<br />{t('footer.addressLine3')}</span>
+            <MapPin className="w-4 h-4 text-emerald-400 mt-1 shrink-0" />
+            <span>Sahyadri Land Developer, Satara / Karad Belt, Maharashtra, India.</span>
           </div>
         </div>
 
       </div>
 
-      <div className="max-w-7xl mx-auto border-t border-slate-800 mt-6 pt-6 sm:mt-12 sm:pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500">
-        <p>{t('footer.rights')}</p>
-        <div className="flex flex-wrap items-center gap-6">
-          <a href="#" className="hover:text-white transition-colors">{t('footer.privacyPolicy')}</a>
-          <a href="#" className="hover:text-white transition-colors">{t('footer.termsOfService')}</a>
+      {/* Bottom Bar with Admin Access Trigger */}
+      <div className="max-w-7xl mx-auto border-t border-slate-900 mt-10 pt-6 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-slate-500">
+        <p>© {new Date().getFullYear()} Sahyadri Land Developer. All Rights Reserved.</p>
+        
+        <div className="flex items-center gap-6">
+          {/* Admin Panel Direct Link (navigates directly to /admin/login page) */}
+          <Link
+            to="/admin/login"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-emerald-500/40 text-slate-400 hover:text-emerald-400 transition-all cursor-pointer select-none"
+            title="Administrator Login"
+          >
+            <Shield className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="font-semibold">{isMr ? 'ॲडमिन प्रवेश' : 'Admin Access'}</span>
+          </Link>
         </div>
       </div>
     </footer>

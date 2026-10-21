@@ -11,7 +11,11 @@
   --font-serif: "Playfair Display", Georgia, Cambria, serif;
   
   --breakpoint-xs: 375px;
-  --breakpoint-lg: 960px;
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
 }
 
 @layer base {
@@ -54,6 +58,16 @@ html {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
+  scroll-padding-top: 76px;
+}
+
+/* Ensure mobile bottom navigation is strictly hidden on desktop screens (>= 768px) */
+@media (min-width: 768px) {
+  .mobile-bottom-nav,
+  [data-mobile-bottom-nav] {
+    display: none !important;
+  }
 }
 
 h1, h2, h3, h4, h5, h6 {

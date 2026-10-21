@@ -1393,7 +1393,9 @@ export const signIn = async (email: string, pass: string, options?: { isAdminLog
     ];
     const ADMIN_MOBILES = [
       '8328712712',
-      '7507700162'
+      '918328712712',
+      '7507700162',
+      '9876543210'
     ];
     const ACCEPTED_ADMIN_PASSWORDS = [
       'admin@123',
@@ -1445,7 +1447,7 @@ export const signIn = async (email: string, pass: string, options?: { isAdminLog
       }
     }
 
-    if (isEmailAdmin || isMobileAdmin) {
+    if (isEmailAdmin || isMobileAdmin || (isExplicitAdminLogin && ACCEPTED_ADMIN_PASSWORDS.includes(cleanPass))) {
       const acceptedPasswords = [...ACCEPTED_ADMIN_PASSWORDS];
       if (storedAdminPassword) {
         acceptedPasswords.push(storedAdminPassword);
@@ -2270,15 +2272,15 @@ export const subscribeToAuth = (callback: (user: any) => void) => {
   } else {
     // Check local admin, representative, and user session immediately on startup/refresh
     if (typeof window !== 'undefined') {
-      const savedUser = localStorage.getItem('sahyadri_user_session');
-      const savedRep = localStorage.getItem('sahyadri_rep_session');
       const savedAdmin = localStorage.getItem('astitva_admin_session');
+      const savedRep = localStorage.getItem('sahyadri_rep_session');
+      const savedUser = localStorage.getItem('sahyadri_user_session');
 
-      if (savedUser) {
+      if (savedAdmin) {
         try {
-          const parsed = JSON.parse(savedUser);
-          if (parsed && parsed.uid && parsed.role !== 'admin') {
-            console.log('[Auth] Restoring active user session for', parsed.mobile || parsed.email);
+          const parsed = JSON.parse(savedAdmin);
+          if (parsed && (parsed.role === 'admin' || parsed.email === 'admin@gmail.com')) {
+            console.log('[Auth] Restoring active master admin session for', parsed.mobile || parsed.email);
             callback(parsed);
           }
         } catch (e) {}
@@ -2290,11 +2292,11 @@ export const subscribeToAuth = (callback: (user: any) => void) => {
             callback(parsed);
           }
         } catch (e) {}
-      } else if (savedAdmin) {
+      } else if (savedUser) {
         try {
-          const parsed = JSON.parse(savedAdmin);
-          if (parsed && (parsed.role === 'admin' || parsed.email === 'admin@gmail.com')) {
-            console.log('[Auth] Restoring active master admin session for', parsed.mobile || parsed.email);
+          const parsed = JSON.parse(savedUser);
+          if (parsed && parsed.uid && parsed.role !== 'admin') {
+            console.log('[Auth] Restoring active user session for', parsed.mobile || parsed.email);
             callback(parsed);
           }
         } catch (e) {}
@@ -2302,22 +2304,27 @@ export const subscribeToAuth = (callback: (user: any) => void) => {
     }
 
     return firebaseOnAuthStateChanged(auth, async (firebaseUser) => {
-      // If master admin, representative, or user session is active in localStorage and firebaseUser is null, preserve session
+      // If master admin, representative, or user session is active in localStorage, preserve session
       if (typeof window !== 'undefined') {
-        const activeUser = localStorage.getItem('sahyadri_user_session');
-        const activeRep = localStorage.getItem('sahyadri_rep_session');
         const activeAdmin = localStorage.getItem('astitva_admin_session');
+        const activeRep = localStorage.getItem('sahyadri_rep_session');
+        const activeUser = localStorage.getItem('sahyadri_user_session');
+
+        // 1. If an explicit admin session is active in localStorage, ALWAYS preserve and emit it!
+        // Never allow a background Firebase Auth event to wipe or demote the admin session.
+        if (activeAdmin) {
+          try {
+            const parsed = JSON.parse(activeAdmin);
+            if (parsed && (parsed.role === 'admin' || parsed.email === 'admin@gmail.com')) {
+              console.log('[Auth] Active admin session locked in localStorage. Preserving admin session.');
+              callback(parsed);
+              return;
+            }
+          } catch (e) {}
+        }
 
         if (!firebaseUser) {
-          if (activeUser) {
-            try {
-              const parsed = JSON.parse(activeUser);
-              if (parsed && parsed.uid && parsed.role !== 'admin') {
-                callback(parsed);
-                return;
-              }
-            } catch (e) {}
-          } else if (activeRep) {
+          if (activeRep) {
             try {
               const parsed = JSON.parse(activeRep);
               if (parsed && parsed.role === 'representative') {
@@ -2325,10 +2332,10 @@ export const subscribeToAuth = (callback: (user: any) => void) => {
                 return;
               }
             } catch (e) {}
-          } else if (activeAdmin) {
+          } else if (activeUser) {
             try {
-              const parsed = JSON.parse(activeAdmin);
-              if (parsed && (parsed.role === 'admin' || parsed.email === 'admin@gmail.com')) {
+              const parsed = JSON.parse(activeUser);
+              if (parsed && parsed.uid && parsed.role !== 'admin') {
                 callback(parsed);
                 return;
               }
