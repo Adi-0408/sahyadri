@@ -5,6 +5,12 @@ import { useAuth } from '../providers/AuthProvider';
 export const ProtectedAdminRoute: React.FC = () => {
   const { user, loading, isAdmin, authInitialized } = useAuth();
 
+  // If the admin was logging out, redirect directly to the public landing page '/'
+  if (typeof window !== 'undefined' && sessionStorage.getItem('admin_logging_out') === 'true') {
+    sessionStorage.removeItem('admin_logging_out');
+    return <Navigate to="/" replace />;
+  }
+
   // Instant authorization check for master admin or representative session from localStorage
   const hasLocalAdmin = typeof window !== 'undefined' && (() => {
     try {

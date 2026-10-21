@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import {
-  ShieldCheck,
   CheckCircle2,
   MapPin,
   Phone,
@@ -158,17 +157,6 @@ export const Home: React.FC = () => {
               alt="Sahyadri Land Developer"
               className="h-36 sm:h-52 md:h-64 lg:h-72 w-auto object-contain drop-shadow-2xl"
             />
-          </motion.div>
-
-          {/* Verification Badge */}
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="mt-4 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900/85 border border-white/20 text-white text-xs sm:text-sm font-semibold backdrop-blur-md shadow-xl"
-          >
-            <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>{isMr ? '१००% निर्वेध ७/१२ • रेरा व कलेक्टर संमत लेआऊट्स' : '100% CLEAR TITLE • RERA & COLLECTOR APPROVED'}</span>
           </motion.div>
 
           {/* Action CTAs Over Video */}

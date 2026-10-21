@@ -285,6 +285,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
     setLoading(true);
     try {
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('admin_logging_out', 'true');
+      }
       localStorage.removeItem('sahyadri_user_session');
       localStorage.removeItem('sahyadri_rep_session');
       localStorage.removeItem('astitva_admin_session');

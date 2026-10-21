@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../app/providers/AuthProvider';
 import { LogOut, Search, Menu } from 'lucide-react';
@@ -12,6 +13,15 @@ interface AdminHeaderProps {
 export const AdminHeader: React.FC<AdminHeaderProps> = ({ onMobileMenuToggle }) => {
   const { logout, user } = useAuth();
   const { t } = useTranslation();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } finally {
+      navigate('/', { replace: true });
+    }
+  };
 
   return (
     <header className="fixed top-0 right-0 z-40 bg-white/70 backdrop-blur-md border-b border-slate-200/60 flex justify-between items-center w-full md:pl-[280px] px-4 sm:px-6 md:px-8 h-16 sm:h-20 shadow-sm">
@@ -51,7 +61,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onMobileMenuToggle }) 
             <p className="text-[9px] uppercase tracking-widest text-slate-400">{user?.role === 'admin' ? 'Admin' : 'Employee'}</p>
           </div>
           <button
-            onClick={() => logout()}
+            onClick={handleLogout}
             className="p-2 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full cursor-pointer transition-all"
             title={t('admin.logout')}
           >
