@@ -2046,7 +2046,7 @@ export const approveRoleInquiry = async (
             images:
               prop.images && prop.images.length > 0
                 ? prop.images
-                : ['https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80'],
+                : [],
 
             // Settings & Visibility
             showPrice: true,
@@ -2149,7 +2149,7 @@ export const approveRoleInquiry = async (
           images:
             prop.images && prop.images.length > 0
               ? prop.images
-              : ['https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80'],
+              : [],
           showPrice: true,
           showAddress: true,
           showOwnerName: true,

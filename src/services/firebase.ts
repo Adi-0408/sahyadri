@@ -736,10 +736,16 @@ export const normalizeProperty = (doc: any) => {
   // 2. Clean and filter images array
   let imgs = doc.images;
   if (Array.isArray(imgs)) {
-    imgs = imgs.filter((img: any) => typeof img === 'string' && img.trim() !== '');
-  }
-  if (!Array.isArray(imgs) || imgs.length === 0) {
-    imgs = ['https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80'];
+    imgs = imgs.filter(
+      (img: any) =>
+        typeof img === 'string' &&
+        img.trim() !== '' &&
+        !img.includes('photo-1564013799919-ab600027ffc6') &&
+        !img.includes('photo-1600585154340-be6161a56a0c') &&
+        !img.includes('photo-1545324418-cc1a3fa10c00')
+    );
+  } else {
+    imgs = [];
   }
   doc.images = imgs;
 
