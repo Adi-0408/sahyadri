@@ -24,7 +24,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onMobileMenuToggle }) 
   };
 
   return (
-    <header className="fixed top-0 right-0 z-40 bg-white/70 backdrop-blur-md border-b border-slate-200/60 flex justify-between items-center w-full md:pl-[280px] px-4 sm:px-6 md:px-8 h-16 sm:h-20 shadow-sm">
+    <header className="fixed top-0 right-0 z-40 bg-white/70 backdrop-blur-md border-b border-slate-200/60 flex justify-between items-center w-full md:pl-[300px] xl:pl-[325px] 2xl:pl-[340px] px-4 sm:px-6 md:px-8 h-16 sm:h-20 shadow-sm transition-all duration-150">
       <div className="flex items-center gap-4">
         <button
           onClick={onMobileMenuToggle}

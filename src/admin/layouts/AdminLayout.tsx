@@ -18,7 +18,7 @@ export const AdminLayout: React.FC = () => {
       />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col md:pl-[280px] w-full overflow-x-hidden">
+      <div className="flex-1 flex flex-col md:pl-[300px] xl:pl-[325px] 2xl:pl-[340px] w-full overflow-x-hidden transition-all duration-150">
         {/* Header */}
         <AdminHeader 
           onMobileMenuToggle={() => setIsMobileOpen(!isMobileOpen)} 
