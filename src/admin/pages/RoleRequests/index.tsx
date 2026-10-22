@@ -24,7 +24,8 @@ import {
   rejectRoleInquiry,
   deleteRoleInquiry,
   isGenericOrDummyName,
-  isRealMobileNumber
+  isRealMobileNumber,
+  syncApprovedRoleInquiriesWithProperties
 } from '../../../services/roleInquiry';
 import type { RoleInquiry } from '../../../services/roleInquiry';
 import { useAuth } from '../../../app/providers/AuthProvider';
@@ -75,6 +76,7 @@ export const RoleRequestsManager: React.FC = () => {
 
   useEffect(() => {
     setLoading(true);
+    syncApprovedRoleInquiriesWithProperties().catch(() => {});
     const unsub = subscribeToRoleInquiries((list) => {
       setInquiries(list);
       setLoading(false);
@@ -111,9 +113,9 @@ export const RoleRequestsManager: React.FC = () => {
         alert(
           isMr
             ? `वापरकर्ता ${inq.userName} आता "${inq.requestedRole}" बनला आहे!` +
-                (res.propertyCreated ? '\nत्यांचे पहिले घर/फ्लॅट ॲडमिन मंजुरीसाठी प्रलंबित मालमत्तांमध्ये पाठवले आहे.' : '')
+                (res.propertyCreated ? '\nत्यांची मालमत्ता थेट मंजूर करून वेबसाईटवर जोडली गेली आहे!' : '')
             : `User ${inq.userName} is now approved as "${inq.requestedRole}"!` +
-                (res.propertyCreated ? '\nTheir first property was submitted to Pending Properties for Admin approval.' : '')
+                (res.propertyCreated ? '\nTheir property has been approved and is now live on the website!' : '')
         );
         if (selectedInquiry?.id === inq.id) {
           setIsDetailOpen(false);

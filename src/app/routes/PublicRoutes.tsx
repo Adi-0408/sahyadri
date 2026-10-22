@@ -6,8 +6,14 @@ import { Footer } from '../../components/layout/Footer';
 import { MobileBottomNav } from '../../components/layout/MobileBottomNav';
 import { PageLoader } from '../../components/ui/PageLoader';
 
-// Landing Page
+// Landing Page & Public Catalogs
 const Home = lazy(() => import('../../public-pages/Home').then(module => ({ default: module.Home })));
+const Properties = lazy(() => import('../../public-pages/Properties').then(module => ({ default: module.Properties })));
+const Details = lazy(() => import('../../public-pages/Properties/Details').then(module => ({ default: module.Details })));
+const Projects = lazy(() => import('../../public-pages/Projects').then(module => ({ default: module.Projects })));
+const ProjectDetails = lazy(() => import('../../public-pages/Projects/ProjectDetails').then(module => ({ default: module.ProjectDetails })));
+const RoleInquiry = lazy(() => import('../../public-pages/RoleInquiry').then(module => ({ default: module.RoleInquiryPage })));
+const PostProperty = lazy(() => import('../../public-pages/Properties/PostProperty').then(module => ({ default: module.PostProperty })));
 
 const PublicLayout: React.FC = () => {
   const location = useLocation();
@@ -52,16 +58,20 @@ export const PublicRoutes: React.FC = () => {
         {/* Landing Page */}
         <Route path="/" element={<Home />} />
 
-        {/* All other public/role paths redirect cleanly to the Landing Page */}
+        {/* Public Catalogs & Details */}
+        <Route path="/properties" element={<Properties />} />
+        <Route path="/property/:id" element={<Details />} />
+        <Route path="/projects" element={<Projects />} />
+        <Route path="/project/:id" element={<ProjectDetails />} />
+        <Route path="/role-inquiry" element={<RoleInquiry />} />
+        <Route path="/post-property" element={<PostProperty />} />
+
+        {/* Redirects for legacy / protected paths */}
         <Route path="/login" element={<Navigate to="/" replace />} />
         <Route path="/register" element={<Navigate to="/" replace />} />
-        <Route path="/properties" element={<Navigate to="/" replace />} />
-        <Route path="/projects" element={<Navigate to="/" replace />} />
-        <Route path="/contact" element={<Navigate to="/" replace />} />
+        <Route path="/contact" element={<Navigate to="/#contact" replace />} />
         <Route path="/materials" element={<Navigate to="/" replace />} />
-        <Route path="/post-property" element={<Navigate to="/" replace />} />
         <Route path="/profile" element={<Navigate to="/" replace />} />
-        <Route path="/role-inquiry" element={<Navigate to="/" replace />} />
         <Route path="/seller/dashboard" element={<Navigate to="/" replace />} />
         <Route path="/buyer/dashboard" element={<Navigate to="/" replace />} />
         <Route path="/builder/dashboard" element={<Navigate to="/" replace />} />

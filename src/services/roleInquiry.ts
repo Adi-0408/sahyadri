@@ -329,9 +329,9 @@ export const submitRoleInquiry = async (
           alternateMobile: inquiryData.sellerDetails.alternateMobile || '',
           category: prop.category || 'House',
           type: prop.type || 'sale',
-          status: 'pending',
-          adminApproved: false,
-          isActive: false,
+          status: 'approved',
+          adminApproved: true,
+          isActive: true,
           title: prop.title || prop.propertyName || `${prop.category} in ${prop.cityVillage || 'Sangli'}`,
           propertyName: prop.propertyName || prop.title,
           description: prop.description || `${prop.category} listed by applicant ${normName}`,
@@ -2028,121 +2028,155 @@ export const approveRoleInquiry = async (
         }
       }
 
-      if (prop) {
-        // Check if property is already created in 'properties'
-        let existingProp: any = null;
-        try {
-          const props = await fetchCollection('properties');
-          existingProp = props.find((p: any) =>
-            (p.roleInquiryId && p.roleInquiryId === inquiry.id) ||
-            (p.source === 'seller_inquiry_onboarding' &&
-              ((userId && (p.userId === userId || p.ownerId === userId)) ||
-               (cleanMobile && (p.mobileNumber || p.phone || p.ownerPhone || '').replace(/[^0-9]/g, '').slice(-10) === cleanMobile)))
-          );
-        } catch {}
+      // Fallback lookup if inquiry document itself holds property data directly
+      if (!prop && ((inquiry as any).propertyType || (inquiry as any).propertyName || (inquiry as any).askingPrice)) {
+        const rawP = inquiry as any;
+        prop = {
+          category: (rawP.propertyType?.includes('Plots') || rawP.propertyType?.includes('जमीन'))
+            ? 'Land'
+            : (rawP.propertyType?.includes('Bungalow') || rawP.propertyType?.includes('बंगला'))
+            ? 'Bungalow'
+            : (rawP.propertyType?.includes('Flats') || rawP.propertyType?.includes('फ्लॅट'))
+            ? 'Flat'
+            : 'House',
+          type: 'sale',
+          title: rawP.propertyType ? `${rawP.propertyType} in ${rawP.city || rawP.district || 'Sangli'}` : (rawP.propertyName || `Property of ${inquiry.userName}`),
+          propertyName: rawP.propertyName || rawP.propertyType || 'Property for Sale',
+          expectedPrice: Number(rawP.askingPrice || rawP.expectedPrice || rawP.price || 0),
+          district: rawP.district || 'Sangli',
+          taluka: rawP.taluka || '',
+          cityVillage: rawP.city || rawP.cityVillage || '',
+          description: rawP.additionalDetails || rawP.description || '',
+          images: []
+        };
+      }
 
-        if (existingProp && existingProp.id) {
-          createdPropertyDoc = existingProp;
-          console.log('Onboarding property already exists in properties collection:', existingProp.id);
-        } else {
-          const targetPropId = `prop-seller-${cleanMobile || userId || Date.now()}-${Date.now().toString().slice(-4)}`;
-          const newPropertyDoc: any = {
-            id: targetPropId,
-            userId: userId || cleanMobile,
-            ownerName: inquiry.userName,
-            mobileNumber: inquiry.userMobile,
-            ownerPhone: inquiry.userMobile,
-            phone: inquiry.userMobile,
-            cleanMobile: cleanMobile,
-            email: inquiry.userEmail,
-            alternateMobile: sellerAltMobile,
-            category: prop.category || 'House',
-            type: prop.type || 'sale',
-            status: 'pending',
-            adminApproved: false,
-            isActive: false,
-            propertyName: prop.propertyName || prop.title,
-            title: prop.title || prop.propertyName || `${prop.category || 'Property'} in ${prop.cityVillage || prop.taluka || 'Sangli'}`,
-            titleMr: prop.titleMr || prop.title || prop.propertyName,
-            description: prop.description || `${prop.category} listed by verified seller ${inquiry.userName}`,
-            descriptionMr: prop.descriptionMr || prop.description || '',
+      // Check for existing matching properties and activate them directly
+      let matchingProps: any[] = [];
+      try {
+        const props = await fetchCollection('properties');
+        matchingProps = props.filter((p: any) =>
+          (p.roleInquiryId && p.roleInquiryId === inquiry.id) ||
+          (p.source === 'seller_inquiry_onboarding' &&
+            ((userId && (p.userId === userId || p.ownerId === userId)) ||
+             (cleanMobile && (p.mobileNumber || p.phone || p.ownerPhone || '').replace(/[^0-9]/g, '').slice(-10) === cleanMobile))) ||
+          (cleanMobile && (p.mobileNumber || p.phone || p.ownerPhone || '').replace(/[^0-9]/g, '').slice(-10) === cleanMobile)
+        );
 
-            // Pricing
-            expectedPrice: prop.expectedPrice || (prop.type === 'sale' ? (prop.price || 0) : undefined),
-            price: prop.expectedPrice || prop.monthlyRent || prop.price || 0,
-            monthlyRent: prop.monthlyRent || (prop.type === 'rent' ? (prop.price || 0) : undefined),
-            isNegotiable: prop.isNegotiable ?? true,
-
-            // Location
-            state: 'Maharashtra',
-            district: prop.district || inquiry.sellerDetails?.district || 'Sangli',
-            taluka: prop.taluka || inquiry.sellerDetails?.taluka || 'Miraj',
-            cityVillage: prop.cityVillage || inquiry.sellerDetails?.cityVillage || '',
-            fullAddress: prop.fullAddress || '',
-            location: `${prop.cityVillage ? prop.cityVillage + ', ' : ''}${prop.taluka || 'Miraj'}, ${prop.district || 'Sangli'}`,
-            locationMr: `${prop.cityVillage ? prop.cityVillage + ', ' : ''}${prop.taluka || 'Miraj'}, ${prop.district || 'Sangli'}`,
-            landmark: prop.landmark || '',
-
-            // Layout
-            areaType: prop.areaType || 'sqft',
-            builtUpArea: Number(prop.builtUpArea || 0),
-            carpetArea: Number(prop.carpetArea || 0),
-            flatType: prop.flatType || (prop.bedrooms ? `${prop.bedrooms}BHK` : '2BHK'),
-            bedrooms: Number(prop.bedrooms || 0),
-            bathrooms: Number(prop.bathrooms || 0),
-            balconies: Number(prop.balconies || 0),
-            totalFloors: Number(prop.totalFloors || 0),
-            floorNumber: Number(prop.floorNumber || 0),
-            floorNo: prop.floorNo || '',
-            furnishingStatus: prop.furnishingStatus || 'Unfurnished',
-            facingDirection: prop.facingDirection || 'East',
-
-            // Facilities
-            carParking: prop.carParking ?? false,
-            waterSupply: prop.waterSupply ?? true,
-            powerBackup: prop.powerBackup ?? false,
-            hasLoan: prop.hasLoan ?? false,
-
-            // Plot specific
-            plotAreaSqFt: Number(prop.plotAreaSqFt || 0),
-            plotAreaGuntha: Number(prop.plotAreaGuntha || 0),
-            plotDimensions: prop.plotDimensions || '',
-            roadWidth: prop.roadWidth || '',
-            plotSanctionType: prop.plotSanctionType || '',
-            boundaryWall: prop.boundaryWall || '',
-
-            // Land specific
-            landArea: prop.landArea || '',
-            landType: prop.landType || '',
-            waterSource: prop.waterSource || '',
-            roadAccess: prop.roadAccess || '',
-            electricity: prop.electricity || '',
-            titleClear: prop.titleClear || '',
-
-            // Media
-            images:
-              prop.images && prop.images.length > 0
-                ? prop.images
-                : [],
-
-            // Settings & Visibility
-            showPrice: true,
-            showAddress: true,
-            showOwnerName: true,
-            showOwnerContact: true,
-            showImages: true,
-
-            createdAt: now,
-            source: 'seller_inquiry_onboarding',
-            roleInquiryId: inquiry.id
-          };
-
-          try {
-            createdPropertyDoc = await createDocument('properties', newPropertyDoc);
-            console.log('Successfully created onboarding property in properties collection:', createdPropertyDoc);
-          } catch (err) {
-            console.error('Could not auto-create seller first property in properties:', err);
+        for (const ep of matchingProps) {
+          if (ep.id) {
+            const propApprovalPayload: any = {
+              status: 'approved',
+              adminApproved: true,
+              isActive: true,
+              reviewedAt: now,
+              reviewedBy: reviewer
+            };
+            await updateDocument('properties', ep.id, propApprovalPayload);
+            createdPropertyDoc = { ...ep, ...propApprovalPayload };
+            console.log('Successfully activated existing property on role approval:', ep.id);
           }
+        }
+      } catch (checkErr) {
+        console.warn('Error checking existing properties for approved seller:', checkErr);
+      }
+
+      // If no property currently exists in properties collection, but details were provided, create directly as APPROVED
+      if (!createdPropertyDoc && prop) {
+        const targetPropId = `prop-seller-${cleanMobile || userId || Date.now()}-${Date.now().toString().slice(-4)}`;
+        const newPropertyDoc: any = {
+          id: targetPropId,
+          userId: userId || cleanMobile,
+          ownerName: inquiry.userName,
+          mobileNumber: inquiry.userMobile,
+          ownerPhone: inquiry.userMobile,
+          phone: inquiry.userMobile,
+          cleanMobile: cleanMobile,
+          email: inquiry.userEmail,
+          alternateMobile: sellerAltMobile,
+          category: prop.category || 'House',
+          type: prop.type || 'sale',
+          status: 'approved',
+          adminApproved: true,
+          isActive: true,
+          propertyName: prop.propertyName || prop.title,
+          title: prop.title || prop.propertyName || `${prop.category || 'Property'} in ${prop.cityVillage || prop.taluka || 'Sangli'}`,
+          titleMr: prop.titleMr || prop.title || prop.propertyName,
+          description: prop.description || `${prop.category} listed by verified seller ${inquiry.userName}`,
+          descriptionMr: prop.descriptionMr || prop.description || '',
+
+          // Pricing
+          expectedPrice: Number(prop.expectedPrice || (prop.type === 'sale' ? (prop.price || 0) : 0)),
+          price: Number(prop.expectedPrice || prop.monthlyRent || prop.price || 0),
+          monthlyRent: Number(prop.monthlyRent || (prop.type === 'rent' ? (prop.price || 0) : 0)),
+          isNegotiable: Boolean(prop.isNegotiable ?? true),
+
+          // Location
+          state: 'Maharashtra',
+          district: prop.district || inquiry.sellerDetails?.district || 'Sangli',
+          taluka: prop.taluka || inquiry.sellerDetails?.taluka || 'Miraj',
+          cityVillage: prop.cityVillage || inquiry.sellerDetails?.cityVillage || '',
+          fullAddress: prop.fullAddress || '',
+          location: `${prop.cityVillage ? prop.cityVillage + ', ' : ''}${prop.taluka || 'Miraj'}, ${prop.district || 'Sangli'}`,
+          locationMr: `${prop.cityVillage ? prop.cityVillage + ', ' : ''}${prop.taluka || 'Miraj'}, ${prop.district || 'Sangli'}`,
+          landmark: prop.landmark || '',
+
+          // Layout
+          areaType: prop.areaType || 'sqft',
+          builtUpArea: Number(prop.builtUpArea || 0),
+          carpetArea: Number(prop.carpetArea || 0),
+          flatType: prop.flatType || (prop.bedrooms ? `${prop.bedrooms}BHK` : '2BHK'),
+          bedrooms: Number(prop.bedrooms || 0),
+          bathrooms: Number(prop.bathrooms || 0),
+          balconies: Number(prop.balconies || 0),
+          totalFloors: Number(prop.totalFloors || 0),
+          floorNumber: Number(prop.floorNumber || 0),
+          floorNo: prop.floorNo || '',
+          furnishingStatus: prop.furnishingStatus || 'Unfurnished',
+          facingDirection: prop.facingDirection || 'East',
+
+          // Facilities
+          carParking: Boolean(prop.carParking ?? false),
+          waterSupply: Boolean(prop.waterSupply ?? true),
+          powerBackup: Boolean(prop.powerBackup ?? false),
+          hasLoan: Boolean(prop.hasLoan ?? false),
+
+          // Plot specific
+          plotAreaSqFt: Number(prop.plotAreaSqFt || 0),
+          plotAreaGuntha: Number(prop.plotAreaGuntha || 0),
+          plotDimensions: prop.plotDimensions || '',
+          roadWidth: prop.roadWidth || '',
+          plotSanctionType: prop.plotSanctionType || '',
+          boundaryWall: prop.boundaryWall || '',
+
+          // Land specific
+          landArea: prop.landArea || '',
+          landType: prop.landType || '',
+          waterSource: prop.waterSource || '',
+          roadAccess: prop.roadAccess || '',
+          electricity: prop.electricity || '',
+          titleClear: prop.titleClear || '',
+
+          // Media
+          images: prop.images && prop.images.length > 0 ? prop.images : [],
+
+          // Settings & Visibility
+          showPrice: true,
+          showAddress: true,
+          showOwnerName: true,
+          showOwnerContact: true,
+          showImages: true,
+
+          createdAt: now,
+          source: 'seller_inquiry_onboarding',
+          roleInquiryId: inquiry.id
+        };
+
+        try {
+          createdPropertyDoc = await createDocument('properties', newPropertyDoc);
+          console.log('Successfully created onboarding property directly as APPROVED in properties collection:', createdPropertyDoc);
+        } catch (err) {
+          console.error('Could not auto-create seller first property in properties:', err);
         }
       }
     }
@@ -2192,9 +2226,9 @@ export const approveRoleInquiry = async (
           alternateMobile: '',
           category: prop.category || 'Flat',
           type: prop.type || 'sale',
-          status: 'pending',
-          adminApproved: false,
-          isActive: false,
+          status: 'approved',
+          adminApproved: true,
+          isActive: true,
           isBuilderProject: true,
           companyName: inquiry.builderDetails.companyName,
           reraNumber: inquiry.builderDetails.reraNumber || '',
@@ -2672,4 +2706,63 @@ export const deleteRoleInquiry = async (
 
   return true;
 };
+
+/**
+ * Auto-Reconciliation: Scans approved role inquiries and activates any associated
+ * properties that are currently pending in Firestore, ensuring newly accepted requests
+ * immediately appear on the website and in admin approved listings.
+ */
+export const syncApprovedRoleInquiriesWithProperties = async (): Promise<number> => {
+  let syncedCount = 0;
+  try {
+    const [inquiries, properties] = await Promise.all([
+      fetchCollection('role_inquiries'),
+      fetchCollection('properties')
+    ]);
+
+    const approvedInquiries = inquiries.filter((i: any) =>
+      i &&
+      (i.status === 'approved' || i.status === 'accepted') &&
+      (i.requestedRole === 'seller' || i.requestedRole === 'builder' || extractInquiryRole(i) === 'seller')
+    );
+
+    for (const inq of approvedInquiries) {
+      const cleanMob = (inq.userMobile || inq.phone || inq.mobile || '').replace(/[^0-9]/g, '').slice(-10);
+      const uid = (inq.userId || inq.uid || '').trim();
+
+      const matchingPendingProps = properties.filter((p: any) =>
+        p &&
+        p.id &&
+        (p.status === 'pending' || p.adminApproved === false || p.isActive === false) &&
+        (
+          (inq.id && p.roleInquiryId === inq.id) ||
+          (cleanMob && (p.mobileNumber || p.phone || p.ownerPhone || '').replace(/[^0-9]/g, '').slice(-10) === cleanMob) ||
+          (uid && (p.userId === uid || p.ownerId === uid))
+        )
+      );
+
+      for (const prop of matchingPendingProps) {
+        if (prop.id) {
+          try {
+            await updateDocument('properties', prop.id, {
+              status: 'approved',
+              adminApproved: true,
+              isActive: true,
+              reviewedAt: new Date().toISOString(),
+              reviewedBy: 'Admin (System Sync)'
+            });
+            syncedCount++;
+            console.log(`[Auto-Sync] Activated pending property ${prop.id} for accepted inquiry ${inq.id}`);
+          } catch (syncErr) {
+            console.warn(`Could not sync property ${prop.id}:`, syncErr);
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('syncApprovedRoleInquiriesWithProperties error:', err);
+  }
+  return syncedCount;
+};
+
 

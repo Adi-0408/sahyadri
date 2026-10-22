@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { subscribeToCollection, updateDocument, deleteDocument, createDocument, fetchCollection, getCachedCollection } from '../../services/firebase';
+import { syncApprovedRoleInquiriesWithProperties } from '../../services/roleInquiry';
 import { useAuth } from '../../app/providers/AuthProvider';
 import { Card as UICard } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -666,6 +667,10 @@ export const PropertyManagerBase: React.FC<PropertyManagerBaseProps> = ({ filter
   const [addCategory, setAddCategory] = useState('Flat');
   const [addTransactionType, setAddTransactionType] = useState<'sale' | 'rent'>('sale');
 
+  useEffect(() => {
+    syncApprovedRoleInquiriesWithProperties().catch(() => {});
+  }, []);
+
   // Fetch properties from Firestore
   useEffect(() => {
     if (properties.length === 0) setLoading(true);
@@ -675,7 +680,7 @@ export const PropertyManagerBase: React.FC<PropertyManagerBaseProps> = ({ filter
         const t = (p.type || '').toLowerCase().trim();
         const f = (filterType || '').toLowerCase().trim();
         if (f === 'sale' || f === 'sell') {
-          return t === 'sale' || t === 'sell' || t === 'buy';
+          return t === 'sale' || t === 'sell' || t === 'buy' || !t;
         }
         if (f === 'rent') {
           return t === 'rent' || t === 'rental';
