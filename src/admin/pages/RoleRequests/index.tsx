@@ -233,6 +233,7 @@ export const RoleRequestsManager: React.FC = () => {
   const pendingCount = validInquiries.filter((i) => i.status === 'pending').length;
   const approvedCount = validInquiries.filter((i) => isItemApproved(i.status)).length;
   const sellerRequestsCount = validInquiries.filter((i) => i.requestedRole === 'seller').length;
+  const builderRequestsCount = validInquiries.filter((i) => i.requestedRole === 'builder').length;
 
   return (
     <div className="space-y-8 text-left">
@@ -245,8 +246,8 @@ export const RoleRequestsManager: React.FC = () => {
           </h1>
           <p className="text-xs sm:text-sm text-slate-500">
             {isMr
-              ? 'अतिथी व वापरकर्त्यांकडून आलेले विक्रेता (Seller), एजंट (Agent) व खरेदीदार (Buyer) अर्ज तपासा व मंजूर करा.'
-              : 'Review and approve role upgrade inquiries from guest users. Approving a seller automatically activates their 1st property!'}
+              ? 'अतिथी व वापरकर्त्यांकडून आलेले विक्रेता (Seller), बिल्डर (Builder), एजंट (Agent) व खरेदीदार (Buyer) अर्ज तपासा व मंजूर करा.'
+              : 'Review and approve role upgrade inquiries from applicants. Approving a seller or builder automatically activates their listings!'}
           </p>
         </div>
       </div>
@@ -270,18 +271,18 @@ export const RoleRequestsManager: React.FC = () => {
 
         <UICard className="p-5 bg-white border border-emerald-100 rounded-2xl shadow-sm">
           <div className="flex items-center justify-between text-xs font-bold text-emerald-700 uppercase tracking-wider mb-2">
-            <span>{isMr ? 'मंजूर विक्रेते / इतर' : 'Approved Requests'}</span>
+            <span>{isMr ? 'मंजूर विनंत्या' : 'Approved Requests'}</span>
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
           </div>
           <div className="text-3xl font-extrabold text-emerald-700">{approvedCount}</div>
         </UICard>
 
-        <UICard className="p-5 bg-white border border-blue-100 rounded-2xl shadow-sm">
-          <div className="flex items-center justify-between text-xs font-bold text-blue-700 uppercase tracking-wider mb-2">
-            <span>{isMr ? 'विक्रेता अर्ज' : 'Seller Requests'}</span>
-            <Home className="w-4 h-4 text-blue-600" />
+        <UICard className="p-5 bg-white border border-purple-100 rounded-2xl shadow-sm">
+          <div className="flex items-center justify-between text-xs font-bold text-purple-700 uppercase tracking-wider mb-2">
+            <span>{isMr ? 'बिल्डर व विक्रेता अर्ज' : 'Builder & Seller Requests'}</span>
+            <Building className="w-4 h-4 text-purple-600" />
           </div>
-          <div className="text-3xl font-extrabold text-blue-700">{sellerRequestsCount}</div>
+          <div className="text-3xl font-extrabold text-purple-700">{builderRequestsCount + sellerRequestsCount}</div>
         </UICard>
       </div>
 
@@ -352,7 +353,13 @@ export const RoleRequestsManager: React.FC = () => {
               filtered.map((item) => {
                 const isPending = item.status === 'pending';
                 const isApproved = isItemApproved(item.status);
-                const firstProp = item.sellerDetails?.firstProperty;
+                const firstProp = item.sellerDetails?.firstProperty ||
+                  item.builderDetails?.firstProject ||
+                  (item.builderDetails as any)?.firstProperty ||
+                  (item as any).firstProject ||
+                  (item as any).firstProperty ||
+                  (item as any).property;
+                const isBuilder = item.requestedRole === 'builder';
 
                 return (
                   <UICard
@@ -420,22 +427,27 @@ export const RoleRequestsManager: React.FC = () => {
                     </div>
 
                     {firstProp && (
-                      <div className="text-xs bg-amber-50/60 border border-amber-100 p-2.5 rounded-xl space-y-1.5">
+                      <div className={`text-xs p-2.5 rounded-xl space-y-1.5 border ${
+                        isBuilder ? 'bg-purple-50/60 border-purple-100' : 'bg-amber-50/60 border-amber-100'
+                      }`}>
                         <div className="flex items-center justify-between gap-2">
                           <span className="font-bold text-slate-900 truncate">
-                            🏠 {firstProp.title || firstProp.propertyName}
+                            {isBuilder ? '🏗️ ' : '🏠 '}
+                            {firstProp.title || firstProp.propertyName || (isBuilder ? 'Builder Project' : 'Property for Sale')}
                           </span>
                           <button
                             type="button"
                             onClick={() => setViewingProperty({ prop: firstProp, inquiry: item })}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary text-white text-[11px] font-bold hover:bg-primary/90 transition-all shrink-0 cursor-pointer shadow-xs"
+                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-white text-[11px] font-bold transition-all shrink-0 cursor-pointer shadow-xs ${
+                              isBuilder ? 'bg-purple-700 hover:bg-purple-800' : 'bg-primary hover:bg-primary/90'
+                            }`}
                           >
                             <Eye className="w-3 h-3" />
-                            <span>{isMr ? 'मालमत्ता पहा' : 'See Property'}</span>
+                            <span>{isMr ? (isBuilder ? 'प्रकल्प पहा' : 'मालमत्ता पहा') : (isBuilder ? 'See Project' : 'See Property')}</span>
                           </button>
                         </div>
                         <span className="text-[11px] text-slate-600 block">
-                          {firstProp.category} • ₹{Number(firstProp.expectedPrice || firstProp.monthlyRent || 0).toLocaleString('en-IN')}
+                          {firstProp.category || (isBuilder ? 'Flat/Project' : 'Property')} • ₹{Number(firstProp.expectedPrice || firstProp.startingPrice || firstProp.monthlyRent || 0).toLocaleString('en-IN')}
                         </span>
                       </div>
                     )}
@@ -518,7 +530,13 @@ export const RoleRequestsManager: React.FC = () => {
                     filtered.map((item) => {
                       const isPending = item.status === 'pending';
                       const isApproved = isItemApproved(item.status);
-                      const firstProp = item.sellerDetails?.firstProperty;
+                      const firstProp = item.sellerDetails?.firstProperty ||
+                        item.builderDetails?.firstProject ||
+                        (item.builderDetails as any)?.firstProperty ||
+                        (item as any).firstProject ||
+                        (item as any).firstProperty ||
+                        (item as any).property;
+                      const isBuilder = item.requestedRole === 'builder';
 
                       return (
                         <tr key={item.id} className="hover:bg-slate-50/70 transition-colors">
@@ -560,17 +578,22 @@ export const RoleRequestsManager: React.FC = () => {
                             {firstProp ? (
                               <div className="max-w-xs space-y-1">
                                 <span className="font-semibold text-slate-900 block truncate">
-                                  🏠 {firstProp.title || firstProp.propertyName}
+                                  {isBuilder ? '🏗️ ' : '🏠 '}
+                                  {firstProp.title || firstProp.propertyName || (isBuilder ? 'Builder Project' : 'Property for Sale')}
                                 </span>
                                 <div className="flex items-center justify-between gap-2">
                                   <span className="text-[11px] text-slate-500">
-                                    {firstProp.category} • ₹{Number(firstProp.expectedPrice || firstProp.monthlyRent || 0).toLocaleString('en-IN')}
+                                    {firstProp.category || (isBuilder ? 'Flat/Project' : 'Property')} • ₹{Number(firstProp.expectedPrice || firstProp.startingPrice || firstProp.monthlyRent || 0).toLocaleString('en-IN')}
                                   </span>
                                   <button
                                     type="button"
                                     onClick={() => setViewingProperty({ prop: firstProp, inquiry: item })}
-                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/10 hover:bg-primary text-primary hover:text-white text-[11px] font-bold transition-colors cursor-pointer shrink-0"
-                                    title={isMr ? 'मालमत्ता पहा' : 'See Property'}
+                                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold transition-colors cursor-pointer shrink-0 ${
+                                      isBuilder
+                                        ? 'bg-purple-50 text-purple-700 hover:bg-purple-700 hover:text-white'
+                                        : 'bg-primary/10 hover:bg-primary text-primary hover:text-white'
+                                    }`}
+                                    title={isMr ? (isBuilder ? 'प्रकल्प पहा' : 'मालमत्ता पहा') : (isBuilder ? 'See Project' : 'See Property')}
                                   >
                                     <Eye className="w-3 h-3" />
                                     <span>{isMr ? 'पहा' : 'See'}</span>

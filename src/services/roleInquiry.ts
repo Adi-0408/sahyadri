@@ -93,6 +93,7 @@ export interface BuilderDetails {
   completedProjectsCount?: number;
   specialization?: string;
   firstProject?: FirstPropertyData;
+  firstProperty?: FirstPropertyData;
 }
 
 export interface SupplierDetails {
@@ -915,13 +916,6 @@ export const mergeInquiryRecords = (existing: RoleInquiry, incoming: RoleInquiry
 export const normalizeMobileRoleDoc = (item: any, collectionName: string): RoleInquiry | null => {
   if (!item || item.test === true || item.test === 'true') return null;
 
-  // If established directory agent/builder/buyer/seller that is already active/approved and NOT a role inquiry, skip!
-  const isPending = String(item.status || '').toLowerCase() === 'pending';
-  const isExplicitInquiry = item.isRoleInquiry === true || item.isRoleInquiry === 'true' || item.type === 'role_inquiry';
-  if (!isPending && !isExplicitInquiry && (collectionName === 'agents' || collectionName === 'builders')) {
-    return null;
-  }
-
   let rawMob = item.mobile || item.phone || item.userMobile || item.contactNumber || item.ownerPhone || item.mobileNumber || '';
   let cleanMob = String(rawMob).replace(/[^0-9]/g, '');
   if (cleanMob.length >= 10 && /^[6-9]\d{9}$/.test(cleanMob.slice(-10))) {
@@ -1034,8 +1028,20 @@ export const normalizeMobileRoleDoc = (item: any, collectionName: string): RoleI
       notes: item.additionalDetails || ''
     };
   } else if (role === 'builder') {
+    const firstProj = item.firstProject || item.firstProperty || item.builderDetails?.firstProject || item.builderDetails?.firstProperty || (item.propertyType ? {
+      title: item.propertyType ? `${item.propertyType} Project` : 'Residential Project',
+      category: 'Flat',
+      type: 'sale',
+      expectedPrice: Number(item.askingPrice || item.price || 0) || undefined,
+      district: item.district || 'Sangli',
+      taluka: item.taluka || 'Miraj',
+      cityVillage: item.city || '',
+      description: item.additionalDetails || '',
+      images: Array.isArray(item.images) ? item.images : []
+    } : undefined);
+
     res.builderDetails = {
-      companyName: item.firmOrAgencyName || item.firmName || item.name || '',
+      companyName: item.firmOrAgencyName || item.firmName || item.companyName || item.name || '',
       reraNumber: item.reraNumber || '',
       experienceYears: Number(item.experienceYears) || 1,
       officeAddress: item.officeAddress || '',
@@ -1043,8 +1049,18 @@ export const normalizeMobileRoleDoc = (item: any, collectionName: string): RoleI
       district: item.district || 'Sangli',
       taluka: item.taluka || '',
       ongoingProjectsCount: Number(item.ongoingProjects) || 0,
-      completedProjectsCount: Number(item.completedProjects) || 0
+      completedProjectsCount: Number(item.completedProjects) || 0,
+      firstProject: firstProj
     };
+    if (firstProj && !res.sellerDetails) {
+      res.sellerDetails = {
+        sellerType: 'owner',
+        district: item.district || 'Sangli',
+        taluka: item.taluka || '',
+        cityVillage: item.city || '',
+        firstProperty: firstProj
+      };
+    }
   } else if (role === 'agent') {
     res.agentDetails = {
       agencyName: item.firmOrAgencyName || item.agencyName || item.name || '',
@@ -1469,6 +1485,7 @@ export const subscribeToRoleInquiries = (callback: (inquiries: RoleInquiry[]) =>
   let buyersList: RoleInquiry[] = [];
   let buildersList: RoleInquiry[] = [];
   let agentsList: RoleInquiry[] = [];
+  let usersRoleList: RoleInquiry[] = [];
 
   const getLocalInquiries = (): RoleInquiry[] => {
     if (typeof window === 'undefined') return [];
@@ -1508,6 +1525,7 @@ export const subscribeToRoleInquiries = (callback: (inquiries: RoleInquiry[]) =>
       ...buyersList,
       ...buildersList,
       ...agentsList,
+      ...usersRoleList,
       ...localList
     ];
 
@@ -1515,7 +1533,14 @@ export const subscribeToRoleInquiries = (callback: (inquiries: RoleInquiry[]) =>
     const validItems: RoleInquiry[] = [];
     allCandidates.forEach((item) => {
       if (!item) return;
-      if (item.sourceCollection !== 'sellers' && item.sourceCollection !== 'buyers' && item.sourceCollection !== 'builders' && item.sourceCollection !== 'agents' && !isRoleInquiryDocument(item)) return;
+      if (
+        item.sourceCollection !== 'sellers' &&
+        item.sourceCollection !== 'buyers' &&
+        item.sourceCollection !== 'builders' &&
+        item.sourceCollection !== 'agents' &&
+        item.sourceCollection !== 'users' &&
+        !isRoleInquiryDocument(item)
+      ) return;
 
       // Extract mobile
       let rawMob = item.userMobile || (item as any).phone || (item as any).mobile || (item as any).cleanMobile || (item as any).contactNumber || '';
@@ -1694,6 +1719,57 @@ export const subscribeToRoleInquiries = (callback: (inquiries: RoleInquiry[]) =>
     });
   } catch {}
 
+  let unsubUsers: any = null;
+  try {
+    unsubUsers = subscribeToCollection('users', (list: any[]) => {
+      usersRoleList = (list || [])
+        .filter((u: any) => u && (u.role === 'builder' || u.role === 'seller') && !u.isBlocked && !u.isBlacklisted)
+        .map((u: any) => {
+          const rawMob = String(u.mobile || u.phoneNumber || u.phone || u.id || '').replace(/[^0-9]/g, '');
+          const cleanMob = rawMob.length >= 10 ? rawMob.slice(-10) : '';
+          const name = u.name && !isGenericOrDummyName(u.name) ? u.name : (u.role === 'builder' ? 'Registered Builder' : 'Property Owner');
+          return {
+            id: `user_role_${u.role}_${cleanMob || u.id}`,
+            userId: u.id || u.uid || cleanMob,
+            userCode: u.userCode || u.id,
+            userName: name,
+            userMobile: cleanMob,
+            userEmail: u.email && !isAutoGeneratedEmail(u.email) ? u.email : '',
+            requestedRole: u.role,
+            status: 'approved',
+            createdAt: u.createdAt || new Date().toISOString(),
+            reviewedAt: u.reviewedAt || u.createdAt || new Date().toISOString(),
+            reviewedBy: 'Admin (System Sync)',
+            sourceCollection: 'users',
+            isRoleInquiry: true,
+            builderDetails: u.role === 'builder' ? {
+              companyName: name,
+              district: u.district || 'Sangli',
+              taluka: u.taluka || 'Miraj',
+              firstProject: {
+                title: `${name} Construction & Residential Project`,
+                category: 'Flat',
+                expectedPrice: 1500000,
+                district: u.district || 'Sangli',
+                taluka: u.taluka || 'Miraj'
+              }
+            } : undefined,
+            sellerDetails: u.role === 'seller' ? {
+              sellerType: 'owner',
+              district: u.district || 'Sangli',
+              firstProperty: {
+                title: `Verified Property for Sale by ${name}`,
+                category: 'Land',
+                expectedPrice: 500000,
+                district: u.district || 'Sangli'
+              }
+            } : undefined
+          } as RoleInquiry;
+        });
+      notify();
+    });
+  } catch {}
+
   const handleCustomUpdate = () => {
     notify();
   };
@@ -1711,6 +1787,7 @@ export const subscribeToRoleInquiries = (callback: (inquiries: RoleInquiry[]) =>
     if (typeof unsubBuyers === 'function') unsubBuyers();
     if (typeof unsubBuilders === 'function') unsubBuilders();
     if (typeof unsubAgents === 'function') unsubAgents();
+    if (typeof unsubUsers === 'function') unsubUsers();
     if (typeof window !== 'undefined') {
       window.removeEventListener('storage', handleCustomUpdate);
       window.removeEventListener('role_inquiry_updated', handleCustomUpdate);
