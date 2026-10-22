@@ -2880,7 +2880,7 @@ export const fetchCollection = async (collectionName: string) => {
         const querySnapshot = await firebaseGetDocs(firebaseCollection(db, 'properties'));
         const list: any[] = [];
         querySnapshot.forEach((doc) => {
-          list.push(normalizeProperty({ id: doc.id, ...doc.data() }));
+          list.push(normalizeProperty({ ...doc.data(), id: doc.id, firestoreDocId: doc.id }));
         });
         console.log(`[fetchCollection] Live Firebase. Returned properties count: ${list.length}`);
         setStorageCache('session', 'sahyadri_cache_properties', list);
@@ -2904,7 +2904,7 @@ export const fetchCollection = async (collectionName: string) => {
       const querySnapshot = await firebaseGetDocs(firebaseCollection(db, collectionName));
       const list: any[] = [];
       querySnapshot.forEach((doc) => {
-        list.push({ id: doc.id, ...doc.data() });
+        list.push({ ...doc.data(), id: doc.id, firestoreDocId: doc.id });
       });
 
       // Auto-seed real Firestore if collection is empty (restricted to config collections only)
@@ -3538,7 +3538,7 @@ export const subscribeToCollection = (
         (querySnapshot) => {
           const list: any[] = [];
           querySnapshot.forEach((doc) => {
-            list.push(normalizeProperty({ id: doc.id, ...doc.data() }));
+            list.push(normalizeProperty({ ...doc.data(), id: doc.id, firestoreDocId: doc.id }));
           });
           console.log(`[subscribeToCollection] Live Firebase Snapshot. Properties count: ${list.length}`);
           if (list.length > 0) {
@@ -3570,7 +3570,7 @@ export const subscribeToCollection = (
       (querySnapshot) => {
         const list: any[] = [];
         querySnapshot.forEach((doc) => {
-          list.push({ id: doc.id, ...doc.data() });
+          list.push({ ...doc.data(), id: doc.id, firestoreDocId: doc.id });
         });
         if (list.length > 0) {
           setStorageCache('session', `sahyadri_cache_${collectionName}`, list);

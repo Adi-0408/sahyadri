@@ -22,7 +22,9 @@ import {
   subscribeToRoleInquiries,
   approveRoleInquiry,
   rejectRoleInquiry,
-  deleteRoleInquiry
+  deleteRoleInquiry,
+  isGenericOrDummyName,
+  isRealMobileNumber
 } from '../../../services/roleInquiry';
 import type { RoleInquiry } from '../../../services/roleInquiry';
 import { useAuth } from '../../../app/providers/AuthProvider';
@@ -188,14 +190,15 @@ export const RoleRequestsManager: React.FC = () => {
   const validInquiries = inquiries.filter((item) => {
     if (!item || (item as any).test === true || (item as any).test === 'true') return false;
     const cleanMob = String(item.userMobile || (item as any).phone || (item as any).mobile || '').replace(/[^0-9]/g, '').slice(-10);
+    const hasValidMob = isRealMobileNumber(cleanMob);
     const cleanEmail = item.userEmail || (item as any).email || '';
     const name = String(item.userName || (item as any).name || (item as any).fullName || '').trim();
-    const hasRealName = name && name.toLowerCase() !== 'applicant' && name.toLowerCase() !== 'user';
+    const hasRealName = !isGenericOrDummyName(name);
     const hasProperty = Boolean(item.sellerDetails?.firstProperty || (item as any).firstProperty);
     const hasDetails = Boolean(item.builderDetails || item.agentDetails || item.buyerDetails || item.supplierDetails);
 
     // If an entry has no mobile, no email, no real name, and no property/business details, it is a ghost
-    if (!cleanMob && !cleanEmail && !hasRealName && !hasProperty && !hasDetails) {
+    if (!hasValidMob && !cleanMob && !cleanEmail && !hasRealName && !hasProperty && !hasDetails) {
       return false;
     }
     return true;
@@ -354,7 +357,9 @@ export const RoleRequestsManager: React.FC = () => {
                     <div className="flex justify-between items-start gap-2">
                       <div>
                         <div className="font-bold text-slate-900 text-base">{item.userName || (item as any).name || (item as any).fullName || 'Applicant'}</div>
-                        <div className="text-[10px] font-mono text-slate-400">{item.userCode || item.userId || '-'}</div>
+                        <div className="text-[10px] font-mono text-slate-400">
+                          {item.userCode || (item.id && !item.id.startsWith('app_') ? item.id : item.userMobile ? `ID: ${item.userMobile}` : item.userId || '-')}
+                        </div>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
                         <span
@@ -516,7 +521,9 @@ export const RoleRequestsManager: React.FC = () => {
                             <div className="font-bold text-slate-900 text-sm">
                               {item.userName || (item as any).name || (item as any).fullName || 'Applicant'}
                             </div>
-                            <div className="text-[10px] font-mono text-slate-400">{item.userCode || item.userId || '-'}</div>
+                            <div className="text-[10px] font-mono text-slate-400">
+                              {item.userCode || (item.id && !item.id.startsWith('app_') ? item.id : item.userMobile ? `ID: ${item.userMobile}` : item.userId || '-')}
+                            </div>
                           </td>
 
                           <td className="px-4 py-3.5">
