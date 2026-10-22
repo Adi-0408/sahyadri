@@ -160,18 +160,18 @@ export const EnquiriesManager: React.FC = () => {
           <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
         </div>
       ) : (
-        <UICard className="bg-white border border-slate-200/80 shadow-xs rounded-2xl overflow-hidden">
-          <div className="overflow-x-auto overflow-y-auto max-h-[600px]">
-            <table className="w-full text-left">
-              <thead className="bg-[#0b0f19] text-[10px] uppercase font-bold text-white tracking-wider sticky top-0 z-10">
+        <UICard className="bg-white border border-slate-200/80 shadow-xs rounded-2xl overflow-hidden w-full min-w-0">
+          <div className="overflow-x-auto w-full custom-scrollbar">
+            <table className="w-full text-left min-w-[840px] border-collapse">
+              <thead className="bg-[#0b0f19] text-[10px] uppercase font-bold text-white tracking-wider sticky top-0 z-10 select-none">
                 <tr>
-                  <th className="px-5 py-4">{t('admin.enquiries.table.id', 'लीड आयडी')}</th>
-                  <th className="px-5 py-4">{t('admin.enquiries.table.category', 'मालमत्ता / श्रेणी')}</th>
-                  <th className="px-5 py-4">{t('admin.enquiries.table.contact', 'ग्राहक संपर्क माहिती')}</th>
-                  <th className="px-5 py-4">{t('admin.enquiries.table.message', 'संदेश')}</th>
-                  <th className="px-5 py-4">{t('admin.enquiries.table.representative', 'प्रतिनिधी (Representative)')}</th>
-                  <th className="px-5 py-4">{t('admin.enquiries.table.status', 'स्थिति')}</th>
-                  <th className="px-5 py-4 text-right">{t('admin.enquiries.table.actions', 'कृती')}</th>
+                  <th className="px-4 sm:px-5 py-3.5 whitespace-nowrap">{t('admin.enquiries.table.id', 'लीड आयडी')}</th>
+                  <th className="px-4 sm:px-5 py-3.5 whitespace-nowrap">{t('admin.enquiries.table.category', 'मालमत्ता / श्रेणी')}</th>
+                  <th className="px-4 sm:px-5 py-3.5 whitespace-nowrap">{t('admin.enquiries.table.contact', 'ग्राहक संपर्क माहिती')}</th>
+                  <th className="px-4 sm:px-5 py-3.5 whitespace-nowrap">{t('admin.enquiries.table.message', 'संदेश')}</th>
+                  <th className="px-4 sm:px-5 py-3.5 whitespace-nowrap">{t('admin.enquiries.table.representative', 'प्रतिनिधी (Representative)')}</th>
+                  <th className="px-4 sm:px-5 py-3.5 whitespace-nowrap">{t('admin.enquiries.table.status', 'स्थिति')}</th>
+                  <th className="px-4 sm:px-5 py-3.5 text-right whitespace-nowrap">{t('admin.enquiries.table.actions', 'कृती')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs text-slate-700 bg-white">

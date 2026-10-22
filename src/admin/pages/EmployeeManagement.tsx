@@ -316,15 +316,15 @@ export const EmployeeManagement: React.FC = () => {
       )}
 
       {/* Employees List */}
-      <UICard className="p-0 bg-white border border-slate-100 shadow-sm rounded-2xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-[#0b0f19] text-white">
+      <UICard className="p-0 bg-white border border-slate-100 shadow-sm rounded-2xl overflow-hidden w-full min-w-0">
+        <div className="overflow-x-auto w-full custom-scrollbar">
+          <table className="w-full text-left text-sm min-w-[650px] border-collapse">
+            <thead className="bg-[#0b0f19] text-white sticky top-0 z-10 select-none">
               <tr>
-                <th className="px-6 py-4 font-bold tracking-wider text-[11px] uppercase">{t('admin.employeeForm.table.employeeName')}</th>
-                <th className="px-6 py-4 font-bold tracking-wider text-[11px] uppercase">{t('admin.employeeForm.table.emailContact')}</th>
-                <th className="px-6 py-4 font-bold tracking-wider text-[11px] uppercase">{t('admin.employeeForm.table.permissions')}</th>
-                <th className="px-6 py-4 font-bold tracking-wider text-[11px] uppercase text-right">{t('admin.employeeForm.table.actions')}</th>
+                <th className="px-5 py-3.5 font-bold tracking-wider text-[11px] uppercase whitespace-nowrap">{t('admin.employeeForm.table.employeeName')}</th>
+                <th className="px-5 py-3.5 font-bold tracking-wider text-[11px] uppercase whitespace-nowrap">{t('admin.employeeForm.table.emailContact')}</th>
+                <th className="px-5 py-3.5 font-bold tracking-wider text-[11px] uppercase whitespace-nowrap">{t('admin.employeeForm.table.permissions')}</th>
+                <th className="px-5 py-3.5 font-bold tracking-wider text-[11px] uppercase text-right whitespace-nowrap">{t('admin.employeeForm.table.actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">

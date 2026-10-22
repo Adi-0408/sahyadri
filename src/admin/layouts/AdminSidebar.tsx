@@ -471,21 +471,21 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
 
   return (
     <>
-      {/* Desktop Sidebar */}
-      <aside className="fixed left-0 top-0 h-full w-[240px] lg:w-[260px] xl:w-[280px] 2xl:w-[300px] z-50 hidden md:block transition-all duration-150">
+      {/* Desktop Sidebar (Pinned on large screens >= 1024px) */}
+      <aside className="fixed left-0 top-0 h-full w-[260px] xl:w-[280px] 2xl:w-[300px] z-50 hidden lg:block transition-all duration-150">
         {sidebarContent}
       </aside>
 
-      {/* Mobile Drawer */}
+      {/* Off-canvas Drawer for Mobile, Tablet & Split-Screen (< 1024px) */}
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex md:hidden">
+        <div className="fixed inset-0 z-50 flex lg:hidden">
           {/* Backdrop */}
           <div
             onClick={onClose}
-            className="fixed inset-0 bg-slate-950/75 backdrop-blur-xs transition-opacity"
+            className="fixed inset-0 bg-slate-950/75 backdrop-blur-xs transition-opacity cursor-pointer"
           />
           {/* Sidebar Drawer */}
-          <div className="relative w-[280px] max-w-[85vw] h-full shadow-2xl animate-in slide-in-from-left duration-200">
+          <div className="relative w-[280px] max-w-[85vw] h-full shadow-2xl animate-in slide-in-from-left duration-200 z-10">
             {sidebarContent}
           </div>
         </div>

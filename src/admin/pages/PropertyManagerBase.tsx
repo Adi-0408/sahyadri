@@ -303,7 +303,7 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
       <button
         type="button"
         onClick={() => { setIsOpen(!isOpen); setSearch(''); }}
-        className={`w-full min-w-0 rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-150 flex items-center justify-between cursor-pointer border shadow-2xs group bg-white ${
+        className={`w-full min-w-0 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm font-semibold transition-all duration-150 flex items-center justify-between cursor-pointer border shadow-2xs group bg-white ${
           isOpen
             ? 'border-slate-900 ring-2 ring-slate-900/10 text-slate-950'
             : isFiltered
@@ -312,7 +312,7 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
         }`}
         style={{ backgroundColor: isFiltered && !isOpen ? '#f8fafc' : '#ffffff', color: '#0f172a' }}
       >
-        <span className="truncate flex items-center gap-2.5">
+        <span className="truncate flex items-center gap-2 min-w-0 flex-1">
           {Icon && (
             <Icon className={`w-4 h-4 shrink-0 transition-colors ${
               isFiltered ? 'text-slate-900' : 'text-slate-600 group-hover:text-slate-900'
@@ -322,7 +322,7 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
             {displayText}
           </span>
           {selectedOpt?.count !== undefined && (
-            <span className={`text-xs font-bold px-2 py-0.5 rounded-full transition-colors ${
+            <span className={`text-xs font-bold px-2 py-0.5 rounded-full shrink-0 transition-colors ${
               isFiltered
                 ? 'bg-slate-900 text-white'
                 : 'bg-slate-100 text-slate-800 border border-slate-200'
@@ -1087,12 +1087,12 @@ export const PropertyManagerBase: React.FC<PropertyManagerBaseProps> = ({ filter
   return (
     <div className="space-y-8 text-left">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-serif font-bold text-slate-900 mb-1">{title}</h1>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 w-full">
+        <div className="shrink-0">
+          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-slate-900 tracking-tight">{title}</h1>
         </div>
-        <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
-          <div className="w-full sm:w-80 relative">
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 w-full md:w-auto">
+          <div className="flex-1 sm:w-72 lg:w-80 relative min-w-[180px]">
             <Input
               placeholder={t('admin.propertyManager.searchPlaceholder')}
               value={searchQuery}
@@ -1118,49 +1118,51 @@ export const PropertyManagerBase: React.FC<PropertyManagerBaseProps> = ({ filter
               setAddTransactionType(filterType);
               setIsAddPropertyOpen(true);
             }}
-            className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-bold shadow-md hover:bg-primary/90 active:scale-95 transition-all duration-200 cursor-pointer flex-shrink-0 w-full sm:w-auto"
+            className="flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-bold shadow-md hover:bg-primary/90 active:scale-95 transition-all duration-200 cursor-pointer shrink-0 whitespace-nowrap w-full sm:w-auto"
           >
-            <PlusCircle className="w-4 h-4" />
-            {t('admin.propertyManager.addProperty')}
+            <PlusCircle className="w-4 h-4 shrink-0" />
+            <span>{t('admin.propertyManager.addProperty')}</span>
           </button>
         </div>
       </div>
 
       {/* Status Filter Tabs (Inside Section) */}
-      <div className="flex items-center gap-2 p-1.5 bg-slate-100 border border-slate-200/90 rounded-2xl w-full sm:w-fit overflow-x-auto no-scrollbar shadow-2xs">
-        {statusTabs.map((tab) => {
-          const isActive = currentTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => navigate(tab.path)}
-              className={`flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-xs sm:text-[13px] font-bold transition-all duration-150 cursor-pointer shrink-0 ${
-                isActive
-                  ? 'bg-white text-slate-900 shadow-xs border border-slate-200/80'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
-              }`}
-            >
-              <span
-                className={`w-2 h-2 rounded-full shrink-0 transition-colors ${
+      <div className="w-full overflow-x-auto pb-1.5 custom-scrollbar">
+        <div className="inline-flex items-center gap-2 p-1.5 bg-slate-100 border border-slate-200/90 rounded-2xl min-w-max shadow-2xs">
+          {statusTabs.map((tab) => {
+            const isActive = currentTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => navigate(tab.path)}
+                className={`flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-xs sm:text-[13px] font-bold transition-all duration-150 cursor-pointer shrink-0 whitespace-nowrap ${
                   isActive
-                    ? 'bg-orange-500 ring-2 ring-orange-500/20'
-                    : tab.dotColor || 'bg-slate-400'
-                }`}
-              />
-              <span>{tab.label}</span>
-              <span
-                className={`px-2 py-0.5 rounded-full text-[10px] font-black transition-colors ${
-                  isActive
-                    ? tab.activeBadgeColor || 'bg-slate-900 text-white'
-                    : tab.badgeColor || 'bg-slate-200 text-slate-600'
+                    ? 'bg-white text-slate-900 shadow-xs border border-slate-200/80'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
                 }`}
               >
-                {tab.count}
-              </span>
-            </button>
-          );
-        })}
+                <span
+                  className={`w-2 h-2 rounded-full shrink-0 transition-colors ${
+                    isActive
+                      ? 'bg-orange-500 ring-2 ring-orange-500/20'
+                      : tab.dotColor || 'bg-slate-400'
+                  }`}
+                />
+                <span>{tab.label}</span>
+                <span
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-black shrink-0 transition-colors ${
+                    isActive
+                      ? tab.activeBadgeColor || 'bg-slate-900 text-white'
+                      : tab.badgeColor || 'bg-slate-200 text-slate-600'
+                  }`}
+                >
+                  {tab.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Premium Search and Filters Toolbar */}
@@ -1205,8 +1207,8 @@ export const PropertyManagerBase: React.FC<PropertyManagerBaseProps> = ({ filter
           )}
         </div>
 
-        {/* Dropdowns Row - Responsive 3-column Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 w-full">
+        {/* Dropdowns Row - Responsive Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 w-full">
           <SearchableSelect
             label={t('admin.propertyManager.propertyType')}
             value={selectedPropertyType}
@@ -1306,17 +1308,17 @@ export const PropertyManagerBase: React.FC<PropertyManagerBaseProps> = ({ filter
         <UICard className="bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden relative z-10 w-full min-w-0">
           <div className="overflow-x-auto w-full custom-scrollbar">
             <table className="w-full text-left border-collapse min-w-[760px] sm:min-w-[800px]">
-              <thead className="bg-[#0b0f19] text-[10px] uppercase font-bold text-white tracking-wider sticky top-0 z-10">
+              <thead className="bg-[#0b0f19] text-[10px] uppercase font-bold text-white tracking-wider sticky top-0 z-10 select-none">
                 <tr>
-                  <th className="px-3.5 sm:px-4 py-3">{t('admin.propertyManager.table.image')}</th>
-                  <th className="px-3.5 sm:px-4 py-3">{t('admin.propertyManager.table.title')}</th>
-                  <th className="px-3.5 sm:px-4 py-3">{t('admin.propertyManager.table.type')}</th>
-                  <th className="px-3.5 sm:px-4 py-3">{t('admin.propertyManager.table.district')}</th>
-                  <th className="px-3.5 sm:px-4 py-3">{t('admin.propertyManager.table.taluka')}</th>
-                  <th className="px-3.5 sm:px-4 py-3">{t('admin.propertyManager.table.owner')}</th>
-                  <th className="px-3.5 sm:px-4 py-3">{t('admin.propertyManager.table.date')}</th>
-                  <th className="px-3.5 sm:px-4 py-3">{t('admin.propertyManager.table.status')}</th>
-                  <th className="px-3.5 sm:px-4 py-3 text-right">{t('admin.propertyManager.table.actions')}</th>
+                  <th className="px-3.5 sm:px-4 py-3 whitespace-nowrap">{t('admin.propertyManager.table.image')}</th>
+                  <th className="px-3.5 sm:px-4 py-3 whitespace-nowrap">{t('admin.propertyManager.table.title')}</th>
+                  <th className="px-3.5 sm:px-4 py-3 whitespace-nowrap">{t('admin.propertyManager.table.type')}</th>
+                  <th className="px-3.5 sm:px-4 py-3 whitespace-nowrap">{t('admin.propertyManager.table.district')}</th>
+                  <th className="px-3.5 sm:px-4 py-3 whitespace-nowrap">{t('admin.propertyManager.table.taluka')}</th>
+                  <th className="px-3.5 sm:px-4 py-3 whitespace-nowrap">{t('admin.propertyManager.table.owner')}</th>
+                  <th className="px-3.5 sm:px-4 py-3 whitespace-nowrap">{t('admin.propertyManager.table.date')}</th>
+                  <th className="px-3.5 sm:px-4 py-3 whitespace-nowrap">{t('admin.propertyManager.table.status')}</th>
+                  <th className="px-3.5 sm:px-4 py-3 text-right whitespace-nowrap">{t('admin.propertyManager.table.actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs text-slate-700 bg-white">

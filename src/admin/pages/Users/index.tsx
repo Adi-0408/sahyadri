@@ -444,18 +444,18 @@ export const UsersManager: React.FC = () => {
           <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
         </div>
       ) : (
-        <UICard className="bg-white border border-slate-100 shadow-sm rounded-2xl overflow-hidden" >
-          <div className="overflow-x-auto overflow-y-auto max-h-[500px]">
-            <table className="w-full text-left">
-              <thead className="bg-[#0b0f19] text-[10px] uppercase font-bold text-white tracking-wider">
+        <UICard className="bg-white border border-slate-100 shadow-sm rounded-2xl overflow-hidden w-full min-w-0" >
+          <div className="overflow-x-auto w-full custom-scrollbar">
+            <table className="w-full text-left min-w-[720px] border-collapse">
+              <thead className="bg-[#0b0f19] text-[10px] uppercase font-bold text-white tracking-wider sticky top-0 z-10 select-none">
                 <tr>
-                  <th className="px-6 py-4">{t('admin.users.table.id')}</th>
-                  <th className="px-6 py-4">{t('admin.users.table.name')}</th>
-                  <th className="px-6 py-4">Mobile No</th>
-                  <th className="px-6 py-4">Interest</th>
-                  <th className="px-6 py-4">{t('admin.users.table.role')}</th>
-                  <th className="px-6 py-4">{t('admin.users.table.status')}</th>
-                  <th className="px-6 py-4 text-right">{t('admin.users.table.actions')}</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">{t('admin.users.table.id')}</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">{t('admin.users.table.name')}</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Mobile No</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Interest</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">{t('admin.users.table.role')}</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">{t('admin.users.table.status')}</th>
+                  <th className="px-5 py-3.5 text-right whitespace-nowrap">{t('admin.users.table.actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs text-slate-650 bg-white">
