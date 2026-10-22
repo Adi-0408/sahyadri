@@ -1068,6 +1068,19 @@ export const normalizeMobileRoleDoc = (item: any, collectionName: string): RoleI
       reraNumber: item.reraNumber || '',
       specialization: item.specialization || ''
     };
+  } else if (role === 'supplier') {
+    res.supplierDetails = {
+      businessName: item.firmOrAgencyName || item.businessName || item.firmName || item.name || '',
+      category: item.category || item.primaryCategory || 'All',
+      primaryCategory: item.primaryCategory || item.category || 'All',
+      gstNumber: item.gstNumber || '',
+      officeAddress: item.officeAddress || '',
+      operatingDistricts: Array.isArray(item.operatingDistricts) ? item.operatingDistricts : (item.district ? [item.district] : ['Sangli']),
+      operatingTalukas: Array.isArray(item.operatingTalukas) ? item.operatingTalukas : (item.taluka ? [item.taluka] : ['Miraj']),
+      deliveryAvailable: item.deliveryAvailable ?? true,
+      productsOffered: Array.isArray(item.productsOffered) ? item.productsOffered : [],
+      notes: item.notes || item.additionalDetails || ''
+    };
   }
 
   return res;
@@ -1139,13 +1152,14 @@ export const fetchUserRoleInquiry = async (
     matchedInquiries.push(...userInquiries);
   } catch (err) {}
 
-  // 2b. Fetch from mobile collections ('sellers', 'buyers', 'builders', 'agents')
+  // 2b. Fetch from mobile collections ('sellers', 'buyers', 'builders', 'agents', 'suppliers')
   try {
-    const [sellers, buyers, builders, agents] = await Promise.all([
+    const [sellers, buyers, builders, agents, suppliers] = await Promise.all([
       fetchCollection('sellers').catch(() => []),
       fetchCollection('buyers').catch(() => []),
       fetchCollection('builders').catch(() => []),
-      fetchCollection('agents').catch(() => [])
+      fetchCollection('agents').catch(() => []),
+      fetchCollection('suppliers').catch(() => [])
     ]);
 
     sellers.forEach((item: any) => {
@@ -1165,6 +1179,11 @@ export const fetchUserRoleInquiry = async (
 
     agents.forEach((item: any) => {
       const norm = normalizeMobileRoleDoc(item, 'agents');
+      if (norm && isUserMatch(norm)) matchedInquiries.push(norm);
+    });
+
+    suppliers.forEach((item: any) => {
+      const norm = normalizeMobileRoleDoc(item, 'suppliers');
       if (norm && isUserMatch(norm)) matchedInquiries.push(norm);
     });
   } catch (err) {}
@@ -1306,6 +1325,7 @@ export const subscribeToUserRoleInquiry = (
   let buyersList: any[] = [];
   let buildersList: any[] = [];
   let agentsList: any[] = [];
+  let suppliersList: any[] = [];
 
   const updateAndNotify = () => {
     const matched: any[] = [];
@@ -1349,6 +1369,11 @@ export const subscribeToUserRoleInquiry = (
 
     agentsList.forEach((item) => {
       const norm = normalizeMobileRoleDoc(item, 'agents');
+      if (norm && isUserMatch(norm)) matched.push(norm);
+    });
+
+    suppliersList.forEach((item) => {
+      const norm = normalizeMobileRoleDoc(item, 'suppliers');
       if (norm && isUserMatch(norm)) matched.push(norm);
     });
 
@@ -1450,6 +1475,11 @@ export const subscribeToUserRoleInquiry = (
     updateAndNotify();
   });
 
+  const unsubSuppliers = subscribeToCollection('suppliers', (list) => {
+    suppliersList = list;
+    updateAndNotify();
+  });
+
   const handleCustomEvent = () => {
     updateAndNotify();
   };
@@ -1467,6 +1497,7 @@ export const subscribeToUserRoleInquiry = (
     if (typeof unsubBuyers === 'function') unsubBuyers();
     if (typeof unsubBuilders === 'function') unsubBuilders();
     if (typeof unsubAgents === 'function') unsubAgents();
+    if (typeof unsubSuppliers === 'function') unsubSuppliers();
     if (typeof window !== 'undefined') {
       window.removeEventListener('storage', handleCustomEvent);
       window.removeEventListener('role_inquiry_updated', handleCustomEvent);
@@ -1485,6 +1516,7 @@ export const subscribeToRoleInquiries = (callback: (inquiries: RoleInquiry[]) =>
   let buyersList: RoleInquiry[] = [];
   let buildersList: RoleInquiry[] = [];
   let agentsList: RoleInquiry[] = [];
+  let suppliersList: RoleInquiry[] = [];
   let usersRoleList: RoleInquiry[] = [];
 
   const getLocalInquiries = (): RoleInquiry[] => {
@@ -1525,6 +1557,7 @@ export const subscribeToRoleInquiries = (callback: (inquiries: RoleInquiry[]) =>
       ...buyersList,
       ...buildersList,
       ...agentsList,
+      ...suppliersList,
       ...usersRoleList,
       ...localList
     ];
@@ -1538,6 +1571,7 @@ export const subscribeToRoleInquiries = (callback: (inquiries: RoleInquiry[]) =>
         item.sourceCollection !== 'buyers' &&
         item.sourceCollection !== 'builders' &&
         item.sourceCollection !== 'agents' &&
+        item.sourceCollection !== 'suppliers' &&
         item.sourceCollection !== 'users' &&
         !isRoleInquiryDocument(item)
       ) return;
@@ -1719,15 +1753,25 @@ export const subscribeToRoleInquiries = (callback: (inquiries: RoleInquiry[]) =>
     });
   } catch {}
 
+  let unsubSuppliers: any = null;
+  try {
+    unsubSuppliers = subscribeToCollection('suppliers', (list: any[]) => {
+      suppliersList = list
+        .map((item: any) => normalizeMobileRoleDoc(item, 'suppliers'))
+        .filter(Boolean) as RoleInquiry[];
+      notify();
+    });
+  } catch {}
+
   let unsubUsers: any = null;
   try {
     unsubUsers = subscribeToCollection('users', (list: any[]) => {
       usersRoleList = (list || [])
-        .filter((u: any) => u && (u.role === 'builder' || u.role === 'seller') && !u.isBlocked && !u.isBlacklisted)
+        .filter((u: any) => u && (u.role === 'builder' || u.role === 'seller' || u.role === 'supplier' || u.role === 'agent') && !u.isBlocked && !u.isBlacklisted)
         .map((u: any) => {
           const rawMob = String(u.mobile || u.phoneNumber || u.phone || u.id || '').replace(/[^0-9]/g, '');
           const cleanMob = rawMob.length >= 10 ? rawMob.slice(-10) : '';
-          const name = u.name && !isGenericOrDummyName(u.name) ? u.name : (u.role === 'builder' ? 'Registered Builder' : 'Property Owner');
+          const name = u.name && !isGenericOrDummyName(u.name) ? u.name : (u.role === 'builder' ? 'Registered Builder' : u.role === 'supplier' ? 'Registered Supplier' : 'Property Owner');
           return {
             id: `user_role_${u.role}_${cleanMob || u.id}`,
             userId: u.id || u.uid || cleanMob,
@@ -1753,6 +1797,15 @@ export const subscribeToRoleInquiries = (callback: (inquiries: RoleInquiry[]) =>
                 district: u.district || 'Sangli',
                 taluka: u.taluka || 'Miraj'
               }
+            } : undefined,
+            supplierDetails: u.role === 'supplier' ? {
+              businessName: name,
+              category: u.category || u.primaryCategory || 'All',
+              gstNumber: u.gstNumber || '',
+              officeAddress: u.address || u.officeAddress || '',
+              operatingDistricts: [u.district || 'Sangli'],
+              operatingTalukas: [u.taluka || 'Miraj'],
+              deliveryAvailable: true
             } : undefined,
             sellerDetails: u.role === 'seller' ? {
               sellerType: 'owner',
@@ -1787,6 +1840,7 @@ export const subscribeToRoleInquiries = (callback: (inquiries: RoleInquiry[]) =>
     if (typeof unsubBuyers === 'function') unsubBuyers();
     if (typeof unsubBuilders === 'function') unsubBuilders();
     if (typeof unsubAgents === 'function') unsubAgents();
+    if (typeof unsubSuppliers === 'function') unsubSuppliers();
     if (typeof unsubUsers === 'function') unsubUsers();
     if (typeof window !== 'undefined') {
       window.removeEventListener('storage', handleCustomUpdate);
@@ -1922,6 +1976,18 @@ export const approveRoleInquiry = async (
             mobile: cleanMobile
           });
         }
+        if (resolvedRole === 'supplier' || inquiry.supplierDetails) {
+          await setExactDocument('suppliers', `supplier_${cleanMobile}`, {
+            status: 'approved',
+            statusMr: 'मंजूर',
+            reviewedAt: now,
+            reviewedBy: reviewer,
+            ...(inquiry.userName && !isGenericOrDummyName(inquiry.userName) ? { name: inquiry.userName } : {}),
+            mobile: cleanMobile,
+            businessName: inquiry.supplierDetails?.businessName || inquiry.userName,
+            category: inquiry.supplierDetails?.category || inquiry.supplierDetails?.primaryCategory || 'All'
+          });
+        }
       }
       if (
         inquiry.id &&
@@ -1929,7 +1995,8 @@ export const approveRoleInquiry = async (
         inquiry.id !== `seller_${cleanMobile}` &&
         inquiry.id !== `buyer_${cleanMobile}` &&
         inquiry.id !== `builder_${cleanMobile}` &&
-        inquiry.id !== `agent_${cleanMobile}`
+        inquiry.id !== `agent_${cleanMobile}` &&
+        inquiry.id !== `supplier_${cleanMobile}`
       ) {
         if (inquiry.id.startsWith('seller_') || targetCollection === 'sellers') {
           await setExactDocument('sellers', inquiry.id, sellerSyncPayload);
@@ -1949,6 +2016,13 @@ export const approveRoleInquiry = async (
           });
         } else if (inquiry.id.startsWith('agent_') || targetCollection === 'agents') {
           await setExactDocument('agents', inquiry.id, {
+            status: 'approved',
+            statusMr: 'मंजूर',
+            reviewedAt: now,
+            reviewedBy: reviewer
+          });
+        } else if (inquiry.id.startsWith('supplier_') || targetCollection === 'suppliers') {
+          await setExactDocument('suppliers', inquiry.id, {
             status: 'approved',
             statusMr: 'मंजूर',
             reviewedAt: now,
@@ -2329,14 +2403,20 @@ export const approveRoleInquiry = async (
     // 8. If role is 'supplier', ensure entry in 'suppliers' collection
     if (resolvedRole === 'supplier') {
       try {
+        const supplierDocId = cleanMobile ? `supplier_${cleanMobile}` : (userId || `supplier_${Date.now()}`);
         const supplierDoc = {
+          id: supplierDocId,
           uid: userId || cleanMobile,
           userId: userId || cleanMobile,
           businessName: inquiry.supplierDetails?.businessName || inquiry.userName,
+          firmOrAgencyName: inquiry.supplierDetails?.businessName || inquiry.userName,
+          name: inquiry.userName,
           contactPerson: inquiry.userName,
-          mobile: inquiry.userMobile,
+          mobile: cleanMobile || inquiry.userMobile,
+          phone: cleanMobile || inquiry.userMobile,
           email: inquiry.userEmail,
-          category: inquiry.supplierDetails?.category || 'Building Materials',
+          category: inquiry.supplierDetails?.category || inquiry.supplierDetails?.primaryCategory || 'Building Materials',
+          primaryCategory: inquiry.supplierDetails?.primaryCategory || inquiry.supplierDetails?.category || 'Building Materials',
           gstNumber: inquiry.supplierDetails?.gstNumber || '',
           officeAddress: inquiry.supplierDetails?.officeAddress || '',
           operatingDistricts: inquiry.supplierDetails?.operatingDistricts || ['Sangli'],
@@ -2345,9 +2425,10 @@ export const approveRoleInquiry = async (
           productsOffered: inquiry.supplierDetails?.productsOffered || [],
           status: 'active',
           role: 'supplier',
-          createdAt: now
+          createdAt: now,
+          source: 'approval_sync'
         };
-        await createDocument('suppliers', supplierDoc);
+        await setExactDocument('suppliers', supplierDocId, supplierDoc);
       } catch (err) {
         console.warn('Could not mirror supplier doc to suppliers collection:', err);
       }
@@ -2420,7 +2501,7 @@ export const rejectRoleInquiry = async (
 
     // 1. Direct update in source collection with fallback
     try {
-      if (['sellers', 'buyers', 'builders', 'agents'].includes(sourceCollection) || inquiryId.startsWith('seller_') || inquiryId.startsWith('buyer_') || inquiryId.startsWith('builder_') || inquiryId.startsWith('agent_')) {
+      if (['sellers', 'buyers', 'builders', 'agents', 'suppliers'].includes(sourceCollection) || inquiryId.startsWith('seller_') || inquiryId.startsWith('buyer_') || inquiryId.startsWith('builder_') || inquiryId.startsWith('agent_') || inquiryId.startsWith('supplier_')) {
         await setExactDocument(sourceCollection, inquiryId, {
           status: 'rejected',
           adminRemarks: rejectionReason,
@@ -2508,6 +2589,15 @@ export const rejectRoleInquiry = async (
             reviewedBy: reviewer
           });
         }
+        if (resolvedRole === 'supplier' || inquiryObj?.supplierDetails) {
+          await setExactDocument('suppliers', `supplier_${cleanMob}`, {
+            status: 'rejected',
+            statusMr: 'नाकारले',
+            adminRemarks: rejectionReason,
+            reviewedAt: now,
+            reviewedBy: reviewer
+          });
+        }
       }
       if (
         inquiryId &&
@@ -2515,7 +2605,8 @@ export const rejectRoleInquiry = async (
         inquiryId !== `seller_${cleanMob}` &&
         inquiryId !== `buyer_${cleanMob}` &&
         inquiryId !== `builder_${cleanMob}` &&
-        inquiryId !== `agent_${cleanMob}`
+        inquiryId !== `agent_${cleanMob}` &&
+        inquiryId !== `supplier_${cleanMob}`
       ) {
         if (inquiryId.startsWith('seller_') || sourceCollection === 'sellers') {
           await setExactDocument('sellers', inquiryId, {
@@ -2541,6 +2632,14 @@ export const rejectRoleInquiry = async (
           });
         } else if (inquiryId.startsWith('agent_') || sourceCollection === 'agents') {
           await setExactDocument('agents', inquiryId, {
+            status: 'rejected',
+            statusMr: 'नाकारले',
+            adminRemarks: rejectionReason,
+            reviewedAt: now,
+            reviewedBy: reviewer
+          });
+        } else if (inquiryId.startsWith('supplier_') || sourceCollection === 'suppliers') {
+          await setExactDocument('suppliers', inquiryId, {
             status: 'rejected',
             statusMr: 'नाकारले',
             adminRemarks: rejectionReason,
@@ -2703,6 +2802,9 @@ export const deleteRoleInquiry = async (
       deletePromises.push(deleteDocument('builders', `builder_${mob}`).catch(() => {}));
     } else if (item?.requestedRole === 'agent') {
       deletePromises.push(deleteDocument('agents', `agent_${mob}`).catch(() => {}));
+    } else if (item?.requestedRole === 'supplier') {
+      deletePromises.push(deleteDocument('suppliers', `supplier_${mob}`).catch(() => {}));
+      deletePromises.push(deleteDocument('suppliers', `app_supplier_${mob}`).catch(() => {}));
     }
   }
 
@@ -3086,13 +3188,14 @@ export const synthesizePropertyFromUser = (u: any): any => {
 export const syncApprovedRoleInquiriesWithProperties = async (): Promise<number> => {
   let syncedCount = 0;
   try {
-    const [roleInqs, enquiries, sellers, builders, rawUsers, properties] = await Promise.all([
+    const [roleInqs, enquiries, sellers, builders, rawUsers, properties, suppliers] = await Promise.all([
       fetchCollection('role_inquiries').catch(() => []),
       fetchCollection('enquiries').catch(() => []),
       fetchCollection('sellers').catch(() => []),
       fetchCollection('builders').catch(() => []),
       fetchCollection('users').catch(() => []),
-      fetchCollection('properties').catch(() => [])
+      fetchCollection('properties').catch(() => []),
+      fetchCollection('suppliers').catch(() => [])
     ]);
 
     // 1. Run database deduplication & ghost cleanup first
@@ -3111,6 +3214,7 @@ export const syncApprovedRoleInquiriesWithProperties = async (): Promise<number>
       ...(Array.isArray(enquiries) ? enquiries.filter(isRoleInquiryDocument) : []),
       ...(Array.isArray(sellers) ? sellers : []),
       ...(Array.isArray(builders) ? builders : []),
+      ...(Array.isArray(suppliers) ? suppliers : []),
       ...(Array.isArray(localList) ? localList : [])
     ];
 

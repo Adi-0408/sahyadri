@@ -234,6 +234,7 @@ export const RoleRequestsManager: React.FC = () => {
   const approvedCount = validInquiries.filter((i) => isItemApproved(i.status)).length;
   const sellerRequestsCount = validInquiries.filter((i) => i.requestedRole === 'seller').length;
   const builderRequestsCount = validInquiries.filter((i) => i.requestedRole === 'builder').length;
+  const supplierRequestsCount = validInquiries.filter((i) => i.requestedRole === 'supplier').length;
 
   return (
     <div className="space-y-8 text-left">
@@ -279,10 +280,10 @@ export const RoleRequestsManager: React.FC = () => {
 
         <UICard className="p-5 bg-white border border-purple-100 rounded-2xl shadow-sm">
           <div className="flex items-center justify-between text-xs font-bold text-purple-700 uppercase tracking-wider mb-2">
-            <span>{isMr ? 'बिल्डर व विक्रेता अर्ज' : 'Builder & Seller Requests'}</span>
+            <span>{isMr ? 'बिल्डर, विक्रेता व सप्लायर' : 'Builder, Seller & Supplier'}</span>
             <Building className="w-4 h-4 text-purple-600" />
           </div>
-          <div className="text-3xl font-extrabold text-purple-700">{builderRequestsCount + sellerRequestsCount}</div>
+          <div className="text-3xl font-extrabold text-purple-700">{builderRequestsCount + sellerRequestsCount + supplierRequestsCount}</div>
         </UICard>
       </div>
 
@@ -452,6 +453,20 @@ export const RoleRequestsManager: React.FC = () => {
                       </div>
                     )}
 
+                    {item.requestedRole === 'supplier' && item.supplierDetails && (
+                      <div className="text-xs p-2.5 rounded-xl space-y-1 bg-orange-50/70 border border-orange-200 text-slate-700">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-bold text-orange-950 truncate">
+                            🛠️ {item.supplierDetails.businessName || 'Material Supplier'}
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-slate-600">
+                          <span className="font-semibold text-slate-700">Category:</span> {item.supplierDetails.category || item.supplierDetails.primaryCategory || 'Building Materials'}
+                          {item.supplierDetails.gstNumber && <span> • <span className="font-semibold text-slate-700">GST:</span> {item.supplierDetails.gstNumber}</span>}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
                       <Button
                         variant="outline"
@@ -513,7 +528,7 @@ export const RoleRequestsManager: React.FC = () => {
                     <th className="px-4 py-3.5 whitespace-nowrap">{isMr ? 'अर्जदार / नाव' : 'Applicant Name'}</th>
                     <th className="px-4 py-3.5 whitespace-nowrap">{isMr ? 'मोबाईल व ईमेल' : 'Contact'}</th>
                     <th className="px-4 py-3.5 whitespace-nowrap">{isMr ? 'मागितलेली भूमिका' : 'Requested Role'}</th>
-                    <th className="px-4 py-3.5 whitespace-nowrap">{isMr ? 'पहिली मालमत्ता (Seller)' : '1st Property Details'}</th>
+                    <th className="px-4 py-3.5 whitespace-nowrap">{isMr ? 'मालमत्ता / व्यवसाय तपशील' : 'Property / Business Details'}</th>
                     <th className="px-3 py-3.5 whitespace-nowrap">{isMr ? 'तारीख' : 'Date'}</th>
                     <th className="px-3 py-3.5 whitespace-nowrap">{isMr ? 'स्थिती' : 'Status'}</th>
                     <th className="px-4 py-3.5 text-right whitespace-nowrap">{isMr ? 'कृती' : 'Actions'}</th>
@@ -599,6 +614,16 @@ export const RoleRequestsManager: React.FC = () => {
                                     <span>{isMr ? 'पहा' : 'See'}</span>
                                   </button>
                                 </div>
+                              </div>
+                            ) : item.requestedRole === 'supplier' && item.supplierDetails ? (
+                              <div className="max-w-xs space-y-0.5">
+                                <span className="font-semibold text-orange-950 block truncate">
+                                  🛠️ {item.supplierDetails.businessName || 'Material Supplier'}
+                                </span>
+                                <span className="text-[11px] text-slate-500 block truncate">
+                                  {item.supplierDetails.category || item.supplierDetails.primaryCategory || 'Building Materials'}
+                                  {item.supplierDetails.gstNumber ? ` • GST: ${item.supplierDetails.gstNumber}` : ''}
+                                </span>
                               </div>
                             ) : (
                               <span className="text-slate-400 italic">-</span>
