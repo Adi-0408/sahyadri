@@ -80,12 +80,18 @@ export const FlatListingForm: React.FC<FlatListingFormProps> = ({ onBack, onSucc
   }, [baseSchema, transactionType]);
   const resolver = useMemo(() => zodResolver(schema), [schema]);
 
+  const isAdminUser =
+    user?.role === 'admin' ||
+    user?.role === 'employee' ||
+    user?.role === 'representative' ||
+    (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin'));
+
   const { register, handleSubmit, control, formState: { errors }, setValue, watch } = useForm<any>({
     resolver,
     defaultValues: {
       type: initialData?.type || initialData?.propertyInformation?.listingType?.toLowerCase() || initialTransactionType || 'sale',
-      ownerName: initialData?.ownerName || initialData?.ownerDetails?.ownerName || user?.displayName || '',
-      email: initialData?.email || user?.email || '',
+      ownerName: initialData?.ownerName || initialData?.ownerDetails?.ownerName || (isAdminUser ? '' : user?.displayName || ''),
+      email: initialData?.email || (isAdminUser ? '' : user?.email || ''),
       mobileNumber: initialData?.mobileNumber || initialData?.ownerDetails?.ownerPhone || '',
       alternateMobile: initialData?.alternateMobile || initialData?.ownerDetails?.ownerWhatsApp || '',
       isNegotiable: initialData?.isNegotiable !== undefined ? initialData.isNegotiable : true,
