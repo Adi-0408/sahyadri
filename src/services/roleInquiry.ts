@@ -638,6 +638,14 @@ export const extractInquiryRole = (item: any): string => {
   let role = String(item.requestedRole || item.role || '').trim().toLowerCase();
   if (role) return role;
 
+  const idStr = String(item.firestoreDocId || item._docId || item.id || '').toLowerCase();
+  if (idStr.startsWith('supplier_') || idStr.startsWith('app_supplier_') || idStr.includes('supplier')) return 'supplier';
+  if (idStr.startsWith('builder_') || idStr.startsWith('app_builder_')) return 'builder';
+  if (idStr.startsWith('buyer_') || idStr.startsWith('app_buyer_')) return 'buyer';
+  if (idStr.startsWith('seller_') || idStr.startsWith('app_seller_')) return 'seller';
+  if (idStr.startsWith('agent_') || idStr.startsWith('app_agent_')) return 'agent';
+  if (idStr.startsWith('rep_') || idStr.startsWith('representative_')) return 'representative';
+
   if (typeof item.propertyName === 'string' && item.propertyName.includes('Role Application:')) {
     const parsed = item.propertyName.split('Role Application:')[1]?.trim()?.toLowerCase();
     if (parsed) return parsed;
@@ -663,8 +671,8 @@ export const isRoleInquiryDocument = (item: any): boolean => {
   if (item.test === true || item.test === 'true') return false;
 
   const rawMob = item.userMobile || item.phone || item.mobile || item.cleanMobile || item.contactNumber || '';
-  const hasPhoneInId = Boolean(String(item.id || item.userId || '').match(/\d{10}/));
-  const rawName = String(item.userName || item.name || item.fullName || '').trim();
+  const hasPhoneInId = Boolean(String(item.id || item.userId || item.firestoreDocId || '').match(/\d{10}/));
+  const rawName = String(item.userName || item.name || item.fullName || item.firmOrAgencyName || '').trim();
   const hasRealName = rawName && rawName.toLowerCase() !== 'applicant' && rawName.toLowerCase() !== 'user';
   const hasContact = Boolean(rawMob || hasPhoneInId || item.userEmail || item.email);
   const hasPropertyOrDetails = Boolean(
@@ -673,7 +681,8 @@ export const isRoleInquiryDocument = (item: any): boolean => {
     item.builderDetails ||
     item.agentDetails ||
     item.supplierDetails ||
-    item.buyerDetails
+    item.buyerDetails ||
+    item.firmOrAgencyName
   );
 
   // An inquiry must have at least some contact information or property details
@@ -943,13 +952,36 @@ export const normalizeMobileRoleDoc = (item: any, collectionName: string): RoleI
 
   const name = hasRealName ? rawName : (cleanMob ? `User ${cleanMob}` : 'Applicant');
 
+  const rawIdStr = String(item.firestoreDocId || item._docId || item.id || '').toLowerCase();
+
   let role: UserRole = 'seller';
-  if (collectionName === 'buyers' || item.role === 'buyer') role = 'buyer';
-  else if (collectionName === 'sellers' || item.role === 'seller') role = 'seller';
-  else if (collectionName === 'builders' || item.role === 'builder') role = 'builder';
-  else if (collectionName === 'agents' || item.role === 'agent') role = 'agent';
-  else if (collectionName === 'suppliers' || item.role === 'supplier') role = 'supplier';
-  else if (collectionName === 'representatives' || item.role === 'representative') role = 'representative';
+  if (collectionName === 'buyers' || item.role === 'buyer' || rawIdStr.startsWith('buyer_') || rawIdStr.startsWith('app_buyer_')) {
+    role = 'buyer';
+  } else if (collectionName === 'sellers' || item.role === 'seller' || rawIdStr.startsWith('seller_') || rawIdStr.startsWith('app_seller_')) {
+    role = 'seller';
+  } else if (collectionName === 'builders' || item.role === 'builder' || rawIdStr.startsWith('builder_') || rawIdStr.startsWith('app_builder_')) {
+    role = 'builder';
+  } else if (collectionName === 'agents' || item.role === 'agent' || rawIdStr.startsWith('agent_') || rawIdStr.startsWith('app_agent_')) {
+    role = 'agent';
+  } else if (
+    collectionName === 'suppliers' || 
+    collectionName === 'material_suppliers' || 
+    item.role === 'supplier' || 
+    rawIdStr.startsWith('supplier_') || 
+    rawIdStr.startsWith('app_supplier_') ||
+    rawIdStr.includes('supplier')
+  ) {
+    role = 'supplier';
+  } else if (
+    collectionName === 'representatives' || 
+    item.role === 'representative' || 
+    rawIdStr.startsWith('rep_') || 
+    rawIdStr.startsWith('representative_')
+  ) {
+    role = 'representative';
+  } else if (extractInquiryRole(item)) {
+    role = extractInquiryRole(item) as UserRole;
+  }
 
   const rawStatus = String(item.status || 'pending').toLowerCase();
   let status: 'pending' | 'approved' | 'rejected' = 'pending';
@@ -1152,14 +1184,16 @@ export const fetchUserRoleInquiry = async (
     matchedInquiries.push(...userInquiries);
   } catch (err) {}
 
-  // 2b. Fetch from mobile collections ('sellers', 'buyers', 'builders', 'agents', 'suppliers')
+  // 2b. Fetch from mobile collections ('sellers', 'buyers', 'builders', 'agents', 'suppliers', 'role_applications', 'material_suppliers')
   try {
-    const [sellers, buyers, builders, agents, suppliers] = await Promise.all([
+    const [sellers, buyers, builders, agents, suppliers, roleApplications, materialSuppliers] = await Promise.all([
       fetchCollection('sellers').catch(() => []),
       fetchCollection('buyers').catch(() => []),
       fetchCollection('builders').catch(() => []),
       fetchCollection('agents').catch(() => []),
-      fetchCollection('suppliers').catch(() => [])
+      fetchCollection('suppliers').catch(() => []),
+      fetchCollection('role_applications').catch(() => []),
+      fetchCollection('material_suppliers').catch(() => [])
     ]);
 
     sellers.forEach((item: any) => {
@@ -1184,6 +1218,16 @@ export const fetchUserRoleInquiry = async (
 
     suppliers.forEach((item: any) => {
       const norm = normalizeMobileRoleDoc(item, 'suppliers');
+      if (norm && isUserMatch(norm)) matchedInquiries.push(norm);
+    });
+
+    roleApplications.forEach((item: any) => {
+      const norm = normalizeMobileRoleDoc(item, 'role_applications');
+      if (norm && isUserMatch(norm)) matchedInquiries.push(norm);
+    });
+
+    materialSuppliers.forEach((item: any) => {
+      const norm = normalizeMobileRoleDoc(item, 'material_suppliers');
       if (norm && isUserMatch(norm)) matchedInquiries.push(norm);
     });
   } catch (err) {}
@@ -1321,6 +1365,8 @@ export const subscribeToUserRoleInquiry = (
 
   let roleInquiriesList: any[] = [];
   let enquiriesList: any[] = [];
+  let roleApplicationsList: any[] = [];
+  let materialSuppliersList: any[] = [];
   let sellersList: any[] = [];
   let buyersList: any[] = [];
   let buildersList: any[] = [];
@@ -1350,6 +1396,16 @@ export const subscribeToUserRoleInquiry = (
           sourceCollection: 'enquiries'
         });
       }
+    });
+
+    roleApplicationsList.forEach((item) => {
+      const norm = normalizeMobileRoleDoc(item, 'role_applications');
+      if (norm && isUserMatch(norm)) matched.push(norm);
+    });
+
+    materialSuppliersList.forEach((item) => {
+      const norm = normalizeMobileRoleDoc(item, 'material_suppliers');
+      if (norm && isUserMatch(norm)) matched.push(norm);
     });
 
     sellersList.forEach((item) => {
@@ -1480,6 +1536,16 @@ export const subscribeToUserRoleInquiry = (
     updateAndNotify();
   });
 
+  const unsubRoleApplications = subscribeToCollection('role_applications', (list) => {
+    roleApplicationsList = list;
+    updateAndNotify();
+  });
+
+  const unsubMaterialSuppliers = subscribeToCollection('material_suppliers', (list) => {
+    materialSuppliersList = list;
+    updateAndNotify();
+  });
+
   const handleCustomEvent = () => {
     updateAndNotify();
   };
@@ -1493,6 +1559,8 @@ export const subscribeToUserRoleInquiry = (
   return () => {
     if (typeof unsubRole === 'function') unsubRole();
     if (typeof unsubEnquiries === 'function') unsubEnquiries();
+    if (typeof unsubRoleApplications === 'function') unsubRoleApplications();
+    if (typeof unsubMaterialSuppliers === 'function') unsubMaterialSuppliers();
     if (typeof unsubSellers === 'function') unsubSellers();
     if (typeof unsubBuyers === 'function') unsubBuyers();
     if (typeof unsubBuilders === 'function') unsubBuilders();
@@ -1512,6 +1580,8 @@ export const subscribeToUserRoleInquiry = (
 export const subscribeToRoleInquiries = (callback: (inquiries: RoleInquiry[]) => void) => {
   let roleInquiriesList: RoleInquiry[] = [];
   let enquiriesList: RoleInquiry[] = [];
+  let roleApplicationsList: RoleInquiry[] = [];
+  let materialSuppliersList: RoleInquiry[] = [];
   let sellersList: RoleInquiry[] = [];
   let buyersList: RoleInquiry[] = [];
   let buildersList: RoleInquiry[] = [];
@@ -1553,6 +1623,8 @@ export const subscribeToRoleInquiries = (callback: (inquiries: RoleInquiry[]) =>
     const allCandidates = [
       ...roleInquiriesList,
       ...enquiriesList,
+      ...roleApplicationsList,
+      ...materialSuppliersList,
       ...sellersList,
       ...buyersList,
       ...buildersList,
@@ -1572,6 +1644,8 @@ export const subscribeToRoleInquiries = (callback: (inquiries: RoleInquiry[]) =>
         item.sourceCollection !== 'builders' &&
         item.sourceCollection !== 'agents' &&
         item.sourceCollection !== 'suppliers' &&
+        item.sourceCollection !== 'role_applications' &&
+        item.sourceCollection !== 'material_suppliers' &&
         item.sourceCollection !== 'users' &&
         !isRoleInquiryDocument(item)
       ) return;
@@ -1667,8 +1741,25 @@ export const subscribeToRoleInquiries = (callback: (inquiries: RoleInquiry[]) =>
     });
 
     // 3. Merge each cluster into a single consolidated RoleInquiry
+    const userNamesByMobile = new Map<string, string>();
+    allCandidates.forEach((cand) => {
+      if (!cand) return;
+      const mob = String(cand.userMobile || (cand as any).mobile || (cand as any).phone || '').replace(/[^0-9]/g, '').slice(-10);
+      const name = String(cand.userName || (cand as any).name || (cand as any).fullName || '').trim();
+      if (mob && name && !isGenericOrDummyName(name) && name !== 'Registered Builder' && name !== 'Registered Supplier' && name !== 'Property Owner') {
+        if (!userNamesByMobile.has(mob) || cand.sourceCollection === 'users') {
+          userNamesByMobile.set(mob, name);
+        }
+      }
+    });
+
     const unified = clusters.map((cluster) => {
-      return cluster.reduce((merged, current) => mergeInquiryRecords(merged, current));
+      const merged = cluster.reduce((m, current) => mergeInquiryRecords(m, current));
+      const mob = String(merged.userMobile || '').replace(/[^0-9]/g, '').slice(-10);
+      if (mob && userNamesByMobile.has(mob) && (isGenericOrDummyName(merged.userName) || merged.userName === merged.supplierDetails?.businessName || merged.userName === merged.builderDetails?.companyName)) {
+        merged.userName = userNamesByMobile.get(mob)!;
+      }
+      return merged;
     });
 
     const sorted = unified.sort(
@@ -1763,6 +1854,26 @@ export const subscribeToRoleInquiries = (callback: (inquiries: RoleInquiry[]) =>
     });
   } catch {}
 
+  let unsubRoleApplications: any = null;
+  try {
+    unsubRoleApplications = subscribeToCollection('role_applications', (list: any[]) => {
+      roleApplicationsList = (list || [])
+        .map((item: any) => normalizeMobileRoleDoc(item, 'role_applications'))
+        .filter(Boolean) as RoleInquiry[];
+      notify();
+    });
+  } catch {}
+
+  let unsubMaterialSuppliers: any = null;
+  try {
+    unsubMaterialSuppliers = subscribeToCollection('material_suppliers', (list: any[]) => {
+      materialSuppliersList = (list || [])
+        .map((item: any) => normalizeMobileRoleDoc(item, 'material_suppliers'))
+        .filter(Boolean) as RoleInquiry[];
+      notify();
+    });
+  } catch {}
+
   let unsubUsers: any = null;
   try {
     unsubUsers = subscribeToCollection('users', (list: any[]) => {
@@ -1836,6 +1947,8 @@ export const subscribeToRoleInquiries = (callback: (inquiries: RoleInquiry[]) =>
   return () => {
     if (typeof unsubRole === 'function') unsubRole();
     if (typeof unsubEnquiries === 'function') unsubEnquiries();
+    if (typeof unsubRoleApplications === 'function') unsubRoleApplications();
+    if (typeof unsubMaterialSuppliers === 'function') unsubMaterialSuppliers();
     if (typeof unsubSellers === 'function') unsubSellers();
     if (typeof unsubBuyers === 'function') unsubBuyers();
     if (typeof unsubBuilders === 'function') unsubBuilders();
@@ -1987,7 +2100,23 @@ export const approveRoleInquiry = async (
             businessName: inquiry.supplierDetails?.businessName || inquiry.userName,
             category: inquiry.supplierDetails?.category || inquiry.supplierDetails?.primaryCategory || 'All'
           });
+          await setExactDocument('material_suppliers', `supplier_${cleanMobile}`, {
+            status: 'approved',
+            statusMr: 'मंजूर',
+            reviewedAt: now,
+            reviewedBy: reviewer,
+            ...(inquiry.userName && !isGenericOrDummyName(inquiry.userName) ? { name: inquiry.userName } : {}),
+            mobile: cleanMobile,
+            businessName: inquiry.supplierDetails?.businessName || inquiry.userName,
+            category: inquiry.supplierDetails?.category || inquiry.supplierDetails?.primaryCategory || 'All'
+          }).catch(() => {});
         }
+        await setExactDocument('role_applications', `${resolvedRole}_${cleanMobile}`, {
+          status: 'approved',
+          adminRemarks: 'Approved by Admin',
+          reviewedAt: now,
+          reviewedBy: reviewer
+        }).catch(() => {});
       }
       if (
         inquiry.id &&
@@ -2029,6 +2158,12 @@ export const approveRoleInquiry = async (
             reviewedBy: reviewer
           });
         }
+        await setExactDocument('role_applications', inquiry.id, {
+          status: 'approved',
+          adminRemarks: 'Approved by Admin',
+          reviewedAt: now,
+          reviewedBy: reviewer
+        }).catch(() => {});
       }
     } catch (mobileSyncErr) {
       console.warn('Could not sync approval to mobile collection:', mobileSyncErr);
@@ -2597,7 +2732,20 @@ export const rejectRoleInquiry = async (
             reviewedAt: now,
             reviewedBy: reviewer
           });
+          await setExactDocument('material_suppliers', `supplier_${cleanMob}`, {
+            status: 'rejected',
+            statusMr: 'नाकारले',
+            adminRemarks: rejectionReason,
+            reviewedAt: now,
+            reviewedBy: reviewer
+          }).catch(() => {});
         }
+        await setExactDocument('role_applications', `${resolvedRole}_${cleanMob}`, {
+          status: 'rejected',
+          adminRemarks: rejectionReason,
+          reviewedAt: now,
+          reviewedBy: reviewer
+        }).catch(() => {});
       }
       if (
         inquiryId &&
@@ -2647,6 +2795,12 @@ export const rejectRoleInquiry = async (
             reviewedBy: reviewer
           });
         }
+        await setExactDocument('role_applications', inquiryId, {
+          status: 'rejected',
+          adminRemarks: rejectionReason,
+          reviewedAt: now,
+          reviewedBy: reviewer
+        }).catch(() => {});
       }
     } catch (mobileSyncErr) {
       console.warn('Could not sync rejection to mobile collection:', mobileSyncErr);
@@ -2762,6 +2916,8 @@ export const deleteRoleInquiry = async (
   const collections = [
     'role_inquiries',
     'enquiries',
+    'role_applications',
+    'material_suppliers',
     'sellers',
     'buyers',
     'builders',
@@ -2793,6 +2949,10 @@ export const deleteRoleInquiry = async (
   const rawMob = item?.userMobile || (item as any)?.phone || (item as any)?.mobile;
   const mob = String(rawMob || '').replace(/[^0-9]/g, '').slice(-10);
   if (mob) {
+    if (item?.requestedRole) {
+      deletePromises.push(deleteDocument('role_applications', `${item.requestedRole}_${mob}`).catch(() => {}));
+      deletePromises.push(deleteDocument('role_applications', `app_${item.requestedRole}_${mob}`).catch(() => {}));
+    }
     if (item?.requestedRole === 'seller') {
       deletePromises.push(deleteDocument('sellers', `seller_${mob}`).catch(() => {}));
       deletePromises.push(deleteDocument('sellers', `app_seller_${mob}`).catch(() => {}));
@@ -2805,6 +2965,7 @@ export const deleteRoleInquiry = async (
     } else if (item?.requestedRole === 'supplier') {
       deletePromises.push(deleteDocument('suppliers', `supplier_${mob}`).catch(() => {}));
       deletePromises.push(deleteDocument('suppliers', `app_supplier_${mob}`).catch(() => {}));
+      deletePromises.push(deleteDocument('material_suppliers', `supplier_${mob}`).catch(() => {}));
     }
   }
 
@@ -3188,9 +3349,11 @@ export const synthesizePropertyFromUser = (u: any): any => {
 export const syncApprovedRoleInquiriesWithProperties = async (): Promise<number> => {
   let syncedCount = 0;
   try {
-    const [roleInqs, enquiries, sellers, builders, rawUsers, properties, suppliers] = await Promise.all([
+    const [roleInqs, enquiries, roleApps, matSuppliers, sellers, builders, rawUsers, properties, suppliers] = await Promise.all([
       fetchCollection('role_inquiries').catch(() => []),
       fetchCollection('enquiries').catch(() => []),
+      fetchCollection('role_applications').catch(() => []),
+      fetchCollection('material_suppliers').catch(() => []),
       fetchCollection('sellers').catch(() => []),
       fetchCollection('builders').catch(() => []),
       fetchCollection('users').catch(() => []),
@@ -3212,6 +3375,8 @@ export const syncApprovedRoleInquiriesWithProperties = async (): Promise<number>
     const allInquiries = [
       ...(Array.isArray(roleInqs) ? roleInqs : []),
       ...(Array.isArray(enquiries) ? enquiries.filter(isRoleInquiryDocument) : []),
+      ...(Array.isArray(roleApps) ? roleApps.map((a: any) => normalizeMobileRoleDoc(a, 'role_applications')).filter(Boolean) : []),
+      ...(Array.isArray(matSuppliers) ? matSuppliers.map((m: any) => normalizeMobileRoleDoc(m, 'material_suppliers')).filter(Boolean) : []),
       ...(Array.isArray(sellers) ? sellers : []),
       ...(Array.isArray(builders) ? builders : []),
       ...(Array.isArray(suppliers) ? suppliers : []),
