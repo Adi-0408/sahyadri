@@ -117,6 +117,9 @@ export const RoleRequestsManager: React.FC = () => {
             : `User ${inq.userName} is now approved as "${inq.requestedRole}"!` +
                 (res.propertyCreated ? '\nTheir property has been approved and is now live on the website!' : '')
         );
+        // Synchronize and verify all properties in background
+        syncApprovedRoleInquiriesWithProperties().catch(() => {});
+
         if (selectedInquiry?.id === inq.id) {
           setIsDetailOpen(false);
         }

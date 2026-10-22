@@ -1,6 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { fetchCollection, subscribeToCollection, getCachedCollection } from '../../services/firebase';
+import {
+  syncApprovedRoleInquiriesWithProperties,
+  subscribeToRoleInquiries,
+  synthesizePropertyFromInquiry
+} from '../../services/roleInquiry';
 import { MapPin, BedDouble, Bath, Heart, Ruler, Search, ArrowLeft, LayoutGrid, Building, Home, Warehouse, Mountain, Tractor } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
@@ -241,6 +246,8 @@ export const Properties: React.FC = () => {
       console.error("Failed to load master metadata:", err);
     });
 
+    syncApprovedRoleInquiriesWithProperties().catch(() => {});
+
     // 2. Real-time subscription to properties collection:
     // Guarantees instant synchronization: the second an admin approves or updates
     // a property (from mobile or admin), it is instantly reflected on the web!
@@ -252,7 +259,16 @@ export const Properties: React.FC = () => {
         p.status === 'active' ||
         (p.adminApproved === true && p.isActive !== false)
       );
-      setProperties(approvedList);
+      setProperties((prev) => {
+        const propMap = new Map();
+        approvedList.forEach((p) => propMap.set(p.id, p));
+        prev.forEach((p) => {
+          if (p.source === 'approved_role_inquiry_sync' && !propMap.has(p.id)) {
+            propMap.set(p.id, p);
+          }
+        });
+        return Array.from(propMap.values());
+      });
       setIsLoading(false);
 
       // Clean up stale saved properties that do not exist in the database
@@ -271,8 +287,39 @@ export const Properties: React.FC = () => {
       }
     });
 
+    // 3. Real-time listener for approved role inquiries:
+    // Guarantees newly accepted requests are instantly visible even before server write confirms
+    const unsubInqs = subscribeToRoleInquiries((inqList) => {
+      const approvedInqs = (inqList || []).filter(
+        (i) => i && ((i.status as string) === 'approved' || (i.status as string) === 'accepted')
+      );
+      if (approvedInqs.length > 0) {
+        setProperties((prev) => {
+          const propMap = new Map();
+          prev.forEach((p) => propMap.set(p.id, p));
+          approvedInqs.forEach((inq) => {
+            const hasProp = Array.from(propMap.values()).some(
+              (p: any) =>
+                p.roleInquiryId === inq.id ||
+                p.id === inq.id ||
+                p.id === `prop-inquiry-${inq.id}`
+            );
+            if (!hasProp) {
+              const synthesized = synthesizePropertyFromInquiry(inq);
+              if (synthesized) {
+                propMap.set(synthesized.id, synthesized);
+              }
+            }
+          });
+          return Array.from(propMap.values());
+        });
+        setIsLoading(false);
+      }
+    });
+
     return () => {
       if (typeof unsubscribe === 'function') unsubscribe();
+      if (typeof unsubInqs === 'function') unsubInqs();
     };
   }, []);
 

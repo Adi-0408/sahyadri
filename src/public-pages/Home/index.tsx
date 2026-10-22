@@ -35,7 +35,11 @@ import {
 } from 'lucide-react';
 import { WaveDivider } from '../../components/ui/WaveDivider';
 import { subscribeToCollection, getCachedCollection } from '../../services/firebase';
-import { syncApprovedRoleInquiriesWithProperties } from '../../services/roleInquiry';
+import {
+  syncApprovedRoleInquiriesWithProperties,
+  subscribeToRoleInquiries,
+  synthesizePropertyFromInquiry
+} from '../../services/roleInquiry';
 
 const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.spark.sahyadrilanddeveloper";
 
@@ -82,7 +86,9 @@ export const Home: React.FC = () => {
 
   useEffect(() => {
     syncApprovedRoleInquiriesWithProperties().catch(() => {});
-    const unsub = subscribeToCollection('properties', (list) => {
+
+    // 1. Subscribe to properties collection from Firestore
+    const unsubProps = subscribeToCollection('properties', (list) => {
       const live = (list || [])
         .filter((p: any) =>
           p &&
@@ -91,13 +97,56 @@ export const Home: React.FC = () => {
             p.status === 'approved' ||
             p.status === 'active' ||
             (p.adminApproved === true && p.isActive !== false))
-        )
-        .sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-      setProperties(live);
+        );
+
+      setProperties((prev) => {
+        const propMap = new Map();
+        live.forEach((p) => propMap.set(p.id, p));
+        prev.forEach((p) => {
+          if (p.source === 'approved_role_inquiry_sync' && !propMap.has(p.id)) {
+            propMap.set(p.id, p);
+          }
+        });
+        return Array.from(propMap.values()).sort(
+          (a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+        );
+      });
+    });
+
+    // 2. Real-time Role Inquiries listener:
+    // Ensures ANY accepted role request immediately appears on the website without delay!
+    const unsubInqs = subscribeToRoleInquiries((inqList) => {
+      const approvedInqs = (inqList || []).filter(
+        (i) => i && ((i.status as string) === 'approved' || (i.status as string) === 'accepted')
+      );
+      if (approvedInqs.length > 0) {
+        setProperties((prev) => {
+          const propMap = new Map();
+          prev.forEach((p) => propMap.set(p.id, p));
+          approvedInqs.forEach((inq) => {
+            const hasProp = Array.from(propMap.values()).some(
+              (p: any) =>
+                p.roleInquiryId === inq.id ||
+                p.id === inq.id ||
+                p.id === `prop-inquiry-${inq.id}`
+            );
+            if (!hasProp) {
+              const synthesized = synthesizePropertyFromInquiry(inq);
+              if (synthesized) {
+                propMap.set(synthesized.id, synthesized);
+              }
+            }
+          });
+          return Array.from(propMap.values()).sort(
+            (a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+          );
+        });
+      }
     });
 
     return () => {
-      if (typeof unsub === 'function') unsub();
+      if (typeof unsubProps === 'function') unsubProps();
+      if (typeof unsubInqs === 'function') unsubInqs();
     };
   }, []);
 
