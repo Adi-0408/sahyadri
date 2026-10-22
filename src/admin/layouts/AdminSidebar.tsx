@@ -155,7 +155,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
         key={item.path}
         to={item.path}
         onClick={onClose}
-        className={`group relative flex items-center justify-between px-3 py-2 xl:py-2.5 rounded-lg text-[13px] xl:text-[14px] font-medium transition-all duration-150 cursor-pointer ${
+        className={`group relative flex items-center justify-between px-2.5 py-1.5 xl:py-2 rounded-lg text-xs lg:text-[13px] xl:text-[13.5px] font-medium transition-all duration-150 cursor-pointer ${
           isActive
             ? 'text-white font-bold bg-gradient-to-r from-emerald-500/20 via-emerald-500/10 to-transparent border border-emerald-500/30 shadow-xs'
             : 'text-slate-300 hover:text-white hover:bg-white/5 border border-transparent'
@@ -166,7 +166,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
           <span className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-emerald-400 rounded-r shadow-xs shadow-emerald-400/50" />
         )}
 
-        <div className="flex items-center gap-3 min-w-0 pl-1">
+        <div className="flex items-center gap-2.5 min-w-0 pl-0.5">
           <span
             className={`shrink-0 transition-colors ${
               isActive ? 'text-emerald-400' : 'text-slate-400 group-hover:text-slate-200'
@@ -177,9 +177,9 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
           <span className="truncate">{item.name}</span>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
           {item.badge !== undefined && (
-            <span className="px-2 py-0.5 rounded-full text-[10px] xl:text-[11px] font-bold bg-amber-500 text-slate-950 shrink-0 shadow-xs animate-pulse">
+            <span className="px-1.5 py-0.5 rounded-full text-[9px] xl:text-[10px] font-bold bg-amber-500 text-slate-950 shrink-0 shadow-xs animate-pulse">
               {item.badge}
             </span>
           )}
@@ -194,33 +194,33 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
   const sidebarContent = (
     <div className="flex flex-col h-full bg-[#0b0f19] border-r border-slate-800/60 overflow-hidden w-full select-none text-left shadow-xl">
       {/* Brand Header */}
-      <div className="px-4 xl:px-5 py-4 border-b border-slate-800/60 flex items-center justify-between shrink-0 bg-slate-950/60">
-        <Link to="/" className="flex items-center gap-3">
+      <div className="px-3.5 xl:px-4 py-3 xl:py-3.5 border-b border-slate-800/60 flex items-center justify-between shrink-0 bg-slate-950/60">
+        <Link to="/" className="flex items-center gap-2.5">
           <img
             src="/sahyadri-logo.png"
             alt="Sahyadri Land Developer"
-            className="h-9 xl:h-10 w-auto object-contain shrink-0 drop-shadow-md"
+            className="h-8 xl:h-9 w-auto object-contain shrink-0 drop-shadow-md"
           />
           <div className="flex flex-col">
-            <span className="text-base xl:text-lg font-black tracking-wide text-white leading-tight">
+            <span className="text-sm xl:text-base font-black tracking-wide text-white leading-tight">
               Sahyadri
             </span>
-            <span className="text-[10px] xl:text-[11px] uppercase tracking-wider text-emerald-400 font-extrabold">
+            <span className="text-[9px] xl:text-[10px] uppercase tracking-wider text-emerald-400 font-extrabold">
               Land Developer
             </span>
           </div>
         </Link>
         <Link
           to="/"
-          className="text-slate-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/10"
+          className="text-slate-400 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/10"
           title={t('admin.viewPublicSite', 'View Public Site')}
         >
-          <ExternalLink className="w-4 h-4 xl:w-4.5 xl:h-4.5" />
+          <ExternalLink className="w-3.5 h-3.5 xl:w-4 xl:h-4" />
         </Link>
       </div>
 
       {/* Navigation Sections with distinct card borders */}
-      <div className="flex-1 p-3 xl:p-4 space-y-3.5 xl:space-y-4 overflow-y-auto overscroll-contain admin-sidebar-scroll">
+      <div className="flex-1 p-2.5 xl:p-3 space-y-2.5 xl:space-y-3 overflow-y-auto overscroll-contain admin-sidebar-scroll">
         {/* 1. Overview */}
         {hasAnyAccess(['/admin/dashboard']) && (
           <div
@@ -460,7 +460,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
         <button
           type="button"
           onClick={handleLogout}
-          className="w-full flex items-center justify-center gap-2.5 px-3 py-2.5 xl:py-3 rounded-xl text-xs xl:text-sm font-bold text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 hover:border-rose-500/30 transition-all duration-150 cursor-pointer shadow-xs"
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 xl:py-2.5 rounded-xl text-xs xl:text-sm font-bold text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 hover:border-rose-500/30 transition-all duration-150 cursor-pointer shadow-xs"
         >
           <LogOut className="w-4 h-4 xl:w-4.5 xl:h-4.5 shrink-0" />
           <span>{t('admin.logout', 'Sign Out')}</span>
@@ -472,7 +472,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className="fixed left-0 top-0 h-full w-[300px] xl:w-[325px] 2xl:w-[340px] z-50 hidden md:block transition-all duration-150">
+      <aside className="fixed left-0 top-0 h-full w-[240px] lg:w-[260px] xl:w-[280px] 2xl:w-[300px] z-50 hidden md:block transition-all duration-150">
         {sidebarContent}
       </aside>
 
@@ -485,7 +485,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
             className="fixed inset-0 bg-slate-950/75 backdrop-blur-xs transition-opacity"
           />
           {/* Sidebar Drawer */}
-          <div className="relative w-[300px] max-w-[85vw] h-full shadow-2xl animate-in slide-in-from-left duration-200">
+          <div className="relative w-[280px] max-w-[85vw] h-full shadow-2xl animate-in slide-in-from-left duration-200">
             {sidebarContent}
           </div>
         </div>

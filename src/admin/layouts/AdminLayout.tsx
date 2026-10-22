@@ -18,20 +18,20 @@ export const AdminLayout: React.FC = () => {
       />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col md:pl-[300px] xl:pl-[325px] 2xl:pl-[340px] w-full overflow-x-hidden transition-all duration-150">
+      <div className="flex-1 flex flex-col md:pl-[240px] lg:pl-[260px] xl:pl-[280px] 2xl:pl-[300px] w-full min-w-0 overflow-x-hidden transition-all duration-150">
         {/* Header */}
         <AdminHeader 
           onMobileMenuToggle={() => setIsMobileOpen(!isMobileOpen)} 
         />
 
         {/* Content canvas */}
-        <main className="flex-grow pt-24 sm:pt-28 pb-12 px-4 sm:px-6 md:px-10 max-w-7xl w-full mx-auto overflow-x-hidden">
+        <main className="flex-grow pt-20 sm:pt-22 pb-12 px-3 sm:px-5 md:px-6 lg:px-8 max-w-7xl w-full mx-auto min-w-0">
           <motion.div
             key={location.pathname}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-            className="w-full flex-grow flex flex-col"
+            className="w-full flex-grow flex flex-col min-w-0"
           >
             <Outlet />
           </motion.div>

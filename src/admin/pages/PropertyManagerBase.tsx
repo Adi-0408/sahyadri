@@ -1205,8 +1205,8 @@ export const PropertyManagerBase: React.FC<PropertyManagerBaseProps> = ({ filter
           )}
         </div>
 
-        {/* Dropdowns Row - Premium 3-column Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
+        {/* Dropdowns Row - Responsive 3-column Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 w-full">
           <SearchableSelect
             label={t('admin.propertyManager.propertyType')}
             value={selectedPropertyType}
@@ -1303,23 +1303,23 @@ export const PropertyManagerBase: React.FC<PropertyManagerBaseProps> = ({ filter
           <div className="w-8 h-8 border-4 border-slate-200 border-t-primary rounded-full animate-spin"></div>
         </div>
       ) : (
-        <UICard className="bg-white border border-slate-100 shadow-sm rounded-2xl overflow-hidden relative z-10">
-          <div className="overflow-x-auto overflow-y-auto max-h-[500px] min-h-[380px]">
-            <table className="w-full text-left">
-              <thead className="bg-[#0b0f19] text-[10px] uppercase font-bold text-white tracking-wider">
+        <UICard className="bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden relative z-10 w-full min-w-0">
+          <div className="overflow-x-auto w-full custom-scrollbar">
+            <table className="w-full text-left border-collapse min-w-[760px] sm:min-w-[800px]">
+              <thead className="bg-[#0b0f19] text-[10px] uppercase font-bold text-white tracking-wider sticky top-0 z-10">
                 <tr>
-                  <th className="px-6 py-4">{t('admin.propertyManager.table.image')}</th>
-                  <th className="px-6 py-4">{t('admin.propertyManager.table.title')}</th>
-                  <th className="px-6 py-4">{t('admin.propertyManager.table.type')}</th>
-                  <th className="px-6 py-4">{t('admin.propertyManager.table.district')}</th>
-                  <th className="px-6 py-4">{t('admin.propertyManager.table.taluka')}</th>
-                  <th className="px-6 py-4">{t('admin.propertyManager.table.owner')}</th>
-                  <th className="px-6 py-4">{t('admin.propertyManager.table.date')}</th>
-                  <th className="px-6 py-4">{t('admin.propertyManager.table.status')}</th>
-                  <th className="px-6 py-4 text-right">{t('admin.propertyManager.table.actions')}</th>
+                  <th className="px-3.5 sm:px-4 py-3">{t('admin.propertyManager.table.image')}</th>
+                  <th className="px-3.5 sm:px-4 py-3">{t('admin.propertyManager.table.title')}</th>
+                  <th className="px-3.5 sm:px-4 py-3">{t('admin.propertyManager.table.type')}</th>
+                  <th className="px-3.5 sm:px-4 py-3">{t('admin.propertyManager.table.district')}</th>
+                  <th className="px-3.5 sm:px-4 py-3">{t('admin.propertyManager.table.taluka')}</th>
+                  <th className="px-3.5 sm:px-4 py-3">{t('admin.propertyManager.table.owner')}</th>
+                  <th className="px-3.5 sm:px-4 py-3">{t('admin.propertyManager.table.date')}</th>
+                  <th className="px-3.5 sm:px-4 py-3">{t('admin.propertyManager.table.status')}</th>
+                  <th className="px-3.5 sm:px-4 py-3 text-right">{t('admin.propertyManager.table.actions')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-xs text-slate-650 bg-white">
+              <tbody className="divide-y divide-slate-100 text-xs text-slate-700 bg-white">
                 {paginatedProperties.length === 0 ? (
                   <tr>
                     <td colSpan={9} className="px-6 py-10 text-center text-slate-400 font-semibold">
@@ -1340,7 +1340,7 @@ export const PropertyManagerBase: React.FC<PropertyManagerBaseProps> = ({ filter
                         setIsDetailOpen(true);
                       }}
                     >
-                      <td className="px-6 py-4">
+                      <td className="px-3.5 sm:px-4 py-3 sm:py-3.5">
                         <div className="relative w-12 h-9">
                           {prop.images?.[0] ? (
                             <img
@@ -1364,17 +1364,17 @@ export const PropertyManagerBase: React.FC<PropertyManagerBaseProps> = ({ filter
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-4 font-semibold text-slate-900 max-w-[180px] truncate">{getPropertyName(prop)}</td>
-                      <td className="px-6 py-4 capitalize text-slate-800 font-medium">
+                      <td className="px-3.5 sm:px-4 py-3 sm:py-3.5 font-semibold text-slate-900 max-w-[180px] truncate">{getPropertyName(prop)}</td>
+                      <td className="px-3.5 sm:px-4 py-3 sm:py-3.5 capitalize text-slate-800 font-medium">
                         {prop.propertyType || prop.category ? t(`categories.${(prop.propertyType || prop.category || '').toLowerCase()}`) : '—'}
                       </td>
-                      <td className="px-6 py-4 text-slate-800 font-medium">{prop.district || '—'}</td>
-                      <td className="px-6 py-4 text-slate-800 font-medium">{prop.taluka || '—'}</td>
-                      <td className="px-6 py-4 text-slate-800 font-medium max-w-[140px] truncate">{prop.ownerName || '—'}</td>
-                      <td className="px-6 py-4 text-slate-700 font-medium">
+                      <td className="px-3.5 sm:px-4 py-3 sm:py-3.5 text-slate-800 font-medium">{prop.district || '—'}</td>
+                      <td className="px-3.5 sm:px-4 py-3 sm:py-3.5 text-slate-800 font-medium">{prop.taluka || '—'}</td>
+                      <td className="px-3.5 sm:px-4 py-3 sm:py-3.5 text-slate-800 font-medium max-w-[140px] truncate">{prop.ownerName || '—'}</td>
+                      <td className="px-3.5 sm:px-4 py-3 sm:py-3.5 text-slate-700 font-medium whitespace-nowrap">
                         {prop.createdAt ? new Date(prop.createdAt).toLocaleDateString('en-IN') : '—'}
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-3.5 sm:px-4 py-3 sm:py-3.5">
                         <div className="flex flex-col gap-1.5 items-start">
                           <span className={`px-2.5 py-0.5 rounded-full text-[9px] uppercase font-extrabold border ${getStatusBadge(prop.status)}`}>
                             {t(`admin.status.${prop.status}`)}
@@ -1387,7 +1387,7 @@ export const PropertyManagerBase: React.FC<PropertyManagerBaseProps> = ({ filter
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-3.5 sm:px-4 py-3 sm:py-3.5 text-right">
                         <div className="flex items-center justify-end gap-2">
                           {/* 3-dot dropdown menu */}
                           <div className="relative inline-block text-left">

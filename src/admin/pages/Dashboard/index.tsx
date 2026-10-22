@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../app/providers/AuthProvider';
@@ -35,16 +35,19 @@ export const Dashboard: React.FC = () => {
 
   const [loading, setLoading] = useState(true);
   const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({});
+  const [propertiesList, setPropertiesList] = useState<any[]>([]);
+  const [enquiriesList, setEnquiriesList] = useState<any[]>([]);
 
   useEffect(() => {
     setLoading(true);
     let propsLoaded = false;
     let logsLoaded = false;
 
-    const unsubProps = subscribeToCollection('properties', (propertiesList) => {
-      const pendingCount = propertiesList.filter((p) => p.status === 'pending').length;
-      const liveCount = propertiesList.filter((p) => p.status === 'approved' || p.status === 'active').length;
-      const onHoldCount = propertiesList.filter((p) => p.status === 'onhold').length;
+    const unsubProps = subscribeToCollection('properties', (list) => {
+      setPropertiesList(list || []);
+      const pendingCount = (list || []).filter((p) => p.status === 'pending').length;
+      const liveCount = (list || []).filter((p) => p.status === 'approved' || p.status === 'active').length;
+      const onHoldCount = (list || []).filter((p) => p.status === 'onhold').length;
 
       setStats((prev) => ({
         ...prev,
@@ -54,7 +57,7 @@ export const Dashboard: React.FC = () => {
       }));
 
       const counts: Record<string, number> = {};
-      propertiesList.forEach((p) => {
+      (list || []).forEach((p) => {
         const cat = p.propertyType || p.category || 'Other';
         const formattedCat = cat.charAt(0).toUpperCase() + cat.slice(1).toLowerCase();
         counts[formattedCat] = (counts[formattedCat] || 0) + 1;
@@ -88,9 +91,11 @@ export const Dashboard: React.FC = () => {
       if (propsLoaded && logsLoaded) setLoading(false);
     });
 
-    fetchCollection('enquiries').then((res) => {
-      setStats((prev) => ({ ...prev, enquiries: res.length }));
+    const unsubEnquiries = subscribeToCollection('enquiries', (list) => {
+      setEnquiriesList(list || []);
+      setStats((prev) => ({ ...prev, enquiries: (list || []).length }));
     });
+
     fetchCollection('visit_requests').then((res) => {
       setStats((prev) => ({ ...prev, visits: res.length }));
     });
@@ -129,20 +134,82 @@ export const Dashboard: React.FC = () => {
     return () => {
       if (typeof unsubProps === 'function') unsubProps();
       if (typeof unsubLogs === 'function') unsubLogs();
+      if (typeof unsubEnquiries === 'function') unsubEnquiries();
       if (typeof unsubAgents === 'function') unsubAgents();
       if (typeof unsubUsers === 'function') unsubUsers();
     };
   }, []);
 
-  // Mock charts data matching Aura Estate styles
-  const trendsData = [
-    { name: 'Jan', Listings: 14, Enquiries: 45 },
-    { name: 'Feb', Listings: 18, Enquiries: 58 },
-    { name: 'Mar', Listings: 22, Enquiries: 85 },
-    { name: 'Apr', Listings: 16, Enquiries: 62 },
-    { name: 'May', Listings: 25, Enquiries: 96 },
-    { name: 'Jun', Listings: 30, Enquiries: 110 }
-  ];
+  // Real charts data dynamically aggregated from live database properties and enquiries
+  const trendsData = useMemo(() => {
+    const now = new Date();
+    const buckets: Array<{
+      name: string;
+      year: number;
+      month: number;
+      Listings: number;
+      Enquiries: number;
+    }> = [];
+
+    // Rolling 6-month window up to current month
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const name = d.toLocaleString('en-US', { month: 'short' });
+      buckets.push({
+        name,
+        year: d.getFullYear(),
+        month: d.getMonth(),
+        Listings: 0,
+        Enquiries: 0
+      });
+    }
+
+    const parseItemDate = (item: any): Date | null => {
+      if (!item) return null;
+      const raw = item.createdAt || item.timestamp || item.date || item.appliedAt || item.updatedAt;
+      if (raw) {
+        if (raw instanceof Date) return isNaN(raw.getTime()) ? null : raw;
+        if (typeof raw === 'object' && typeof raw.seconds === 'number') {
+          return new Date(raw.seconds * 1000);
+        }
+        const d = new Date(raw);
+        if (!isNaN(d.getTime())) return d;
+      }
+      if (item.id && typeof item.id === 'string') {
+        const match = item.id.match(/(\d{10,13})$/);
+        if (match) {
+          const ts = parseInt(match[1], 10);
+          const d = new Date(ts > 1e11 ? ts : ts * 1000);
+          if (!isNaN(d.getTime())) return d;
+        }
+      }
+      return null;
+    };
+
+    propertiesList.forEach((p) => {
+      const d = parseItemDate(p);
+      if (!d) return;
+      const bucket = buckets.find((b) => b.year === d.getFullYear() && b.month === d.getMonth());
+      if (bucket) {
+        bucket.Listings += 1;
+      }
+    });
+
+    enquiriesList.forEach((e) => {
+      const d = parseItemDate(e);
+      if (!d) return;
+      const bucket = buckets.find((b) => b.year === d.getFullYear() && b.month === d.getMonth());
+      if (bucket) {
+        bucket.Enquiries += 1;
+      }
+    });
+
+    return buckets.map(({ name, Listings, Enquiries }) => ({
+      name,
+      Listings,
+      Enquiries
+    }));
+  }, [propertiesList, enquiriesList]);
 
   const listingDistribution = Object.entries(categoryCounts).map(([name, count]) => ({
     name,
@@ -384,7 +451,7 @@ export const Dashboard: React.FC = () => {
                 <LineChart data={trendsData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                   <XAxis dataKey="name" stroke="#64748b" fontSize={11} tickLine={false} />
-                  <YAxis stroke="#64748b" fontSize={11} tickLine={false} />
+                  <YAxis stroke="#64748b" fontSize={11} tickLine={false} allowDecimals={false} />
                   <Tooltip 
                     contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)' }} 
                     labelStyle={{ color: '#0f172a', fontFamily: 'serif', fontWeight: 'bold' }}
@@ -407,7 +474,7 @@ export const Dashboard: React.FC = () => {
                 <BarChart data={listingDistribution} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                   <XAxis dataKey="name" stroke="#64748b" fontSize={11} tickLine={false} />
-                  <YAxis stroke="#64748b" fontSize={11} tickLine={false} />
+                  <YAxis stroke="#64748b" fontSize={11} tickLine={false} allowDecimals={false} />
                   <Tooltip 
                     contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)' }}
                     labelStyle={{ color: '#0f172a', fontFamily: 'serif', fontWeight: 'bold' }}
