@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { fetchCollection, updateDocument, deleteUserAccount, isMockMode, createDocument, generateUserCode, toggleBlockUser, isUserBlacklisted } from '../../../services/firebase';
+import { cleanAndDeduplicateUsers, syncApprovedRoleInquiriesWithProperties } from '../../../services/roleInquiry';
 import { Card as UICard } from '../../../components/ui/Card';
 import { ShieldCheck, Ban, Trash2, Search, UserPlus, X, User, Smartphone, Lock, Eye, EyeOff, Send, ChevronDown, Check } from 'lucide-react';
 import { Input } from '../../../components/ui/Input';
@@ -176,16 +177,19 @@ export const UsersManager: React.FC = () => {
     setLoading(true);
     try {
       const list = await fetchCollection('users');
-      // If list is empty in mock/real, fallback to some mock users for visual excellence
-      if (list.length === 0) {
+      // Clean up ghost records and merge duplicate phone-keyed entries
+      const { cleanedUsers } = await cleanAndDeduplicateUsers(list);
+      if (cleanedUsers.length === 0) {
         setUsers([
           { id: 'user-1', name: 'Elena Rossi', email: 'elena@example.com', role: 'user', isBlocked: false },
           { id: 'user-2', name: 'Julian Vane', email: 'julian@example.com', role: 'user', isBlocked: true },
           { id: 'user-3', name: 'Marcus Thorne', email: 'marcus@example.com', role: 'user', isBlocked: false }
         ]);
       } else {
-        setUsers(list);
+        setUsers(cleanedUsers);
       }
+      // Reconcile and guarantee properties exist for all seller/builder roles
+      syncApprovedRoleInquiriesWithProperties().catch(() => {});
     } catch (e) {
       console.error(e);
     } finally {
@@ -222,6 +226,13 @@ export const UsersManager: React.FC = () => {
   const handleRoleChange = async (targetUser: any, newRole: string) => {
     try {
       await updateDocument('users', targetUser.id, { role: newRole });
+      const cleanMobile = String(targetUser.mobile || targetUser.phone || targetUser.phoneNumber || targetUser.id || '').replace(/[^0-9]/g, '').slice(-10);
+
+      // If user was elevated to seller or builder, automatically sync approved properties
+      if (newRole === 'seller' || newRole === 'builder') {
+        await syncApprovedRoleInquiriesWithProperties();
+      }
+
       if (isMockMode && typeof window !== 'undefined') {
         const raw = localStorage.getItem('luminous_mock_users');
         if (raw) {
@@ -233,7 +244,14 @@ export const UsersManager: React.FC = () => {
           }
         }
       }
-      setUsers(users.map((u) => (u.id === targetUser.id ? { ...u, role: newRole } : u)));
+      setUsers((prev) => prev.map((u) => (u.id === targetUser.id ? { ...u, role: newRole } : u)));
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('role_inquiry_updated', {
+          detail: { userId: targetUser.id, mobile: cleanMobile, role: newRole, status: 'approved' }
+        }));
+        window.dispatchEvent(new Event('storage'));
+      }
     } catch (e) {
       console.error("Failed to change user role:", e);
     }
@@ -399,13 +417,21 @@ export const UsersManager: React.FC = () => {
   };
 
   const filteredUsers = users.filter((u) => {
+    if (!u) return false;
+    const name = String(u.name || '').trim();
+    const displayMobile = getDisplayMobile(u);
+    const uId = String(u.id || '');
+
+    // Defensively exclude ghost records that have no name and no mobile
+    if (!name && (displayMobile === '-' || !displayMobile)) return false;
+    if (uId.startsWith('app_seller_') && (!name || displayMobile === '-')) return false;
+
     if (!searchTerm) return true;
     const lowerTerm = searchTerm.toLowerCase();
-    const displayMobile = getDisplayMobile(u);
     const userCode = (u.userCode || u.id || '').toLowerCase();
     const userInterest = String(u.interest || u.interests || u.propertyInterest || '').toLowerCase();
     return (
-      (u.name && u.name.toLowerCase().includes(lowerTerm)) ||
+      (name && name.toLowerCase().includes(lowerTerm)) ||
       userCode.includes(lowerTerm) ||
       (displayMobile && displayMobile.toLowerCase().includes(lowerTerm)) ||
       (userInterest && userInterest.includes(lowerTerm))

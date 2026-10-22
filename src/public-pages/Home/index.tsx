@@ -103,7 +103,7 @@ export const Home: React.FC = () => {
         const propMap = new Map();
         live.forEach((p) => propMap.set(p.id, p));
         prev.forEach((p) => {
-          if (p.source === 'approved_role_inquiry_sync' && !propMap.has(p.id)) {
+          if ((p.source === 'approved_role_inquiry_sync' || p.source === 'user_role_sync') && !propMap.has(p.id)) {
             propMap.set(p.id, p);
           }
         });

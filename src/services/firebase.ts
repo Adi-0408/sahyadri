@@ -2121,14 +2121,8 @@ export const registerUser = async (email: string, pass: string, name: string, mo
         console.warn('[registerUser] Firestore user doc write deferred/warning:', writeErr);
       }
 
-      if (cleanMobile) {
-        try {
-          await firebaseSetDoc(firebaseDoc(db, 'users', cleanMobile), {
-            ...userPayload,
-            id: cleanMobile
-          });
-        } catch {}
-      }
+      // Do NOT create a duplicate document keyed by cleanMobile in 'users' collection.
+      // The single canonical document in 'users' is keyed by uid to prevent duplicate user rows.
 
       // If registered as buyer, auto-create approved record in 'buyers' collection
       if (effectiveRole === 'buyer') {
@@ -3258,6 +3252,19 @@ export const updateDocument = async (collectionName: string, docId: string, data
           updateErr?.code === 'not-found' ||
           (updateErr?.message && updateErr.message.includes('No document to update'))
         ) {
+          // SAFEGUARD: Never create a ghost user document when updating 'users' collection!
+          if (collectionName === 'users') {
+            const hasRealName = cleanedData.name &&
+              String(cleanedData.name).trim().length > 1 &&
+              !['user', 'applicant', 'test', '-', 'undefined', 'client'].includes(String(cleanedData.name).trim().toLowerCase());
+            const hasRealEmail = cleanedData.email && String(cleanedData.email).includes('@');
+            const hasRealMobile = cleanedData.mobile && String(cleanedData.mobile).replace(/[^0-9]/g, '').slice(-10).length === 10;
+            
+            if (!hasRealName && !hasRealEmail && !hasRealMobile) {
+              console.warn(`[updateDocument] Suppressed ghost user document creation for missing docId: ${docId}`);
+              return { id: docId, ...cleanedData };
+            }
+          }
           await firebaseSetDoc(firebaseDoc(db, collectionName, docId), cleanedData, { merge: true });
         } else {
           throw updateErr;
