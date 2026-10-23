@@ -106,8 +106,8 @@ export const Navbar: React.FC = () => {
           )}
         </Link>
 
-        {/* ── CENTER: Section Anchor Nav Links (Desktop md and above) ── */}
-        <nav className="hidden md:flex items-center gap-0.5 lg:gap-1.5 xl:gap-2.5">
+        {/* ── CENTER: Section Anchor Nav Links (Desktop lg and above) ── */}
+        <nav className="hidden lg:flex items-center gap-1 xl:gap-2.5">
           {navLinks.map((link) => {
             const isActive = activeSection === link.id;
             return (
@@ -115,7 +115,7 @@ export const Navbar: React.FC = () => {
                 key={link.id}
                 href={`/${link.href}`}
                 onClick={(e) => handleScrollTo(e, link.href)}
-                className={`px-2 lg:px-2.5 xl:px-3 py-1.5 text-xs lg:text-[13px] xl:text-[14px] font-bold rounded-lg transition-all whitespace-nowrap cursor-pointer ${
+                className={`px-2 xl:px-3 py-1.5 text-xs lg:text-[13px] xl:text-[14px] font-bold rounded-lg transition-all whitespace-nowrap cursor-pointer ${
                   isActive
                     ? 'text-[#b81414] bg-red-50/80 shadow-xs'
                     : 'text-slate-700 hover:text-[#b81414] hover:bg-slate-100/70'
@@ -146,11 +146,11 @@ export const Navbar: React.FC = () => {
           {/* Language Switcher */}
           <LanguageSwitcher />
 
-          {/* Mobile Hamburger Button */}
+          {/* Mobile/Tablet Hamburger Button */}
           <button
             type="button"
             onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden p-2 text-slate-700 hover:text-slate-900 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-colors cursor-pointer"
+            className="lg:hidden p-2 text-slate-700 hover:text-slate-900 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-colors cursor-pointer"
             aria-label="Toggle Menu"
           >
             {isOpen ? (
@@ -168,9 +168,9 @@ export const Navbar: React.FC = () => {
 
       </div>
 
-      {/* ── MOBILE Menu Drawer ── */}
+      {/* ── MOBILE / TABLET Menu Drawer ── */}
       <div
-        className={`md:hidden absolute top-[68px] left-0 w-full bg-white border-b border-slate-200 shadow-xl overflow-hidden transition-all duration-300 ${
+        className={`lg:hidden absolute top-[68px] left-0 w-full bg-white border-b border-slate-200 shadow-xl overflow-hidden transition-all duration-300 ${
           isOpen ? 'max-h-[480px] opacity-100 py-4' : 'max-h-0 opacity-0 py-0'
         }`}
       >
