@@ -299,7 +299,7 @@ export const Home: React.FC = () => {
             className="relative z-10 flex flex-col items-center text-center select-none cursor-pointer"
           >
             <img
-              src="/sahyadri-logo.png"
+              src="/sahyadri-lands-hero.png"
               alt="Sahyadri Lands"
               className="h-36 sm:h-52 md:h-64 lg:h-72 w-auto object-contain drop-shadow-2xl"
             />
