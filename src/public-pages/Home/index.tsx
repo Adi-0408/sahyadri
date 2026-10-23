@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import {
@@ -27,19 +26,9 @@ import {
   SunMedium,
   HelpCircle,
   Ruler,
-  Landmark,
-  Building,
-  ArrowRight,
-  BedDouble,
-  Bath
+  Landmark
 } from 'lucide-react';
 import { WaveDivider } from '../../components/ui/WaveDivider';
-import { subscribeToCollection, getCachedCollection } from '../../services/firebase';
-import {
-  syncApprovedRoleInquiriesWithProperties,
-  subscribeToRoleInquiries,
-  synthesizePropertyFromInquiry
-} from '../../services/roleInquiry';
 
 const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.spark.sahyadrilanddeveloper";
 
@@ -59,141 +48,6 @@ export const Home: React.FC = () => {
     if (el) {
       el.scrollIntoView({ behavior: 'smooth' });
     }
-  };
-
-  // Real-time approved properties state
-  const [properties, setProperties] = useState<any[]>(() => {
-    if (typeof window !== 'undefined') {
-      const cached = getCachedCollection('properties');
-      if (Array.isArray(cached) && cached.length > 0) {
-        return cached
-          .filter((p: any) =>
-            p &&
-            (p.isSoldOut === true ||
-              p.status === 'sold' ||
-              p.status === 'approved' ||
-              p.status === 'active' ||
-              (p.adminApproved === true && p.isActive !== false))
-          )
-          .sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-      }
-    }
-    return [];
-  });
-
-  const [propCategoryFilter, setPropCategoryFilter] = useState<'All' | 'Plot' | 'Flat' | 'House' | 'Land' | 'Bungalow'>('All');
-  const [propTypeFilter, setPropTypeFilter] = useState<'all' | 'sale' | 'rent'>('all');
-
-  useEffect(() => {
-    syncApprovedRoleInquiriesWithProperties().catch(() => {});
-
-    // 1. Subscribe to properties collection from Firestore
-    const unsubProps = subscribeToCollection('properties', (list) => {
-      const live = (list || [])
-        .filter((p: any) =>
-          p &&
-          (p.isSoldOut === true ||
-            p.status === 'sold' ||
-            p.status === 'approved' ||
-            p.status === 'active' ||
-            (p.adminApproved === true && p.isActive !== false))
-        );
-
-      setProperties((prev) => {
-        const propMap = new Map();
-        live.forEach((p) => propMap.set(p.id, p));
-        prev.forEach((p) => {
-          if ((p.source === 'approved_role_inquiry_sync' || p.source === 'user_role_sync') && !propMap.has(p.id)) {
-            propMap.set(p.id, p);
-          }
-        });
-        return Array.from(propMap.values()).sort(
-          (a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
-        );
-      });
-    });
-
-    // 2. Real-time Role Inquiries listener:
-    // Ensures ANY accepted role request immediately appears on the website without delay!
-    const unsubInqs = subscribeToRoleInquiries((inqList) => {
-      const approvedInqs = (inqList || []).filter(
-        (i) => i && ((i.status as string) === 'approved' || (i.status as string) === 'accepted')
-      );
-      if (approvedInqs.length > 0) {
-        setProperties((prev) => {
-          const propMap = new Map();
-          prev.forEach((p) => propMap.set(p.id, p));
-          approvedInqs.forEach((inq) => {
-            const hasProp = Array.from(propMap.values()).some(
-              (p: any) =>
-                p.roleInquiryId === inq.id ||
-                p.id === inq.id ||
-                p.id === `prop-inquiry-${inq.id}`
-            );
-            if (!hasProp) {
-              const synthesized = synthesizePropertyFromInquiry(inq);
-              if (synthesized) {
-                propMap.set(synthesized.id, synthesized);
-              }
-            }
-          });
-          return Array.from(propMap.values()).sort(
-            (a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
-          );
-        });
-      }
-    });
-
-    return () => {
-      if (typeof unsubProps === 'function') unsubProps();
-      if (typeof unsubInqs === 'function') unsubInqs();
-    };
-  }, []);
-
-  const filteredProperties = useMemo(() => {
-    return properties.filter((p) => {
-      if (propTypeFilter !== 'all') {
-        const t = (p.type || 'sale').toLowerCase();
-        if (t !== propTypeFilter) return false;
-      }
-      if (propCategoryFilter !== 'All') {
-        const c = (p.category || '').toLowerCase();
-        const f = propCategoryFilter.toLowerCase();
-        if (f === 'plot' && c !== 'plot' && c !== 'land') return false;
-        if (f === 'land' && c !== 'land' && c !== 'plot') return false;
-        if (f === 'flat' && c !== 'flat' && c !== 'apartment') return false;
-        if (f === 'house' && c !== 'house' && c !== 'villa' && c !== 'bungalow') return false;
-        if (f === 'bungalow' && c !== 'bungalow' && c !== 'villa' && c !== 'house') return false;
-      }
-      return true;
-    });
-  }, [properties, propCategoryFilter, propTypeFilter]);
-
-  const getFallbackImage = (cat?: string) => {
-    const c = (cat || '').toLowerCase();
-    if (c.includes('plot') || c.includes('land')) {
-      return 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80';
-    }
-    if (c.includes('flat') || c.includes('apartment')) {
-      return 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80';
-    }
-    if (c.includes('bungalow') || c.includes('villa')) {
-      return 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=800&q=80';
-    }
-    return 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80';
-  };
-
-  const formatPrice = (val?: number | string) => {
-    if (val === undefined || val === null || val === '') return isMr ? 'किंमत विचारणा' : 'On Request';
-    const num = typeof val === 'number' ? val : Number(String(val).replace(/[^0-9.]/g, ''));
-    if (isNaN(num) || num <= 0) return isMr ? 'किंमत विचारणा' : 'On Request';
-    if (num >= 10000000) {
-      return `₹${(num / 10000000).toFixed(2).replace(/\.00$/, '')} Cr`;
-    }
-    if (num >= 100000) {
-      return `₹${(num / 100000).toFixed(2).replace(/\.00$/, '')} Lakh`;
-    }
-    return `₹${num.toLocaleString('en-IN')}`;
   };
 
   const faqs = [
@@ -607,282 +461,15 @@ export const Home: React.FC = () => {
 
         </div>
 
-        {/* Multi-layered Wave Divider to Section 3.5 (slate-50) */}
+        {/* Multi-layered Wave Divider to Section 4 (slate-50) */}
         <WaveDivider to="slate-50" variant="reverse" />
-      </section>
-
-
-      {/* ─────────────────────────────────────────────────────────────
-          SECTION 3.5: LIVE VERIFIED & APPROVED PROPERTIES (#properties)
-      ───────────────────────────────────────────────────────────── */}
-      <section id="properties" className="relative bg-slate-50 pt-16 sm:pt-24 pb-0 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 pb-16 sm:pb-24">
-          
-          {/* Section Header */}
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
-            <div>
-              <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-[#b81414] bg-red-50 px-3.5 py-1 rounded-full border border-red-200 mb-3">
-                <Sparkles className="w-3.5 h-3.5 text-[#b81414]" />
-                <span>{isMr ? 'थेट उपलब्ध मालमत्ता' : 'Live Verified Listings'}</span>
-              </div>
-              <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-                {isMr ? 'नुकत्याच मंजूर झालेल्या थेट मालमत्ता' : 'Freshly Approved Properties & Plots'}
-              </h2>
-              <p className="mt-2 text-sm sm:text-base text-slate-600 max-w-2xl">
-                {isMr
-                  ? 'सह्याद्री लँड्सद्वारे कायदेशीर पडताळणी पूर्ण झालेले अधिकृत रेसिडेन्शियल प्लॉट्स, फ्लॅट्स आणि स्वतंत्र घरे.'
-                  : 'Hand-picked residential, commercial, and agricultural properties directly reviewed and live for acquisition.'}
-              </p>
-            </div>
-
-            {/* Direct CTA to full catalog */}
-            <div className="shrink-0 flex items-center gap-3">
-              <Link
-                to="/properties"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-800 text-xs font-bold shadow-xs hover:border-[#b81414] hover:text-[#b81414] hover:shadow-sm transition-all"
-              >
-                <span>{isMr ? 'सर्व मालमत्ता पहा' : 'View All Properties'}</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-          </div>
-
-          {/* Filter Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-8 pb-4 border-b border-slate-200">
-            {/* Category pills */}
-            <div className="flex flex-wrap gap-2">
-              {[
-                { id: 'All', labelMr: 'सर्व मालमत्ता', labelEn: 'All Listings' },
-                { id: 'Plot', labelMr: 'प्लॉट्स व जमीन', labelEn: 'Plots & Land' },
-                { id: 'Flat', labelMr: 'फ्लॅट्स', labelEn: 'Flats & Apartments' },
-                { id: 'House', labelMr: 'घरे व बंगले', labelEn: 'Houses & Villas' }
-              ].map((tab) => {
-                const active = propCategoryFilter === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => setPropCategoryFilter(tab.id as any)}
-                    className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                      active
-                        ? 'bg-[#b81414] text-white shadow-xs'
-                        : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
-                    }`}
-                  >
-                    {isMr ? tab.labelMr : tab.labelEn}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Type selector (Sale / Rent) */}
-            <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-slate-200 text-xs font-bold">
-              {[
-                { id: 'all', labelMr: 'सर्व', labelEn: 'All' },
-                { id: 'sale', labelMr: 'विक्रीसाठी', labelEn: 'For Sale' },
-                { id: 'rent', labelMr: 'भाड्याने', labelEn: 'For Rent' }
-              ].map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => setPropTypeFilter(t.id as any)}
-                  className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
-                    propTypeFilter === t.id
-                      ? 'bg-slate-900 text-white shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  {isMr ? t.labelMr : t.labelEn}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Properties Grid */}
-          {filteredProperties.length === 0 ? (
-            <div className="bg-white rounded-3xl border border-dashed border-slate-300 p-12 text-center max-w-lg mx-auto">
-              <Building className="w-12 h-12 text-slate-400 mx-auto mb-3" />
-              <h3 className="text-base font-bold text-slate-800">
-                {isMr ? 'नवीन मालमत्ता लवकरच उपलब्ध होतील' : 'No Properties in this Category'}
-              </h3>
-              <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-                {isMr
-                  ? 'आमच्या ॲडमिन टीमद्वारे नवीन प्राप्त झालेल्या मालमत्तांची पडताळणी सुरू आहे. मंजूर होताच त्या येथे दिसतील.'
-                  : 'New listings are currently undergoing title audit and verification. They will appear here immediately upon approval.'}
-              </p>
-              <div className="mt-5 flex justify-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPropCategoryFilter('All');
-                    setPropTypeFilter('all');
-                  }}
-                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 cursor-pointer"
-                >
-                  {isMr ? 'सर्व फिल्टर काढा' : 'Reset Filters'}
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredProperties.slice(0, 8).map((prop) => {
-                const img = (prop.images && prop.images.length > 0 && prop.images[0]) || getFallbackImage(prop.category);
-                const priceText = formatPrice(prop.type === 'rent' ? (prop.monthlyRent || prop.expectedPrice || prop.price) : (prop.expectedPrice || prop.price || prop.priceAmount));
-                const categoryLabel = prop.category || 'Plot';
-                const isRent = (prop.type || '').toLowerCase() === 'rent';
-                const titleText = prop.title || prop.propertyName || `${categoryLabel} in ${prop.cityVillage || prop.location || 'Sangli'}`;
-                const locationText = [prop.cityVillage, prop.taluka, prop.district].filter(Boolean).join(', ') || prop.location || 'Sangli';
-
-                return (
-                  <motion.div
-                    key={prop.id}
-                    whileHover={{ y: -6, transition: { duration: 0.2 } }}
-                    className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs hover:shadow-xl hover:border-slate-300 transition-all flex flex-col justify-between group text-left"
-                  >
-                    <div>
-                      {/* Image Thumbnail */}
-                      <div className="relative h-48 w-full overflow-hidden bg-slate-100">
-                        <img
-                          src={img}
-                          alt={titleText}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                          loading="lazy"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
-
-                        {/* Badges on Image */}
-                        <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/95 text-slate-900 shadow-xs backdrop-blur-xs">
-                            {categoryLabel}
-                          </span>
-                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider text-white shadow-xs backdrop-blur-xs ${
-                            isRent ? 'bg-amber-600' : 'bg-emerald-600'
-                          }`}>
-                            {isRent ? (isMr ? 'भाड्याने' : 'For Rent') : (isMr ? 'विक्रीसाठी' : 'For Sale')}
-                          </span>
-                        </div>
-
-                        {prop.isSoldOut && (
-                          <div className="absolute top-3 right-3">
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-600 text-white shadow-xs">
-                              {isMr ? 'विक्री पूर्ण' : 'Sold Out'}
-                            </span>
-                          </div>
-                        )}
-
-                        {/* Price Tag pinned to bottom of photo */}
-                        <div className="absolute bottom-3 left-3 right-3 flex items-baseline justify-between text-white">
-                          <div>
-                            <span className="text-lg font-black tracking-tight drop-shadow-md">
-                              {priceText}
-                            </span>
-                            {isRent && <span className="text-[10px] ml-1 opacity-90">{isMr ? '/महिना' : '/mo'}</span>}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Content */}
-                      <div className="p-4 sm:p-5">
-                        <h3 className="text-base font-bold text-slate-900 line-clamp-1 group-hover:text-[#b81414] transition-colors mb-1.5" title={titleText}>
-                          {titleText}
-                        </h3>
-
-                        <div className="flex items-center gap-1.5 text-xs text-slate-500 mb-3.5">
-                          <MapPin className="w-3.5 h-3.5 text-[#b81414] shrink-0" />
-                          <span className="truncate">{locationText}</span>
-                        </div>
-
-                        {/* Specs Pills */}
-                        <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-600 border-t border-slate-100 pt-3">
-                          {/* Built-up area / plot area */}
-                          {(prop.plotAreaGuntha || prop.plotAreaSqFt || prop.builtUpArea || prop.carpetArea || prop.landArea) && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-50 rounded-md border border-slate-200 font-semibold">
-                              <Ruler className="w-3 h-3 text-slate-500" />
-                              <span>
-                                {prop.plotAreaGuntha
-                                  ? `${prop.plotAreaGuntha} गुंठे`
-                                  : prop.plotAreaSqFt
-                                  ? `${prop.plotAreaSqFt} sqft`
-                                  : prop.builtUpArea
-                                  ? `${prop.builtUpArea} sqft`
-                                  : prop.carpetArea
-                                  ? `${prop.carpetArea} sqft`
-                                  : prop.landArea || ''}
-                              </span>
-                            </span>
-                          )}
-
-                          {/* BHK / Bedrooms */}
-                          {(prop.bedrooms || prop.flatType) && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-50 rounded-md border border-slate-200 font-semibold">
-                              <BedDouble className="w-3 h-3 text-slate-500" />
-                              <span>{prop.bedrooms ? `${prop.bedrooms} BHK` : prop.flatType}</span>
-                            </span>
-                          )}
-
-                          {/* Bathrooms */}
-                          {Boolean(prop.bathrooms) && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-50 rounded-md border border-slate-200 font-semibold">
-                              <Bath className="w-3 h-3 text-slate-500" />
-                              <span>{prop.bathrooms} बाथ</span>
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Card Actions Footer */}
-                    <div className="p-4 pt-0 sm:p-5 sm:pt-0 flex items-center gap-2">
-                      <Link
-                        to={`/property/${prop.id}`}
-                        className="flex-1 text-center py-2 px-3 rounded-xl bg-slate-900 hover:bg-[#b81414] text-white text-xs font-bold transition-colors shadow-xs"
-                      >
-                        {isMr ? 'तपशील पहा' : 'View Details'}
-                      </Link>
-
-                      <a
-                        href={`https://wa.me/918328712712?text=${encodeURIComponent(
-                          `नमस्कार Sahyadri Lands, मला "${titleText}" (${prop.id}) या मालमत्तेबद्दल अधिक माहिती हवी आहे.`
-                        )}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-2 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white border border-emerald-200 transition-colors shrink-0"
-                        title={isMr ? 'व्हॉट्सॲप चौकशी' : 'WhatsApp Enquiry'}
-                      >
-                        <MessageCircle className="w-4 h-4" />
-                      </a>
-                    </div>
-
-                  </motion.div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Bottom View All Link Banner */}
-          {properties.length > 8 && (
-            <div className="mt-12 text-center">
-              <Link
-                to="/properties"
-                className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-2xl bg-gradient-to-r from-slate-900 to-slate-800 hover:from-[#b81414] hover:to-[#991b1b] text-white text-sm font-bold shadow-md hover:shadow-lg transition-all"
-              >
-                <span>{isMr ? `सर्व ${properties.length} मालमत्तांची यादी पहा` : `Browse All ${properties.length} Available Listings`}</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-          )}
-
-        </div>
-
-        {/* Multi-layered Wave Divider to Section 4 (white) */}
-        <WaveDivider to="white" variant="forward" />
       </section>
 
 
       {/* ─────────────────────────────────────────────────────────────
           SECTION 4: AMENITIES & INFRASTRUCTURE GALLERY (#amenities)
       ───────────────────────────────────────────────────────────── */}
-      <section id="amenities" className="relative bg-white pt-16 sm:pt-24 pb-0 overflow-hidden">
+      <section id="amenities" className="relative bg-slate-50 pt-16 sm:pt-24 pb-0 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 pb-16 sm:pb-24">
           
           <div className="text-center max-w-3xl mx-auto mb-14">
@@ -997,14 +584,14 @@ export const Home: React.FC = () => {
         </div>
 
         {/* Multi-layered Wave Divider to Section 5 (slate-50) */}
-        <WaveDivider to="slate-50" variant="forward" />
+        <WaveDivider to="white" variant="forward" />
       </section>
 
 
       {/* ─────────────────────────────────────────────────────────────
           SECTION 5: GUNTHA & LAND MEASUREMENT BUYER'S GUIDE
       ───────────────────────────────────────────────────────────── */}
-      <section className="relative bg-slate-50 pt-16 sm:pt-20 pb-0 overflow-hidden">
+      <section className="relative bg-white pt-16 sm:pt-20 pb-0 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 pb-16 sm:pb-20">
           
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">

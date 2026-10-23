@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Home,
-  Building,
+  Landmark,
   Layers,
   Download,
   PhoneCall
@@ -45,14 +45,14 @@ export const MobileBottomNav: React.FC = () => {
         <span className="text-[10px] font-bold tracking-tight">{isMr ? 'मुख्य' : 'Overview'}</span>
       </button>
 
-      {/* 2. Properties */}
+      {/* 2. Amenities */}
       <button
         type="button"
-        onClick={() => scrollTo('properties')}
+        onClick={() => scrollTo('amenities')}
         className="flex-1 flex flex-col items-center justify-center py-0.5 text-slate-600 hover:text-[#b81414] transition-colors"
       >
-        <Building className="w-5 h-5 mb-0.5 text-slate-800" />
-        <span className="text-[10px] font-bold tracking-tight">{isMr ? 'मालमत्ता' : 'Properties'}</span>
+        <Landmark className="w-5 h-5 mb-0.5 text-slate-800" />
+        <span className="text-[10px] font-bold tracking-tight">{isMr ? 'सुविधा' : 'Amenities'}</span>
       </button>
 
       {/* 3. Developments */}

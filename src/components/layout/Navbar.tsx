@@ -18,7 +18,7 @@ export const Navbar: React.FC = () => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 12);
       
-      const sections = ['overview', 'developments', 'properties', 'amenities', 'app', 'process', 'faq', 'contact'];
+      const sections = ['overview', 'developments', 'amenities', 'app', 'process', 'faq', 'contact'];
       const scrollPos = window.scrollY + 140;
       
       for (let i = sections.length - 1; i >= 0; i--) {
@@ -37,7 +37,6 @@ export const Navbar: React.FC = () => {
   const navLinks = [
     { id: 'overview', name: isMr ? 'माहिती' : 'Overview', href: '#overview' },
     { id: 'developments', name: isMr ? 'प्रकल्प' : 'Projects', href: '#developments' },
-    { id: 'properties', name: isMr ? 'मालमत्ता' : 'Properties', href: '#properties' },
     { id: 'amenities', name: isMr ? 'सुविधा' : 'Amenities', href: '#amenities' },
     { id: 'app', name: isMr ? 'ॲप' : 'App', href: '#app' },
     { id: 'process', name: isMr ? 'प्रक्रिया' : 'Process', href: '#process' },
