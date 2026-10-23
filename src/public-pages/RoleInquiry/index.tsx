@@ -2186,7 +2186,7 @@ export const RoleInquiryPage: React.FC = () => {
             <p className="text-xs text-slate-500">
               {isMr
                 ? '* अर्जाची पडताळणी सह्याद्री ॲडमिनद्वारे २४ तासांच्या आत केली जाते.'
-                : '* Applications are reviewed by Sahyadri Land Developer within 24 hours.'}
+                : '* Applications are reviewed by Sahyadri Lands within 24 hours.'}
             </p>
 
             <Button

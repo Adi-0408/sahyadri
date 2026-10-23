@@ -258,8 +258,8 @@ const seedAds = [
     offerBadge: 'Special Offer',
     offerBadgeMr: 'खास ऑफर',
     preTitle: '',
-    title: 'Sahyadri Land Developer',
-    titleMr: 'सह्याद्री लँड डेव्हलपर',
+    title: 'Sahyadri Lands',
+    titleMr: 'सह्याद्री लँड्स',
     subtitle: '2 & 3 BHK LUXURY HOMES • STARTING ₹ 35 LAKH*',
     subtitleMr: '२ आणि ३ बीएचके लक्झरी घरे • सुरुवात ₹ ३५ लाख*',
     image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80',
@@ -330,7 +330,7 @@ const seedBuyerRequirements = [
 export const seedAgents: any[] = [];
 
 const seedSettings = {
-  websiteName: 'Sahyadri Land Developer',
+  websiteName: 'Sahyadri Lands',
   contactEmail: 'contact@sahyadriland.com',
   contactPhone: '+91 83287 12712',
   contactAddress: 'Sangli, Maharashtra, India',
@@ -338,7 +338,7 @@ const seedSettings = {
   socialFacebook: 'https://facebook.com/sahyadrilanddeveloper',
   socialInstagram: 'https://instagram.com/sahyadrilanddeveloper',
   socialTwitter: 'https://twitter.com/sahyadriland',
-  seoTitle: 'Sahyadri Land Developer | Building Better Tomorrows',
+  seoTitle: 'Sahyadri Lands | Building Better Tomorrows',
   seoDescription: 'Discover residential flats, plots, and land developments in Sangli directly with zero brokerage.'
 };
 
@@ -3953,22 +3953,19 @@ export const saveShortVideo = async (data: any) => {
     payload.property_code = data.propertyCode.trim();
   }
 
-  // Synchronize across all collections used in Android / iOS mobile apps and web
-  const collections = ['99shorts', 'shots', '99shots', 'shorts'];
-  for (const col of collections) {
-    try {
-      if (data.id) {
-        try {
-          await updateDocument(col, docId, payload);
-        } catch {
-          await createDocument(col, payload);
-        }
-      } else {
-        await createDocument(col, payload);
+  // Save to '99shorts' as canonical master collection
+  try {
+    if (data.id) {
+      try {
+        await updateDocument('99shorts', docId, payload);
+      } catch {
+        await createDocument('99shorts', payload);
       }
-    } catch (err) {
-      console.warn(`[saveShortVideo] Sync to ${col} warning:`, err);
+    } else {
+      await createDocument('99shorts', payload);
     }
+  } catch (err) {
+    console.warn(`[saveShortVideo] Sync to 99shorts warning:`, err);
   }
 
   return payload;
@@ -4032,21 +4029,19 @@ export const saveAppBanner = async (data: any) => {
     updatedAt: now
   };
 
-  const collections = ['advertisements', 'banners', 'posters', 'app_banners'];
-  for (const col of collections) {
-    try {
-      if (data.id) {
-        try {
-          await updateDocument(col, docId, payload);
-        } catch {
-          await createDocument(col, payload);
-        }
-      } else {
-        await createDocument(col, payload);
+  // Save to 'advertisements' as canonical master collection
+  try {
+    if (data.id) {
+      try {
+        await updateDocument('advertisements', docId, payload);
+      } catch {
+        await createDocument('advertisements', payload);
       }
-    } catch (err) {
-      console.warn(`[saveAppBanner] Sync to ${col} warning:`, err);
+    } else {
+      await createDocument('advertisements', payload);
     }
+  } catch (err) {
+    console.warn(`[saveAppBanner] Sync to advertisements warning:`, err);
   }
 
   // Also sync to hero_settings general document if this is a home top banner
@@ -4079,43 +4074,37 @@ export const saveAppBanner = async (data: any) => {
 };
 
 /**
- * Universal Short/Reel Deleter across all collections:
- * Synchronizes deletion across '99shorts', 'shots', '99shots', and 'shorts'
- * Also cleans up by videoUrl if multiple copies with different IDs exist.
+ * Short/Reel Deleter:
+ * Deletes from '99shorts' canonical master collection.
  */
 export const deleteShortVideo = async (docId: string, videoUrl?: string) => {
-  const collections = ['99shorts', 'shots', '99shots', 'shorts'];
-  for (const col of collections) {
-    try {
-      await deleteDocument(col, docId);
-    } catch {
-      // Ignore
-    }
+  try {
+    await deleteDocument('99shorts', docId);
+  } catch {
+    // Ignore
   }
 
-  // Also clean up by videoUrl across all collections if URL is present
+  // Also clean up by videoUrl in 99shorts if URL is present
   if (videoUrl && !isMockMode) {
     const normalizedUrl = videoUrl.trim().toLowerCase();
-    for (const col of collections) {
-      try {
-        const snap = await firebaseGetDocs(firebaseCollection(db, col));
-        for (const docSnap of snap.docs) {
-          const data = docSnap.data();
-          const docUrl = (data.videoUrl || data.video || data.mediaUrl || data.url || '').trim().toLowerCase();
-          if (docUrl && docUrl === normalizedUrl) {
-            await deleteDocument(col, docSnap.id).catch(() => {});
-          }
+    try {
+      const snap = await firebaseGetDocs(firebaseCollection(db, '99shorts'));
+      for (const docSnap of snap.docs) {
+        const data = docSnap.data();
+        const docUrl = (data.videoUrl || data.video || data.mediaUrl || data.url || '').trim().toLowerCase();
+        if (docUrl && docUrl === normalizedUrl) {
+          await deleteDocument('99shorts', docSnap.id).catch(() => {});
         }
-      } catch {
-        // Ignore
       }
+    } catch {
+      // Ignore
     }
   }
 };
 
 /**
- * Universal Short/Reel Status Toggler:
- * Updates status across all collections: '99shorts', 'shots', '99shots', 'shorts'
+ * Short/Reel Status Toggler:
+ * Updates status in '99shorts' canonical master collection.
  */
 export const toggleShortVideoStatus = async (shot: any) => {
   const newStatus = shot.status === 'active' ? 'hidden' : 'active';
@@ -4124,53 +4113,45 @@ export const toggleShortVideoStatus = async (shot: any) => {
     active: newStatus === 'active',
     isActive: newStatus === 'active'
   };
-  const collections = ['99shorts', 'shots', '99shots', 'shorts'];
-  for (const col of collections) {
-    try {
-      await updateDocument(col, shot.id, updateData);
-    } catch {
-      // Ignore
-    }
+  try {
+    await updateDocument('99shorts', shot.id, updateData);
+  } catch {
+    // Ignore
   }
   return newStatus;
 };
 
 /**
- * Universal App Banner Deleter across all collections:
- * Synchronizes deletion across 'advertisements', 'banners', 'posters', and 'app_banners'
- * Also cleans up any duplicate documents by imageUrl if provided.
+ * App Banner Deleter:
+ * Deletes from 'advertisements' master collection.
  */
 export const deleteAppBanner = async (docId: string, imageUrl?: string) => {
-  const collections = ['advertisements', 'banners', 'posters', 'app_banners'];
-  for (const col of collections) {
-    try {
-      await deleteDocument(col, docId);
-    } catch (e) {
-      console.warn(`[deleteAppBanner] delete from ${col} failed:`, e);
-    }
+  try {
+    await deleteDocument('advertisements', docId);
+  } catch (e) {
+    console.warn(`[deleteAppBanner] delete from advertisements failed:`, e);
   }
 
   if (imageUrl && !isMockMode) {
     const normalizedUrl = imageUrl.trim().toLowerCase();
-    for (const col of collections) {
-      try {
-        const snap = await firebaseGetDocs(firebaseCollection(db, col));
-        for (const docSnap of snap.docs) {
-          const data = docSnap.data();
-          const docImg = (data.image || data.imageUrl || data.bannerImage || data.poster || '').trim().toLowerCase();
-          if (docImg && docImg === normalizedUrl) {
-            await deleteDocument(col, docSnap.id).catch(() => {});
-          }
+    try {
+      const snap = await firebaseGetDocs(firebaseCollection(db, 'advertisements'));
+      for (const docSnap of snap.docs) {
+        const data = docSnap.data();
+        const docImg = (data.image || data.imageUrl || data.bannerImage || data.poster || '').trim().toLowerCase();
+        if (docImg && docImg === normalizedUrl) {
+          await deleteDocument('advertisements', docSnap.id).catch(() => {});
         }
-      } catch (e) {
-        // Ignore
       }
+    } catch (e) {
+      // Ignore
     }
   }
 };
 
 /**
- * Universal App Banner Status Toggler across all collections:
+ * App Banner Status Toggler:
+ * Updates status in 'advertisements' master collection.
  */
 export const toggleAppBannerStatus = async (banner: any) => {
   const currentActive = banner.active !== false && banner.status !== 'paused';
@@ -4183,30 +4164,25 @@ export const toggleAppBannerStatus = async (banner: any) => {
     isVisible: newActive,
     updatedAt: new Date().toISOString()
   };
-  const collections = ['advertisements', 'banners', 'posters', 'app_banners'];
-  for (const col of collections) {
-    try {
-      await updateDocument(col, banner.id, updateData);
-    } catch (e) {
-      console.warn(`[toggleAppBannerStatus] update ${col} failed:`, e);
-    }
+  try {
+    await updateDocument('advertisements', banner.id, updateData);
+  } catch (e) {
+    console.warn(`[toggleAppBannerStatus] update advertisements failed:`, e);
   }
 
   // Also update duplicate copies with matching image if present
   const bannerImg = (banner.image || banner.imageUrl || banner.bannerImage || banner.poster || '').trim().toLowerCase();
   if (bannerImg && !isMockMode) {
-    for (const col of collections) {
-      try {
-        const snap = await firebaseGetDocs(firebaseCollection(db, col));
-        for (const docSnap of snap.docs) {
-          const data = docSnap.data();
-          const docImg = (data.image || data.imageUrl || data.bannerImage || data.poster || '').trim().toLowerCase();
-          if (docImg && docImg === bannerImg && docSnap.id !== banner.id) {
-            await updateDocument(col, docSnap.id, updateData).catch(() => {});
-          }
+    try {
+      const snap = await firebaseGetDocs(firebaseCollection(db, 'advertisements'));
+      for (const docSnap of snap.docs) {
+        const data = docSnap.data();
+        const docImg = (data.image || data.imageUrl || data.bannerImage || data.poster || '').trim().toLowerCase();
+        if (docImg && docImg === bannerImg && docSnap.id !== banner.id) {
+          await updateDocument('advertisements', docSnap.id, updateData).catch(() => {});
         }
-      } catch {}
-    }
+      }
+    } catch {}
   }
 
   return newStatus;

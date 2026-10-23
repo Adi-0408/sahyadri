@@ -115,19 +115,19 @@ export const EnquiriesManager: React.FC = () => {
   const generateWhatsAppShareUrl = (enq: any, repPhone: string, repName: string) => {
     const text = isMr
       ? `नमस्कार ${repName || 'प्रतिनिधी'},\n` +
-        `सह्याद्री लँड डेव्हलपर कडून नवीन ग्राहक चौकशी (Lead):\n\n` +
+        `सह्याद्री लँड्स कडून नवीन ग्राहक चौकशी (Lead):\n\n` +
         `👤 ग्राहक: ${enq.name || 'ग्राहक'}\n` +
         `📞 मोबाईल: ${enq.phone || 'उपलब्ध नाही'}\n` +
         (enq.propertyName ? `🏠 मालमत्ता: ${enq.propertyName}\n` : '') +
         (enq.message ? `💬 संदेश: ${enq.message}\n` : '') +
-        `\nकृपया ग्राहकांशी त्वरित संपर्क साधून मदत करावी.\n- सह्याद्री लँड डेव्हलपर`
+        `\nकृपया ग्राहकांशी त्वरित संपर्क साधून मदत करावी.\n- सह्याद्री लँड्स`
       : `Hello ${repName || 'Representative'},\n` +
-        `New client lead from Sahyadri Land Developer:\n\n` +
+        `New client lead from Sahyadri Lands:\n\n` +
         `👤 Client: ${enq.name || 'Client'}\n` +
         `📞 Mobile: ${enq.phone || 'N/A'}\n` +
         (enq.propertyName ? `🏠 Property: ${enq.propertyName}\n` : '') +
         (enq.message ? `💬 Message: ${enq.message}\n` : '') +
-        `\nPlease contact the client promptly.\n- Sahyadri Land Developer`;
+        `\nPlease contact the client promptly.\n- Sahyadri Lands`;
     return `https://wa.me/91${String(repPhone).replace(/[^0-9]/g, '')}?text=${encodeURIComponent(text)}`;
   };
 
@@ -221,7 +221,7 @@ export const EnquiriesManager: React.FC = () => {
                             </a>
                             {enq.phone && (
                               <a
-                                href={`https://wa.me/91${String(enq.phone).replace(/[^0-9]/g, '')}?text=${encodeURIComponent(isMr ? 'नमस्कार, सह्याद्री लँड डेव्हलपर कडून.' : 'Hello, from Sahyadri Land Developer.')}`}
+                                href={`https://wa.me/91${String(enq.phone).replace(/[^0-9]/g, '')}?text=${encodeURIComponent(isMr ? 'नमस्कार, सह्याद्री लँड्स कडून.' : 'Hello, from Sahyadri Lands.')}`}
                                 target="_blank"
                                 rel="noreferrer"
                                 className="text-[9px] font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 bg-emerald-50 hover:bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-200 transition-colors"

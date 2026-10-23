@@ -337,7 +337,7 @@ export const HeroContentTab: React.FC = () => {
                 <div className="relative h-28 w-full bg-[#f8fafc] flex justify-center items-center overflow-hidden border-b border-slate-200/20">
                   <div className="absolute inset-0 bg-[#f8fafc]"></div>
                   <div className="relative z-10 p-2 flex flex-col items-center">
-                    <span className="text-[10px] font-extrabold uppercase text-slate-800 tracking-wider">Sahyadri Land Developer</span>
+                    <span className="text-[10px] font-extrabold uppercase text-slate-800 tracking-wider">Sahyadri Lands</span>
                   </div>
                 </div>
 

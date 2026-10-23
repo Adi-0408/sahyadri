@@ -73,7 +73,7 @@ export const Navbar: React.FC = () => {
         <Link to="/" className="flex items-center gap-2 lg:gap-2.5 shrink-0 select-none group">
           <img
             src="/sahyadri-emblem.png"
-            alt="Sahyadri Land Developer"
+            alt="Sahyadri Lands"
             className="h-8 sm:h-9 lg:h-10 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
           />
           {isMr ? (
@@ -88,7 +88,7 @@ export const Navbar: React.FC = () => {
                 className="text-xs sm:text-sm font-bold text-slate-800 ml-1 sm:ml-1.5 tracking-wide"
                 style={{ fontFamily: '"Anek Marathi", sans-serif' }}
               >
-                लँड डेव्हलपर
+                लँड्स
               </span>
             </div>
           ) : (
@@ -101,7 +101,7 @@ export const Navbar: React.FC = () => {
               <span
                 className="text-[8px] sm:text-[9px] lg:text-[10px] font-bold uppercase tracking-[0.2em] text-[#b81414] mt-0.5"
               >
-                LAND DEVELOPER
+                LANDS
               </span>
             </div>
           )}

@@ -200,8 +200,8 @@ export const Home: React.FC = () => {
     {
       q: isMr ? 'प्लॉटचे टायटल १००% क्लिअर आणि निर्वेध आहे का?' : 'Is the land title 100% clear and legally verified?',
       a: isMr
-        ? 'होय, सह्याद्री लँड डेव्हलपरच्या प्रत्येक प्रकल्पाचा नामांकित वकिलांमार्फत ३० वर्षांचा सर्च रिपोर्ट काढलेला असतो. मूळ ७/१२, फेरफार नोंदी आणि एन.ए. आदेश पूर्णपणे निर्वेध असतात.'
-        : 'Yes, every project developed by Sahyadri Land Developer is backed by an exhaustive 30-year title search certificate by legal counsel. Revenue records, 7/12 extracts, and NA orders are 100% encumbrance-free.'
+        ? 'होय, सह्याद्री लँड्सच्या प्रत्येक प्रकल्पाचा नामांकित वकिलांमार्फत ३० वर्षांचा सर्च रिपोर्ट काढलेला असतो. मूळ ७/१२, फेरफार नोंदी आणि एन.ए. आदेश पूर्णपणे निर्वेध असतात.'
+        : 'Yes, every project developed by Sahyadri Lands is backed by an exhaustive 30-year title search certificate by legal counsel. Revenue records, 7/12 extracts, and NA orders are 100% encumbrance-free.'
     },
     {
       q: isMr ? 'प्लॉट्सवर राष्ट्रीयीकृत बँकेचे कर्ज मिळते का?' : 'Are bank loans available on NA plots?',
@@ -230,8 +230,8 @@ export const Home: React.FC = () => {
     {
       q: isMr ? 'प्लॉट्सचे लाइव्ह नकाशे व उपलब्ध जागा मोबाईल ॲपवर कशा पहाव्यात?' : 'How can I view live plots and layout maps on the mobile app?',
       a: isMr
-        ? 'आमचे अधिकृत "Sahyadri Land Developer" ॲन्ड्रॉइड ॲप गुगल प्ले वरून डाउनलोड करा. तेथे सर्व उपलब्ध प्लॉट्सचे जीपीएस नकाशे, फोटो, दर व कागदपत्रे एका क्लिकवर उपलब्ध आहेत.'
-        : 'Simply install our official "Sahyadri Land Developer" Android app from the Google Play Store. You can browse all active layouts, inspect GPS boundaries, view 7/12 records, and schedule site inspections directly.'
+        ? 'आमचे अधिकृत "Sahyadri Lands" ॲन्ड्रॉइड ॲप गुगल प्ले वरून डाउनलोड करा. तेथे सर्व उपलब्ध प्लॉट्सचे जीपीएस नकाशे, फोटो, दर व कागदपत्रे एका क्लिकवर उपलब्ध आहेत.'
+        : 'Simply install our official "Sahyadri Lands" Android app from the Google Play Store. You can browse all active layouts, inspect GPS boundaries, view 7/12 records, and schedule site inspections directly.'
     }
   ];
 
@@ -300,7 +300,7 @@ export const Home: React.FC = () => {
           >
             <img
               src="/sahyadri-logo.png"
-              alt="Sahyadri Land Developer"
+              alt="Sahyadri Lands"
               className="h-36 sm:h-52 md:h-64 lg:h-72 w-auto object-contain drop-shadow-2xl"
             />
           </motion.div>
@@ -369,8 +369,8 @@ export const Home: React.FC = () => {
 
               <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
                 {isMr
-                  ? 'सह्याद्री लँड डेव्हलपर ही केवळ जमीन खरेदी-विक्री करणारी संस्था नसून, प्रत्येक ग्राहकाला निर्वेध मालकी हक्क आणि प्रत्यक्ष पायाभूत सुविधा देणारे अग्रगण्य नाव आहे. सातारा, सांगली, पुणे व पश्चिम महाराष्ट्रातील निसर्गरम्य ठिकाणी आम्ही पारदर्शकपणे भूखंड विकसित करतो.'
-                  : 'Sahyadri Land Developer is dedicated to transforming real estate land ownership into a transparent, secure, and legally bulletproof journey. Operating across Satara, Sangli, Pune, and the Sahyadri belt, we develop clear-title, sanction-backed layouts with complete on-ground infrastructure.'}
+                  ? 'सह्याद्री लँड्स ही केवळ जमीन खरेदी-विक्री करणारी संस्था नसून, प्रत्येक ग्राहकाला निर्वेध मालकी हक्क आणि प्रत्यक्ष पायाभूत सुविधा देणारे अग्रगण्य नाव आहे. सातारा, सांगली, पुणे व पश्चिम महाराष्ट्रातील निसर्गरम्य ठिकाणी आम्ही पारदर्शकपणे भूखंड विकसित करतो.'
+                  : 'Sahyadri Lands is dedicated to transforming real estate land ownership into a transparent, secure, and legally bulletproof journey. Operating across Satara, Sangli, Pune, and the Sahyadri belt, we develop clear-title, sanction-backed layouts with complete on-ground infrastructure.'}
               </p>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4">
@@ -456,7 +456,7 @@ export const Home: React.FC = () => {
               <span>{isMr ? 'प्लॉट्स व सेवा' : 'Our Developments'}</span>
             </div>
             <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-              {isMr ? 'सह्याद्री लँड डेव्हलपरचे प्रमुख प्रकल्प' : 'Comprehensive Land Solutions Tailored for You'}
+              {isMr ? 'सह्याद्री लँड्सचे प्रमुख प्रकल्प' : 'Comprehensive Land Solutions Tailored for You'}
             </h2>
             <p className="mt-3 text-sm sm:text-base text-slate-600">
               {isMr
@@ -630,7 +630,7 @@ export const Home: React.FC = () => {
               </h2>
               <p className="mt-2 text-sm sm:text-base text-slate-600 max-w-2xl">
                 {isMr
-                  ? 'सह्याद्री लँड डेव्हलपरद्वारे कायदेशीर पडताळणी पूर्ण झालेले अधिकृत रेसिडेन्शियल प्लॉट्स, फ्लॅट्स आणि स्वतंत्र घरे.'
+                  ? 'सह्याद्री लँड्सद्वारे कायदेशीर पडताळणी पूर्ण झालेले अधिकृत रेसिडेन्शियल प्लॉट्स, फ्लॅट्स आणि स्वतंत्र घरे.'
                   : 'Hand-picked residential, commercial, and agricultural properties directly reviewed and live for acquisition.'}
               </p>
             </div>
@@ -842,7 +842,7 @@ export const Home: React.FC = () => {
 
                       <a
                         href={`https://wa.me/918328712712?text=${encodeURIComponent(
-                          `नमस्कार Sahyadri Land Developer, मला "${titleText}" (${prop.id}) या मालमत्तेबद्दल अधिक माहिती हवी आहे.`
+                          `नमस्कार Sahyadri Lands, मला "${titleText}" (${prop.id}) या मालमत्तेबद्दल अधिक माहिती हवी आहे.`
                         )}`}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -895,7 +895,7 @@ export const Home: React.FC = () => {
             </h2>
             <p className="mt-3 text-sm sm:text-base text-slate-600">
               {isMr
-                ? 'सह्याद्री लँड डेव्हलपरच्या प्रत्येक लेआऊटमध्ये नागरिकांच्या सुखकर जीवनासाठी परिपूर्ण सुविधांची खात्री.'
+                ? 'सह्याद्री लँड्सच्या प्रत्येक लेआऊटमध्ये नागरिकांच्या सुखकर जीवनासाठी परिपूर्ण सुविधांची खात्री.'
                 : 'Every project layout is engineered for lifelong comfort, accessibility, and high capital appreciation.'}
             </p>
           </div>
@@ -1023,7 +1023,7 @@ export const Home: React.FC = () => {
 
               <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
                 {isMr
-                  ? 'महाराष्ट्रात जमीन खरेदी करताना क्षेत्रफळाची अचूक माहिती असणे महत्त्वाचे असते. सह्याद्री लँड डेव्हलपरकडे १ गुंठ्यापासून ते एकरापर्यंत स्वतंत्र डिमार्केशन असलेले प्लॉट्स उपलब्ध आहेत.'
+                  ? 'महाराष्ट्रात जमीन खरेदी करताना क्षेत्रफळाची अचूक माहिती असणे महत्त्वाचे असते. सह्याद्री लँड्सकडे १ गुंठ्यापासून ते एकरापर्यंत स्वतंत्र डिमार्केशन असलेले प्लॉट्स उपलब्ध आहेत.'
                   : 'When buying land in Maharashtra, understanding exact Guntha conversion ensures complete transparency. We offer certified demarcated plots from 1 Guntha up to multi-acre parcels.'}
               </p>
 
@@ -1117,7 +1117,7 @@ export const Home: React.FC = () => {
               <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
                 {isMr
                   ? 'आमच्या मोफत ॲन्ड्रॉइड ॲप्लिकेशनद्वारे आपण घरबसल्या प्रत्येक प्रकल्पाचे सॅटेलाईट नकाशे, उपलब्ध जागांचे क्षेत्रफळ, मंजूर लेआऊट ऑर्डर आणि दर तपासू शकता. कोणत्याही दलालाशिवाय थेट विकासकांशी संवाद साधा!'
-                  : 'Download the official Sahyadri Land Developer app from Google Play. Explore active layouts with real-time GPS dimensions, revenue 7/12 records, approved layout sanctions, and schedule personal site inspections.'}
+                  : 'Download the official Sahyadri Lands app from Google Play. Explore active layouts with real-time GPS dimensions, revenue 7/12 records, approved layout sanctions, and schedule personal site inspections.'}
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
@@ -1427,7 +1427,7 @@ export const Home: React.FC = () => {
 
             {/* WhatsApp */}
             <a
-              href="https://wa.me/918328712712?text=Hello%20Sahyadri%20Land%20Developer,%20I%20am%20interested%20in%20your%20land%20plots."
+              href="https://wa.me/918328712712?text=Hello%20Sahyadri%20Lands,%20I%20am%20interested%20in%20your%20land%20plots."
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-2xl bg-[#25D366] hover:bg-[#20ba59] text-slate-950 font-bold text-sm shadow-md transition-all cursor-pointer"
@@ -1455,7 +1455,7 @@ export const Home: React.FC = () => {
               <MapPin className="w-5 h-5 text-[#b81414] shrink-0 mt-0.5" />
               <div>
                 <strong className="text-slate-900 block">{isMr ? 'मुख्य कार्यालय:' : 'Project Head Office:'}</strong>
-                <span className="text-slate-600">Sahyadri Land Developer, Satara / Karad Belt, Maharashtra, India.</span>
+                <span className="text-slate-600">Sahyadri Lands, Satara / Karad Belt, Maharashtra, India.</span>
               </div>
             </div>
 

@@ -49,7 +49,7 @@ export const ProtectedAdminRoute: React.FC = () => {
           <div className="absolute inset-0 rounded-full border-4 border-primary/20 animate-pulse"></div>
           <div className="absolute inset-0 rounded-full border-4 border-t-primary animate-spin"></div>
         </div>
-        <p className="mt-6 font-serif text-lg tracking-widest text-primary animate-pulse">SAHYADRI LAND DEVELOPER ADMIN</p>
+        <p className="mt-6 font-serif text-lg tracking-widest text-primary animate-pulse">SAHYADRI LANDS ADMIN</p>
         <p className="text-xs text-slate-400 mt-2">Securing admin gateway...</p>
       </div>
     );

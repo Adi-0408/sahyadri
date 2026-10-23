@@ -207,7 +207,7 @@ export const Login: React.FC = () => {
           <div className="flex items-center gap-3">
             <img
               src="/sahyadri-logo.png"
-              alt="Sahyadri Land Developer"
+              alt="Sahyadri Lands"
               className="h-12 object-contain"
               onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
             />
@@ -456,7 +456,7 @@ export const Login: React.FC = () => {
         {/* Bottom branding strip */}
         <div className="px-5 sm:px-8 pb-6 sm:pb-8 pt-4 mt-auto">
           <p className="text-center text-xs text-slate-400">
-            © {new Date().getFullYear()} Sahyadri Land Developer. All rights reserved.
+            © {new Date().getFullYear()} Sahyadri Lands. All rights reserved.
           </p>
         </div>
       </div>

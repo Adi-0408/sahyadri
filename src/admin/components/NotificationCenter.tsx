@@ -335,7 +335,7 @@ export const NotificationCenter: React.FC = () => {
                           <Phone className="w-3 h-3" /> {isMr ? 'कॉल' : 'Call'}
                         </a>
                         <a
-                          href={`https://wa.me/91${meta.mobile}?text=${encodeURIComponent(isMr ? 'नमस्कार, सह्याद्री लँड डेव्हलपर कडून संपर्क करत आहोत.' : 'Hello, contacting you from Sahyadri Land Developer.')}`}
+                          href={`https://wa.me/91${meta.mobile}?text=${encodeURIComponent(isMr ? 'नमस्कार, सह्याद्री लँड्स कडून संपर्क करत आहोत.' : 'Hello, contacting you from Sahyadri Lands.')}`}
                           target="_blank"
                           rel="noreferrer"
                           className="inline-flex items-center gap-1 text-[11px] font-semibold text-green-700 bg-green-100/70 hover:bg-green-200 px-2 py-1 rounded transition-colors"
@@ -375,7 +375,7 @@ export const NotificationCenter: React.FC = () => {
                               📞 {meta.ownerPhone}
                             </a>
                             <a
-                              href={`https://wa.me/91${meta.ownerPhone}?text=${encodeURIComponent(isMr ? `नमस्कार, आपल्या ${meta.title || meta.propertyCode || 'मालमत्ता'} विषयी सह्याद्री लँड डेव्हलपर कडून.` : `Hello, contacting you regarding your property ${meta.title || meta.propertyCode || ''} from Sahyadri Land Developer.`)}`}
+                              href={`https://wa.me/91${meta.ownerPhone}?text=${encodeURIComponent(isMr ? `नमस्कार, आपल्या ${meta.title || meta.propertyCode || 'मालमत्ता'} विषयी सह्याद्री लँड्स कडून.` : `Hello, contacting you regarding your property ${meta.title || meta.propertyCode || ''} from Sahyadri Lands.`)}`}
                               target="_blank"
                               rel="noreferrer"
                               className="text-green-600 hover:text-green-700 font-semibold"

@@ -249,7 +249,7 @@ export const RepresentativesManager: React.FC = () => {
             </h1>
           </div>
           <p className="text-xs text-slate-500 font-medium">
-            {isMr ? 'सह्याद्री लँड डेव्हलपरचे अधिकृत प्रतिनिधी, त्यांचे कार्यक्षेत्र व संपर्क व्यवस्थापित करा.' : 'Manage authorized representatives, service areas and contact details.'}
+            {isMr ? 'सह्याद्री लँड्सचे अधिकृत प्रतिनिधी, त्यांचे कार्यक्षेत्र व संपर्क व्यवस्थापित करा.' : 'Manage authorized representatives, service areas and contact details.'}
           </p>
         </div>
 
@@ -468,7 +468,7 @@ export const RepresentativesManager: React.FC = () => {
                       {isMr ? 'कॉल' : 'Call'}
                     </a>
                     <a
-                      href={`https://wa.me/91${rep.mobile}?text=${encodeURIComponent(isMr ? `नमस्कार ${rep.name}, सह्याद्री लँड डेव्हलपर कडून.` : `Hello ${rep.name}, contacting from Sahyadri Land Developer.`)}`}
+                      href={`https://wa.me/91${rep.mobile}?text=${encodeURIComponent(isMr ? `नमस्कार ${rep.name}, सह्याद्री लँड्स कडून.` : `Hello ${rep.name}, contacting from Sahyadri Lands.`)}`}
                       target="_blank"
                       rel="noreferrer"
                       className="inline-flex items-center gap-1 text-xs font-bold text-green-700 bg-green-50 hover:bg-green-100 px-3 py-1.5 rounded-lg transition-colors"
@@ -522,7 +522,7 @@ export const RepresentativesManager: React.FC = () => {
                   </h3>
                   <p className="text-[11px] text-slate-300">
                     {modalMode === 'add'
-                      ? (isMr ? 'सह्याद्री लँड डेव्हलपर अधिकृत प्रतिनिधी' : 'Sahyadri Land Developer Authorized Representative')
+                      ? (isMr ? 'सह्याद्री लँड्स अधिकृत प्रतिनिधी' : 'Sahyadri Lands Authorized Representative')
                       : (isMr ? `कोड: ${formData.code}` : `Code: ${formData.code}`)}
                   </p>
                 </div>

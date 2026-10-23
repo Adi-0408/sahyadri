@@ -57,7 +57,7 @@ export const Blogs: React.FC = () => {
         {/* Page Title */}
         <div>
           <span className="text-xs uppercase tracking-[0.2em] font-semibold text-primary font-serif">Insights & Intel</span>
-          <h1 className="text-3xl md:text-5xl font-serif font-bold text-slate-900 mt-1">Sahyadri Land Developer Journal</h1>
+          <h1 className="text-3xl md:text-5xl font-serif font-bold text-slate-900 mt-1">Sahyadri Lands Journal</h1>
           <p className="text-slate-600 max-w-xl text-sm font-sans mt-2">
             Explore editorial deep dives into architectural mastery, capital luxury, and design trends.
           </p>

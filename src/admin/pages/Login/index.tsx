@@ -87,7 +87,7 @@ export const AdminLogin: React.FC = () => {
             <div className="flex flex-col items-center text-center gap-3 mb-8">
               <img
                 src="/sahyadri-logo.png"
-                alt="Sahyadri Land Developer"
+                alt="Sahyadri Lands"
                 className="h-20 w-auto object-contain mb-1"
               />
               <div>
@@ -186,7 +186,7 @@ export const AdminLogin: React.FC = () => {
         {/* Bottom logo */}
         <div className="text-center mt-6">
           <p className="text-xs text-slate-600">
-            © {new Date().getFullYear()} Sahyadri Land Developer Admin Panel
+            © {new Date().getFullYear()} Sahyadri Lands Admin Panel
           </p>
         </div>
       </div>

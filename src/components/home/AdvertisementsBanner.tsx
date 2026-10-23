@@ -39,16 +39,11 @@ export const AdvertisementsBanner: React.FC = () => {
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
 
-  // Subscribe to live advertisements, banners, posters, and app_banners collections
+  // Subscribe to live advertisements master collection
   useEffect(() => {
-    let adsList: any[] = [];
-    let bannersList: any[] = [];
-    let postersList: any[] = [];
-    let appBannersList: any[] = [];
-
-    const updateCombinedBanners = () => {
+    const unsub = subscribeToCollection('advertisements', (list) => {
       const map = new Map<string, Advertisement>();
-      [...adsList, ...bannersList, ...postersList, ...appBannersList].forEach((item: any) => {
+      (list || []).forEach((item: any) => {
         if (!item) return;
         const img = (item.image || item.imageUrl || item.image_url || item.bannerImage || item.banner_image || item.banner || item.poster || '').trim();
         if (!img) return;
@@ -85,33 +80,10 @@ export const AdvertisementsBanner: React.FC = () => {
 
       setAds(combined);
       setCurrentIndex((prev) => (prev >= combined.length ? 0 : prev));
-    };
-
-    const unsub1 = subscribeToCollection('advertisements', (list) => {
-      adsList = list || [];
-      updateCombinedBanners();
-    });
-
-    const unsub2 = subscribeToCollection('banners', (list) => {
-      bannersList = list || [];
-      updateCombinedBanners();
-    });
-
-    const unsub3 = subscribeToCollection('posters', (list) => {
-      postersList = list || [];
-      updateCombinedBanners();
-    });
-
-    const unsub4 = subscribeToCollection('app_banners', (list) => {
-      appBannersList = list || [];
-      updateCombinedBanners();
     });
 
     return () => {
-      if (typeof unsub1 === 'function') unsub1();
-      if (typeof unsub2 === 'function') unsub2();
-      if (typeof unsub3 === 'function') unsub3();
-      if (typeof unsub4 === 'function') unsub4();
+      if (typeof unsub === 'function') unsub();
     };
   }, []);
 

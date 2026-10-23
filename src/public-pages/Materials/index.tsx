@@ -434,7 +434,7 @@ export const Materials: React.FC = () => {
       `📍 डिलिव्हरी पत्ता: ${order.deliveryAddress}, ${order.taluka || ''}, ${order.district || ''}\n` +
       (order.landmark ? `🏛️ लँडमार्क: ${order.landmark}\n` : '') +
       (order.notes ? `📝 विशेष सूचना: ${order.notes}\n` : '') +
-      `\nकृपया ऑर्डर कन्फर्म करून डिलिव्हरीची वेळ सांगावी. धन्यवाद! (सह्याद्री लँड डेव्हलपर)`;
+      `\nकृपया ऑर्डर कन्फर्म करून डिलिव्हरीची वेळ सांगावी. धन्यवाद! (सह्याद्री लँड्स)`;
 
     return cleanPhone ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}` : '#';
   };

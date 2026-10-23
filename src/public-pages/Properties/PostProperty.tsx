@@ -248,7 +248,7 @@ export const PostProperty: React.FC = () => {
               </button>
               
               {/* Logo */}
-              <img src="/sahyadri-logo.png" alt="Sahyadri Land Developer" className="h-16 object-contain mb-2" />
+              <img src="/sahyadri-logo.png" alt="Sahyadri Lands" className="h-16 object-contain mb-2" />
 
               {/* Title & Underline layout */}
               <h1 className="text-2xl sm:text-3xl font-serif font-bold text-slate-900 mt-2">
@@ -269,7 +269,7 @@ export const PostProperty: React.FC = () => {
               </button>
               
               {/* Logo */}
-              <img src="/sahyadri-logo.png" alt="Sahyadri Land Developer" className="h-16 object-contain mb-2" />
+              <img src="/sahyadri-logo.png" alt="Sahyadri Lands" className="h-16 object-contain mb-2" />
 
               {/* Title & Underline layout */}
               <h1 className="text-2xl sm:text-3xl font-serif font-bold text-slate-900 mt-2">

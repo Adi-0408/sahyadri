@@ -98,14 +98,9 @@ export const AdvertisementsManager: React.FC = () => {
       .then((res) => setProperties(res || []))
       .catch((err) => console.error('Error fetching properties:', err));
 
-    let adsList: any[] = [];
-    let bannersList: any[] = [];
-    let postersList: any[] = [];
-    let appBannersList: any[] = [];
-
-    const updateCombined = () => {
+    const unsub = subscribeToCollection('advertisements', (list) => {
       const map = new Map<string, any>();
-      [...adsList, ...bannersList, ...postersList, ...appBannersList].forEach((item: any) => {
+      (list || []).forEach((item: any) => {
         if (!item) return;
         const img = (item.image || item.imageUrl || item.image_url || item.bannerImage || item.banner_image || item.banner || item.poster || '').trim();
         const key = item.id || img;
@@ -119,8 +114,8 @@ export const AdvertisementsManager: React.FC = () => {
             image: img,
             imageUrl: img,
             bannerImage: img,
-            title: item.title || item.heading || 'सह्याद्री लँड डेव्हलपर',
-            titleMr: item.titleMr || item.title_mr || item.title || item.heading || 'सह्याद्री लँड डेव्हलपर',
+            title: item.title || item.heading || 'सह्याद्री लँड्स',
+            titleMr: item.titleMr || item.title_mr || item.title || item.heading || 'सह्याद्री लँड्स',
             subtitle: item.subtitle || item.sub_title || item.subHeading || item.sub_heading || '',
             brandBadge: item.brandBadge || item.brand_badge || item.brand || 'SAHYADRI SIGNATURE',
             offerBadge: item.offerBadge || item.offer_badge || item.offer || '',
@@ -144,34 +139,10 @@ export const AdvertisementsManager: React.FC = () => {
 
       setAds(combined);
       setLoading(false);
-    };
-
-    // Subscribe to all 4 banner collections for complete database & app sync
-    const unsub1 = subscribeToCollection('advertisements', (list) => {
-      adsList = list || [];
-      updateCombined();
-    });
-
-    const unsub2 = subscribeToCollection('banners', (list) => {
-      bannersList = list || [];
-      updateCombined();
-    });
-
-    const unsub3 = subscribeToCollection('posters', (list) => {
-      postersList = list || [];
-      updateCombined();
-    });
-
-    const unsub4 = subscribeToCollection('app_banners', (list) => {
-      appBannersList = list || [];
-      updateCombined();
     });
 
     return () => {
-      if (typeof unsub1 === 'function') unsub1();
-      if (typeof unsub2 === 'function') unsub2();
-      if (typeof unsub3 === 'function') unsub3();
-      if (typeof unsub4 === 'function') unsub4();
+      if (typeof unsub === 'function') unsub();
     };
   }, []);
 

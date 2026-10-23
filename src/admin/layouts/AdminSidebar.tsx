@@ -17,7 +17,8 @@ import {
   Settings,
   Shield,
   ExternalLink,
-  LogOut
+  LogOut,
+  Layers
 } from 'lucide-react';
 import { subscribeToCollection } from '../../services/firebase';
 import { subscribeToRoleInquiries } from '../../services/roleInquiry';
@@ -88,7 +89,9 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
         Array.isArray(user?.permissions) &&
         (user.permissions.includes(path) ||
           ((path === '/admin/shots' || path === '/admin/advertisements') &&
-            user.permissions.includes('/admin/hero-section')))
+            user.permissions.includes('/admin/hero-section')) ||
+          (path === '/admin/role-activity' &&
+            user.permissions.includes('/admin/users')))
       );
     }
     return false;
@@ -111,6 +114,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
         );
       case 'leads':
         return (
+          p.startsWith('/admin/role-activity') ||
           p.startsWith('/admin/enquiries') ||
           p.startsWith('/admin/role-requests') ||
           p.startsWith('/admin/agents') ||
@@ -198,7 +202,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
         <Link to="/" className="flex items-center gap-2.5">
           <img
             src="/sahyadri-logo.png"
-            alt="Sahyadri Land Developer"
+            alt="Sahyadri Lands"
             className="h-8 xl:h-9 w-auto object-contain shrink-0 drop-shadow-md"
           />
           <div className="flex flex-col">
@@ -206,7 +210,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
               Sahyadri
             </span>
             <span className="text-[9px] xl:text-[10px] uppercase tracking-wider text-emerald-400 font-extrabold">
-              Land Developer
+              Lands
             </span>
           </div>
         </Link>
@@ -304,7 +308,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
         )}
 
         {/* 3. Leads & Network */}
-        {hasAnyAccess(['/admin/enquiries', '/admin/role-requests', '/admin/agents', '/admin/representatives', '/admin/users', '/admin/tasks']) && (
+        {hasAnyAccess(['/admin/role-activity', '/admin/enquiries', '/admin/role-requests', '/admin/agents', '/admin/representatives', '/admin/users', '/admin/tasks']) && (
           <div
             className={`rounded-xl border transition-all duration-200 overflow-hidden ${
               isSectionActive('leads')
@@ -328,6 +332,12 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
               )}
             </div>
             <div className="p-1.5 xl:p-2 space-y-1">
+              {renderNavItem({
+                name: t('admin.sidebar.roleActivity', 'Role Users & Work'),
+                path: '/admin/role-activity',
+                icon: <Layers className="w-4.5 h-4.5 xl:w-5 xl:h-5" />
+              })}
+
               {renderNavItem({
                 name: t('admin.sidebar.leadsEnquiries', 'Leads & Enquiries'),
                 path: '/admin/enquiries',

@@ -129,11 +129,11 @@ export const RepresentativeTasks: React.FC = () => {
     const repName = user?.displayName || (isMr ? 'प्रतिनिधी' : 'Representative');
     if (isMr) {
       const prop = task.propertyName ? `"${task.propertyName}" मालमत्तेबाबत` : 'मालमत्ता चौकशीबाबत';
-      const msg = `नमस्कार ${task.name} जी,\nमी सह्याद्री लँड डेव्हलपर तर्फे ${repName} बोलत आहे. आपण केलेल्या ${prop} माहितीसाठी संपर्क साधत आहे. आपल्याला कधी बोलणे सोयीचे होईल?`;
+      const msg = `नमस्कार ${task.name} जी,\nमी सह्याद्री लँड्स तर्फे ${repName} बोलत आहे. आपण केलेल्या ${prop} माहितीसाठी संपर्क साधत आहे. आपल्याला कधी बोलणे सोयीचे होईल?`;
       return `https://wa.me/91${task.phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`;
     } else {
       const prop = task.propertyName ? `property "${task.propertyName}"` : 'your property inquiry';
-      const msg = `Hello ${task.name},\nI am ${repName} from Sahyadri Land Developer. I am contacting you regarding ${prop}. When would be a convenient time to speak?`;
+      const msg = `Hello ${task.name},\nI am ${repName} from Sahyadri Lands. I am contacting you regarding ${prop}. When would be a convenient time to speak?`;
       return `https://wa.me/91${task.phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`;
     }
   };

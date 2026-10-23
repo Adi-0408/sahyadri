@@ -24,6 +24,7 @@ const RepresentativeTasks = lazy(() => import('../../admin/pages/RepresentativeT
 const ShotsManager = lazy(() => import('../../admin/pages/Shots').then(m => ({ default: m.ShotsManager })));
 const AgentsManager = lazy(() => import('../../admin/pages/Agents').then(m => ({ default: m.AgentsManager })));
 const RoleRequestsManager = lazy(() => import('../../admin/pages/RoleRequests').then(m => ({ default: m.RoleRequestsManager })));
+const RoleActivityManager = lazy(() => import('../../admin/pages/RoleActivity').then(m => ({ default: m.RoleActivityManager })));
 
 export const AdminRoutes: React.FC = () => {
   return (
@@ -75,7 +76,8 @@ export const AdminRoutes: React.FC = () => {
             <Route path="talukas" element={<Navigate to="/admin/hero-section" replace />} />
             <Route path="property-types" element={<Navigate to="/admin/hero-section" replace />} />
 
-            {/* Client Leads */}
+            {/* Client Leads & Network */}
+            <Route path="role-activity" element={<RoleActivityManager />} />
             <Route path="role-requests" element={<RoleRequestsManager />} />
             <Route path="tasks" element={<RepresentativeTasks />} />
             <Route path="users" element={<UsersManager />} />

@@ -138,13 +138,8 @@ export const ShotsReelsSection: React.FC = () => {
     }
   };
 
-  // Subscribe to ALL shot collections and merge them so no video is ever missed
+  // Subscribe to canonical '99shorts' collection
   useEffect(() => {
-    let shortsList: any[] = [];
-    let shots99List: any[] = [];
-    let legacyShotsList: any[] = [];
-    let singularShortsList: any[] = [];
-
     const parseTime = (val: any) => {
       if (!val) return 0;
       if (typeof val?.toMillis === 'function') return val.toMillis();
@@ -155,9 +150,9 @@ export const ShotsReelsSection: React.FC = () => {
       return isNaN(p) ? 0 : p;
     };
 
-    const updateCombined = () => {
+    const unsub = subscribeToCollection('99shorts', (list) => {
       const map = new Map<string, ShotItem>();
-      [...legacyShotsList, ...shots99List, ...shortsList, ...singularShortsList].forEach((item: any) => {
+      (list || []).forEach((item: any) => {
         if (!item) return;
         const video = (item.videoUrl || item.video_url || item.video || item.url || item.mediaUrl || item.media_url || '').trim();
         const thumb = item.thumbnailUrl || item.thumbnail_url || item.thumbnail || item.image || item.imageUrl || item.poster || '';
@@ -196,33 +191,10 @@ export const ShotsReelsSection: React.FC = () => {
       });
 
       setShots(combined);
-    };
-
-    const unsub1 = subscribeToCollection('99shorts', (list) => {
-      shortsList = list || [];
-      updateCombined();
-    });
-
-    const unsub2 = subscribeToCollection('99shots', (list) => {
-      shots99List = list || [];
-      updateCombined();
-    });
-
-    const unsub3 = subscribeToCollection('shots', (list) => {
-      legacyShotsList = list || [];
-      updateCombined();
-    });
-
-    const unsub4 = subscribeToCollection('shorts', (list) => {
-      singularShortsList = list || [];
-      updateCombined();
     });
 
     return () => {
-      if (typeof unsub1 === 'function') unsub1();
-      if (typeof unsub2 === 'function') unsub2();
-      if (typeof unsub3 === 'function') unsub3();
-      if (typeof unsub4 === 'function') unsub4();
+      if (typeof unsub === 'function') unsub();
     };
   }, []);
 

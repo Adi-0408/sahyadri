@@ -17,7 +17,7 @@ export const DownloadAppModal: React.FC<DownloadAppModalProps> = ({ isOpen, onCl
           <Smartphone className="w-10 h-10 text-white" />
         </div>
         
-        <h2 className="text-2xl font-bold text-slate-900 mb-1">Sahyadri Land Developer</h2>
+        <h2 className="text-2xl font-bold text-slate-900 mb-1">Sahyadri Lands</h2>
         <p className="text-slate-500 font-medium text-sm mb-4">India's Premium Real Estate App</p>
 
         {/* App Info Badges */}

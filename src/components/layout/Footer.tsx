@@ -18,11 +18,11 @@ export const Footer: React.FC = () => {
           <Link to="/" className="flex items-center gap-3 select-none">
             <img
               src="/sahyadri-logo.png"
-              alt="Sahyadri Land Developer"
+              alt="Sahyadri Lands"
               className="h-11 w-auto object-contain shrink-0"
             />
             <span className="text-xl font-bold text-white tracking-tight">
-              Sahyadri Land Developer
+              Sahyadri Lands
             </span>
           </Link>
           <p className="text-sm text-slate-400 leading-relaxed max-w-sm">
@@ -90,7 +90,7 @@ export const Footer: React.FC = () => {
           </div>
           <div className="flex items-start gap-2.5 text-sm leading-relaxed">
             <MapPin className="w-4 h-4 text-emerald-400 mt-1 shrink-0" />
-            <span>Sahyadri Land Developer, Satara / Karad Belt, Maharashtra, India.</span>
+            <span>Sahyadri Lands, Satara / Karad Belt, Maharashtra, India.</span>
           </div>
         </div>
 
@@ -98,7 +98,7 @@ export const Footer: React.FC = () => {
 
       {/* Bottom Bar with Admin Access Trigger */}
       <div className="max-w-7xl mx-auto border-t border-slate-900 mt-10 pt-6 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-slate-500">
-        <p>© {new Date().getFullYear()} Sahyadri Land Developer. All Rights Reserved.</p>
+        <p>© {new Date().getFullYear()} Sahyadri Lands. All Rights Reserved.</p>
         
         <div className="flex items-center gap-6">
           {/* Admin Panel Direct Link (navigates directly to /admin/login page) */}

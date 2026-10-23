@@ -93,12 +93,7 @@ export const ShotsManager: React.FC = () => {
     };
     loadDependencies();
 
-    // Subscribe to live video collections and merge so no video is ever missed
-    let s1: any[] = [];
-    let s2: any[] = [];
-    let s3: any[] = [];
-    let s4: any[] = [];
-
+    // Subscribe to live video collection '99shorts'
     const parseTime = (val: any) => {
       if (!val) return 0;
       if (typeof val?.toMillis === 'function') return val.toMillis();
@@ -109,46 +104,16 @@ export const ShotsManager: React.FC = () => {
       return isNaN(p) ? 0 : p;
     };
 
-    const updateAdminShots = () => {
-      const map = new Map<string, any>();
-      [...s4, ...s3, ...s2, ...s1].forEach((item: any) => {
-        if (!item) return;
-        const vUrl = (item.videoUrl || item.video || item.mediaUrl || item.url || '').trim();
-        const key = vUrl ? vUrl.toLowerCase() : (item.id || '');
-        if (key) map.set(key, item);
-      });
-      const sorted = Array.from(map.values()).sort((a: any, b: any) => {
+    const unsub = subscribeToCollection('99shorts', (list) => {
+      const sorted = (list || []).slice().sort((a: any, b: any) => {
         return parseTime(b.createdAt) - parseTime(a.createdAt);
       });
       setShots(sorted);
       setLoading(false);
-    };
-
-    const unsub1 = subscribeToCollection('99shorts', (list) => {
-      s1 = list || [];
-      updateAdminShots();
-    });
-
-    const unsub2 = subscribeToCollection('shots', (list) => {
-      s2 = list || [];
-      updateAdminShots();
-    });
-
-    const unsub3 = subscribeToCollection('99shots', (list) => {
-      s3 = list || [];
-      updateAdminShots();
-    });
-
-    const unsub4 = subscribeToCollection('shorts', (list) => {
-      s4 = list || [];
-      updateAdminShots();
     });
 
     return () => {
-      if (typeof unsub1 === 'function') unsub1();
-      if (typeof unsub2 === 'function') unsub2();
-      if (typeof unsub3 === 'function') unsub3();
-      if (typeof unsub4 === 'function') unsub4();
+      if (typeof unsub === 'function') unsub();
     };
   }, []);
 
