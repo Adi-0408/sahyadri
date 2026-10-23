@@ -155,7 +155,7 @@ export const Home: React.FC = () => {
             <img
               src="/sahyadri-lands-hero.png"
               alt="Sahyadri Lands"
-              className="h-36 sm:h-52 md:h-64 lg:h-72 w-auto object-contain drop-shadow-2xl"
+              className="h-36 sm:h-52 md:h-64 lg:h-72 w-auto object-contain drop-shadow-[0_12px_28px_rgba(0,0,0,0.65)]"
             />
           </motion.div>
 
