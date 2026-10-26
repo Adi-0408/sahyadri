@@ -191,6 +191,29 @@ export const RoleActivityManager: React.FC = () => {
     return String(val).trim().toLowerCase();
   };
 
+  // Helper to strictly identify and filter out admin/super_admin accounts
+  const isAdminUser = (u: any): boolean => {
+    if (!u) return false;
+    const role = cleanText(u.role);
+    const userType = cleanText(u.userType);
+    const email = cleanText(u.email);
+    const uName = cleanText(u.name || u.displayName || u.fullName);
+    const uid = String(u.id || u.uid || '').trim();
+    return (
+      role === 'admin' ||
+      role === 'super_admin' ||
+      userType === 'admin' ||
+      userType === 'super_admin' ||
+      email === 'admin@gmail.com' ||
+      email === 'admin@sahyadri.com' ||
+      u.isAdmin === true ||
+      uid === 'B47ojxIU3icqVzJSRTdHpouDN0A2' ||
+      uid === 'admin-123' ||
+      uName.includes('super admin') ||
+      uName === 'admin'
+    );
+  };
+
   // Live real-time subscriptions
   useEffect(() => {
     setLoading(true);
@@ -198,9 +221,10 @@ export const RoleActivityManager: React.FC = () => {
     const unsubUsers = subscribeToCollection('users', async (userList) => {
       try {
         const { cleanedUsers } = await cleanAndDeduplicateUsers(userList || []);
-        setUsers(cleanedUsers.length > 0 ? cleanedUsers : (userList || []));
+        const rawList = cleanedUsers.length > 0 ? cleanedUsers : (userList || []);
+        setUsers(rawList.filter((u) => !isAdminUser(u)));
       } catch {
-        setUsers(userList || []);
+        setUsers((userList || []).filter((u) => !isAdminUser(u)));
       }
     });
 
@@ -251,7 +275,7 @@ export const RoleActivityManager: React.FC = () => {
 
     // 1. Add all base users from users collection
     users.forEach((u) => {
-      if (!u) return;
+      if (!u || isAdminUser(u)) return;
       const uid = String(u.id || u.uid || '').trim();
       const mob = cleanPhone(u.mobile || u.phone || u.phoneNumber);
       const email = cleanText(u.email);
@@ -710,6 +734,8 @@ export const RoleActivityManager: React.FC = () => {
     // Compute total work items per user and strictly isolate role boundaries
     const result: RoleUserWithWork[] = [];
     userMap.forEach((u) => {
+      if (isAdminUser(u)) return;
+
       // STRICT ROLE BOUNDARIES:
       // A supplier can ONLY list building supplies/materials (cement, steel, sand, bricks, etc.)
       if (u.role === 'supplier') {
@@ -794,6 +820,8 @@ export const RoleActivityManager: React.FC = () => {
   const filteredUsers = useMemo(() => {
     return aggregatedUsers
       .filter((u) => {
+        if (isAdminUser(u)) return false;
+
         // Role filter
         if (selectedRoleFilter !== 'all' && u.role !== selectedRoleFilter) {
           return false;

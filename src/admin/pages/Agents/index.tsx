@@ -246,7 +246,9 @@ export const AgentsManager: React.FC = () => {
       // 2. Process documents from 'users' collection where role or userType is 'agent'
       (usersData || []).forEach((u) => {
         if (!u) return;
-        const role = (u.role || '').toString().toLowerCase();
+        const role = (u.role || '').toString().toLowerCase().trim();
+        const email = (u.email || '').toString().toLowerCase().trim();
+        if (role === 'admin' || role === 'super_admin' || email === 'admin@gmail.com' || email === 'admin@sahyadri.com' || u.isAdmin === true) return;
         const userType = (u.userType || '').toString().toLowerCase();
         const category = (u.category || '').toString().toLowerCase();
         const isAgent = u.isAgent === true || role === 'agent' || userType === 'agent' || category === 'agent';

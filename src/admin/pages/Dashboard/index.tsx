@@ -108,8 +108,28 @@ export const Dashboard: React.FC = () => {
         const key = a.mobile || a.phone || a.phoneNumber || a.id;
         if (key) agentKeys.add(String(key));
       });
-      (dUsers || []).forEach((u) => {
-        if (!u) return;
+      const nonAdminUsers = (dUsers || []).filter((u) => {
+        if (!u) return false;
+        const role = (u.role || '').toString().toLowerCase().trim();
+        const userType = (u.userType || '').toString().toLowerCase().trim();
+        const email = (u.email || '').toString().toLowerCase().trim();
+        const uName = (u.name || u.displayName || u.fullName || '').toString().toLowerCase().trim();
+        const uid = String(u.id || u.uid || '').trim();
+        return !(
+          role === 'admin' ||
+          role === 'super_admin' ||
+          userType === 'admin' ||
+          userType === 'super_admin' ||
+          email === 'admin@gmail.com' ||
+          email === 'admin@sahyadri.com' ||
+          u.isAdmin === true ||
+          uid === 'B47ojxIU3icqVzJSRTdHpouDN0A2' ||
+          uid === 'admin-123' ||
+          uName.includes('super admin') ||
+          uName === 'admin'
+        );
+      });
+      nonAdminUsers.forEach((u) => {
         const role = (u.role || '').toString().toLowerCase();
         const userType = (u.userType || '').toString().toLowerCase();
         const isAgent = u.isAgent === true || role === 'agent' || userType === 'agent';
@@ -118,7 +138,7 @@ export const Dashboard: React.FC = () => {
           if (key) agentKeys.add(String(key));
         }
       });
-      setStats((prev) => ({ ...prev, agents: agentKeys.size, users: dUsers.length }));
+      setStats((prev) => ({ ...prev, agents: agentKeys.size, users: nonAdminUsers.length }));
     };
 
     const unsubAgents = subscribeToCollection('agents', (list) => {

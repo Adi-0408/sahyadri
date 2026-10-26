@@ -22,7 +22,30 @@ const ROLE_CONFIG: Record<string, { label: string; bg: string; border: string; t
   admin: { label: 'Admin', bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700', dot: 'bg-purple-500' },
 };
 
-const ALL_ROLES = ['user', 'buyer', 'seller', 'builder', 'agent', 'supplier', 'representative', 'admin'];
+const ALL_ROLES = ['user', 'buyer', 'seller', 'builder', 'agent', 'supplier', 'representative'];
+
+// Helper to strictly identify and filter out admin/super_admin accounts
+const isAdminUser = (u: any): boolean => {
+  if (!u) return false;
+  const role = String(u.role || '').toLowerCase().trim();
+  const userType = String(u.userType || '').toLowerCase().trim();
+  const email = String(u.email || '').toLowerCase().trim();
+  const uName = String(u.name || u.displayName || u.fullName || '').toLowerCase().trim();
+  const uid = String(u.id || u.uid || '').trim();
+  return (
+    role === 'admin' ||
+    role === 'super_admin' ||
+    userType === 'admin' ||
+    userType === 'super_admin' ||
+    email === 'admin@gmail.com' ||
+    email === 'admin@sahyadri.com' ||
+    u.isAdmin === true ||
+    uid === 'B47ojxIU3icqVzJSRTdHpouDN0A2' ||
+    uid === 'admin-123' ||
+    uName.includes('super admin') ||
+    uName === 'admin'
+  );
+};
 
 interface RoleDropdownProps {
   currentRole: string;
@@ -179,15 +202,9 @@ export const UsersManager: React.FC = () => {
       const list = await fetchCollection('users');
       // Clean up ghost records and merge duplicate phone-keyed entries
       const { cleanedUsers } = await cleanAndDeduplicateUsers(list);
-      if (cleanedUsers.length === 0) {
-        setUsers([
-          { id: 'user-1', name: 'Elena Rossi', email: 'elena@example.com', role: 'user', isBlocked: false },
-          { id: 'user-2', name: 'Julian Vane', email: 'julian@example.com', role: 'user', isBlocked: true },
-          { id: 'user-3', name: 'Marcus Thorne', email: 'marcus@example.com', role: 'user', isBlocked: false }
-        ]);
-      } else {
-        setUsers(cleanedUsers);
-      }
+      // Strictly exclude any admin / super_admin accounts from user listings
+      const nonAdminUsers = (cleanedUsers || []).filter((u: any) => !isAdminUser(u));
+      setUsers(nonAdminUsers);
       // Reconcile and guarantee properties exist for all seller/builder roles
       syncApprovedRoleInquiriesWithProperties().catch(() => {});
     } catch (e) {
@@ -417,7 +434,7 @@ export const UsersManager: React.FC = () => {
   };
 
   const filteredUsers = users.filter((u) => {
-    if (!u) return false;
+    if (!u || isAdminUser(u)) return false;
     const name = String(u.name || '').trim();
     const displayMobile = getDisplayMobile(u);
     const uId = String(u.id || '');
@@ -534,7 +551,7 @@ export const UsersManager: React.FC = () => {
                 )) : (
                   <tr>
                     <td colSpan={7} className="px-6 py-8 text-center text-slate-500">
-                      No users found matching "{searchTerm}"
+                      {searchTerm ? `No users found matching "${searchTerm}"` : 'No registered clients found.'}
                     </td>
                   </tr>
                 )}
