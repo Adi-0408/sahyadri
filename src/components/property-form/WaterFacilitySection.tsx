@@ -10,6 +10,8 @@ export interface WaterFacilitySectionProps {
   watch: any;
   setValue: any;
   facingOptions?: { value: string; label: string }[];
+  categoryType?: string;
+  hideFacing?: boolean;
 }
 
 export const WaterFacilitySection: React.FC<WaterFacilitySectionProps> = ({
@@ -21,15 +23,35 @@ export const WaterFacilitySection: React.FC<WaterFacilitySectionProps> = ({
     { value: 'West', label: 'West' },
     { value: 'North', label: 'North' },
     { value: 'South', label: 'South' }
-  ]
+  ],
+  categoryType,
+  hideFacing = false
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isMr = Boolean(i18n.language?.startsWith('mr'));
 
-  const waterSources = [
-    { value: 'River', label: t('waterSource.river', 'River') },
-    { value: 'Well', label: t('waterSource.well', 'Well') },
-    { value: 'Borewell', label: t('waterSource.borewell', 'Borewell') }
+  const isHouseType = categoryType?.toLowerCase() === 'house' || categoryType?.toLowerCase() === 'bungalow' || categoryType?.toLowerCase() === 'flat';
+
+  const houseWaterSources = [
+    { value: 'Municipal Water', label: t('waterSource.municipal', 'Municipal Tap Line') },
+    { value: 'Borewell', label: t('waterSource.borewell', 'Borewell') },
+    { value: 'Well', label: t('waterSource.well', 'Well / Open Well') },
+    { value: 'Both', label: isMr ? 'दोन्ही (नळ + बोअरवेल)' : 'Both (Municipal + Borewell)' },
+    { value: '24x7 Supply', label: isMr ? '२४ तास पाण्याची सोय' : '24x7 Water Supply' },
+    { value: 'River', label: t('waterSource.river', 'River Water Intake') },
+    { value: 'Other', label: t('waterSource.other', 'Other Water Source') }
   ];
+
+  const landWaterSources = [
+    { value: 'River', label: t('waterSource.river', 'River Water Intake') },
+    { value: 'Well', label: t('waterSource.well', 'Well / Open Well') },
+    { value: 'Borewell', label: t('waterSource.borewell', 'Borewell') },
+    { value: 'Canal', label: t('waterSource.canal', 'Irrigation Canal') },
+    { value: 'Municipal Water', label: t('waterSource.municipal', 'Municipal Tap Line') },
+    { value: 'Other', label: t('waterSource.other', 'Other Water Source') }
+  ];
+
+  const waterSources = isHouseType ? houseWaterSources : landWaterSources;
 
   const translatedFacingOptions = facingOptions.map((opt) => ({
     value: opt.value,
@@ -55,7 +77,12 @@ export const WaterFacilitySection: React.FC<WaterFacilitySectionProps> = ({
           </label>
           <div className="flex flex-wrap gap-2.5">
             {waterSources.map((item) => {
-              const isActive = watch('waterSourceType') === item.value && watch('waterSourceAvailable') === true;
+              const currentSource = watch('waterSourceType');
+              const isAvailable = watch('waterSourceAvailable') === true || watch('waterSupply') === true;
+              const isActive = isAvailable && (
+                currentSource === item.value ||
+                (item.value === 'Municipal Water' && (currentSource === 'Municipal Corporation' || currentSource === 'Municipal Water'))
+              );
               return (
                 <button
                   key={item.value}
@@ -64,9 +91,11 @@ export const WaterFacilitySection: React.FC<WaterFacilitySectionProps> = ({
                     if (isActive) {
                       setValue('waterSourceType', '');
                       setValue('waterSourceAvailable', false);
+                      setValue('waterSupply', false);
                     } else {
                       setValue('waterSourceType', item.value);
                       setValue('waterSourceAvailable', true);
+                      setValue('waterSupply', true);
                     }
                   }}
                   className={`px-4 py-2.5 text-sm font-semibold rounded-xl border flex items-center gap-1.5 cursor-pointer transition-all ${
@@ -84,18 +113,20 @@ export const WaterFacilitySection: React.FC<WaterFacilitySectionProps> = ({
         </div>
 
         {/* Facing Direction Select */}
-        <Controller
-          name="facingDirection"
-          control={control}
-          render={({ field }) => (
-            <Select
-              label={t('forms.facingDirection') || 'Facing Direction'}
-              icon={Compass}
-              options={translatedFacingOptions}
-              {...field}
-            />
-          )}
-        />
+        {!hideFacing && (
+          <Controller
+            name="facingDirection"
+            control={control}
+            render={({ field }) => (
+              <Select
+                label={t('forms.facingDirection') || 'Facing Direction'}
+                icon={Compass}
+                options={translatedFacingOptions}
+                {...field}
+              />
+            )}
+          />
+        )}
       </div>
     </section>
   );

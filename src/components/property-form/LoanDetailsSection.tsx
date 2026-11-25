@@ -87,8 +87,15 @@ export const LoanDetailsSection: React.FC<LoanDetailsSectionProps> = ({
                 marginTop: 0,
                 transition: { height: { duration: 0.2 }, opacity: { duration: 0.15 } }
               }}
-              className="overflow-hidden border-l-2 border-slate-200 pl-4 md:pl-12 mt-2 flex flex-col gap-5"
+              className="overflow-hidden border-l-2 border-slate-200 pl-4 md:pl-12 mt-2 flex flex-col gap-4"
             >
+              <Input
+                icon={Landmark}
+                label={t('forms.loanBankName') || 'Bank / Lender Name'}
+                placeholder={t('forms.loanBankNamePlaceholder') || 'e.g. State Bank of India, HDFC'}
+                {...register('loanBankName')}
+                error={errors.loanBankName?.message as string}
+              />
               <Input
                 icon={IndianRupee}
                 label={`${t('forms.loanAmount')} (₹)`}

@@ -60,8 +60,13 @@ export const mapToFirebaseProperty = (flatData: any, additionalContext: any) => 
     furnishingStatus: merged.additionalDetails?.furnishingStatus || merged.furnishingStatus || '',
     carParking: merged.additionalDetails?.carParking !== undefined ? merged.additionalDetails.carParking : !!merged.carParking,
     parkingType: merged.additionalDetails?.parkingType || merged.parkingType || '',
+    parkingCapacity: merged.additionalDetails?.parkingCapacity || merged.parkingCapacity || 0,
     lift: merged.additionalDetails?.lift !== undefined ? merged.additionalDetails.lift : !!merged.lift,
+    garden: merged.additionalDetails?.garden !== undefined ? merged.additionalDetails.garden : !!merged.garden,
+    terrace: merged.additionalDetails?.terrace !== undefined ? merged.additionalDetails.terrace : !!merged.terrace,
     waterSupply: merged.additionalDetails?.waterSupply !== undefined ? merged.additionalDetails.waterSupply : !!merged.waterSupply,
+    waterSourceAvailable: merged.additionalDetails?.waterSourceAvailable !== undefined ? merged.additionalDetails.waterSourceAvailable : !!merged.waterSourceAvailable,
+    waterSourceType: merged.additionalDetails?.waterSourceType || merged.waterSourceType || '',
     powerBackup: merged.additionalDetails?.powerBackup !== undefined ? merged.additionalDetails.powerBackup : !!merged.powerBackup,
     amenities: merged.additionalDetails?.amenities || merged.amenities || [],
   };

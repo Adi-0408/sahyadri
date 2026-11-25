@@ -28,7 +28,9 @@ dist-ssr
 .env.*
 !.env.example
 
-# Temporary and duplicate directories
+# Temporary, scratch, and audit directories
 scratch/
+audit/
 /video/
 /videos/
+*.cjs

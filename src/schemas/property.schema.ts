@@ -44,7 +44,7 @@ export const sellPropertySchema = z.object({
   ...ownerDetailsSchema.shape,
 
   propertyName: z.string().min(3, "Property name is required"),
-  description: z.string().min(20, "Description must be at least 20 characters"),
+  description: z.string().optional().default(''),
   expectedPrice: z.number().min(1000, "Price must be greater than 1000"),
   isNegotiable: z.boolean().optional(),
 
@@ -53,11 +53,14 @@ export const sellPropertySchema = z.object({
   facingDirection: z.string().optional(),
   gutNumber: z.string().optional(),
   furnishingStatus: z.enum(['Furnished', 'Semi-Furnished', 'Unfurnished']),
-  carParking: z.boolean(),
-  lift: z.boolean(),
-  garden: z.boolean(),
-  waterSupply: z.boolean(),
-  powerBackup: z.boolean(),
+  carParking: z.boolean().optional(),
+  parkingType: z.string().optional(),
+  parkingCapacity: z.number().optional().or(z.string().optional()),
+  lift: z.boolean().optional(),
+  garden: z.boolean().optional(),
+  terrace: z.boolean().optional(),
+  waterSupply: z.boolean().optional(),
+  powerBackup: z.boolean().optional(),
 
   ...addressSchema.shape,
 
@@ -92,7 +95,7 @@ export const rentPropertySchema = z.object({
   ...ownerDetailsSchema.shape,
 
   propertyName: z.string().min(3, "Property name is required"),
-  description: z.string().min(20, "Description must be at least 20 characters").optional(),
+  description: z.string().optional().default(''),
   monthlyRent: z.number().min(500, "Rent must be greater than 500"),
   securityDeposit: z.number().min(0),
   maintenanceCharges: z.number().min(0).optional(),
@@ -103,13 +106,20 @@ export const rentPropertySchema = z.object({
   facingDirection: z.string().optional(),
   gutNumber: z.string().optional(),
   furnishingStatus: z.enum(['Furnished', 'Semi-Furnished', 'Unfurnished']),
-  carParking: z.boolean(),
+  carParking: z.boolean().optional(),
+  parkingType: z.string().optional(),
+  parkingCapacity: z.number().optional().or(z.string().optional()),
+  lift: z.boolean().optional(),
+  garden: z.boolean().optional(),
+  terrace: z.boolean().optional(),
+  waterSupply: z.boolean().optional(),
+  powerBackup: z.boolean().optional(),
 
   // Rental specific preferences
-  bachelorsAllowed: z.boolean(),
-  familyPreferred: z.boolean(),
-  petsAllowed: z.boolean(),
-  workingProfessionalsAllowed: z.boolean(),
+  bachelorsAllowed: z.boolean().optional(),
+  familyPreferred: z.boolean().optional(),
+  petsAllowed: z.boolean().optional(),
+  workingProfessionalsAllowed: z.boolean().optional(),
   foodPreference: z.string().optional(),
 
   ...addressSchema.shape,

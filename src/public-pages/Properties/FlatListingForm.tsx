@@ -6,11 +6,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   MapPin, Building, Settings, User,
   IndianRupee, Smartphone, LayoutGrid, Bed, Bath, Layers, Calendar,
-  Armchair, CarFront, Rocket, ArrowUpDown
+  Armchair, CarFront, Rocket, ArrowUpDown, Droplet, FileText, Zap
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { sellPropertySchema, rentPropertySchema } from '../../schemas/property.schema';
 import { Input } from '../../components/ui/Input';
+import { Textarea } from '../../components/ui/Textarea';
 import { Select } from '../../components/ui/Select';
 import { Button } from '../../components/ui/Button';
 import { SegmentedControl } from '../../components/ui/SegmentedControl';
@@ -98,7 +99,7 @@ export const FlatListingForm: React.FC<FlatListingFormProps> = ({ onBack, onSucc
       carParking: initialData?.carParking !== undefined ? initialData.carParking : false,
       lift: initialData?.lift !== undefined ? initialData.lift : false,
       garden: initialData?.garden !== undefined ? initialData.garden : false,
-      waterSupply: initialData?.waterSupply !== undefined ? initialData.waterSupply : false,
+      waterSupply: initialData?.waterSupply !== undefined ? Boolean(initialData.waterSupply) : true,
       powerBackup: initialData?.powerBackup !== undefined ? initialData.powerBackup : false,
       bachelorsAllowed: initialData?.bachelorsAllowed !== undefined ? initialData.bachelorsAllowed : false,
       familyPreferred: initialData?.familyPreferred !== undefined ? initialData.familyPreferred : true,
@@ -134,7 +135,7 @@ export const FlatListingForm: React.FC<FlatListingFormProps> = ({ onBack, onSucc
       monthlyRent: initialData?.monthlyRent || initialData?.price || initialData?.pricingDetails?.price || undefined,
       securityDeposit: initialData?.securityDeposit || initialData?.pricingDetails?.securityDeposit || 0,
       maintenanceCharges: initialData?.maintenanceCharges || initialData?.pricingDetails?.maintenanceCharges || 0,
-      description: initialData?.description || initialData?.propertyInformation?.description || 'Spacious modern flat with excellent layout, premium ventilation, and close proximity to key areas.',
+      description: initialData?.description || initialData?.propertyInformation?.description || '',
       images: initialData?.images || initialData?.mediaUpload?.images || [],
       videoPath: initialData?.videoPath || initialData?.mediaUpload?.videoPath || '',
     }
@@ -474,6 +475,34 @@ export const FlatListingForm: React.FC<FlatListingFormProps> = ({ onBack, onSucc
                 )}
               />
 
+              <Controller
+                name="waterSupply"
+                control={control}
+                render={({ field: { value, onChange } }) => (
+                  <ToggleSwitch
+                    icon={Droplet}
+                    label={t('details.fields.waterSupply', 'Water Supply')}
+                    description={i18n.language?.startsWith('mr') ? 'पिण्याचे आणि वापराचे पाणी उपलब्ध आहे का.' : 'Active drinking and domestic water supply available'}
+                    checked={Boolean(value)}
+                    onChange={onChange}
+                  />
+                )}
+              />
+
+              <Controller
+                name="powerBackup"
+                control={control}
+                render={({ field: { value, onChange } }) => (
+                  <ToggleSwitch
+                    icon={Zap}
+                    label={t('details.fields.powerBackup', 'Power Backup')}
+                    description={i18n.language?.startsWith('mr') ? 'इमारतीत किंवा फ्लॅटसाठी पॉवर बॅकअप उपलब्ध आहे का.' : 'Is generator/inverter power backup available?'}
+                    checked={Boolean(value)}
+                    onChange={onChange}
+                  />
+                )}
+              />
+
               <div className="flex flex-col gap-4">
                 <Controller
                   name="carParking"
@@ -586,6 +615,25 @@ export const FlatListingForm: React.FC<FlatListingFormProps> = ({ onBack, onSucc
               setValue={setValue}
             />
           )}
+
+          {/* Section: Property Description */}
+          <section className="bg-white rounded-2xl border border-slate-200 shadow-sm">
+            <SectionHeader icon={FileText} title={i18n.language?.startsWith('mr') ? 'फ्लॅटचे वर्णन (Description)' : 'Property Description'} iconColorClass="text-blue-600" />
+            <div className="p-6 flex flex-col gap-3 text-left">
+              <Textarea
+                label={i18n.language?.startsWith('mr') ? 'तपशीलवार माहिती (वर्णन)' : 'Detailed Description'}
+                placeholder={i18n.language?.startsWith('mr') ? 'फ्लॅटचे खास वैशिष्ट्ये, व्हेंटिलेशन, परिसर, जवळच्या सोयी-सुविधा इत्यादी तपशील लिहा...' : 'Describe the flat, interior features, locality, society amenities, etc...'}
+                rows={4}
+                {...register('description')}
+                error={errors.description?.message as string}
+              />
+              <span className="text-[11px] text-slate-400">
+                {i18n.language?.startsWith('mr') 
+                  ? 'येथे तुम्ही स्वतः माहिती लिहू किंवा बदलू शकता. ही माहिती ग्राहकांना मालमत्तेच्या तपशील पेजवर दिसेल.'
+                  : 'Write or edit the property description in your own words. This will appear on the property details page.'}
+              </span>
+            </div>
+          </section>
 
           {/* Section 5: Media Upload */}
           <MediaUploadSection 

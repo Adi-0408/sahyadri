@@ -5,12 +5,14 @@ import * as z from 'zod';
 import { motion } from 'framer-motion';
 import {
   Settings, LayoutGrid, Layers, Calendar,
-  Armchair, CarFront, Rocket, User, Users
+  CarFront, Rocket, User, Users,
+  FileText, ArrowUpDown, Trees, Landmark, Zap
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { sellPropertySchema, rentPropertySchema } from '../../schemas/property.schema';
 import { Input } from '../../components/ui/Input';
+import { Textarea } from '../../components/ui/Textarea';
 import { Select } from '../../components/ui/Select';
 import { Button } from '../../components/ui/Button';
 import { ToggleSwitch } from '../../components/ui/ToggleSwitch';
@@ -24,6 +26,7 @@ import { mapToFirebaseProperty } from '../../utils/propertyMapper';
 import { SegmentedControl } from '../../components/ui/SegmentedControl';
 import { OwnerDetailsSection } from '../../components/property-form/OwnerDetailsSection';
 import { PropertyInformationSection } from '../../components/property-form/PropertyInformationSection';
+import { WaterFacilitySection } from '../../components/property-form/WaterFacilitySection';
 import { MediaUploadSection } from '../../components/property-form/MediaUploadSection';
 import { AddressDetailsSection } from '../../components/property-form/AddressDetailsSection';
 import { LoanDetailsSection } from '../../components/property-form/LoanDetailsSection';
@@ -81,7 +84,11 @@ export const HouseListingForm: React.FC<HouseListingFormProps> = ({ onBack, onSu
       areaType: z.string().optional(),
       hasLoan: z.boolean().optional(),
       loanBankName: z.string().optional(),
-      loanAmount: z.number().optional().or(z.literal(0)).or(z.string().optional())
+      loanAmount: z.number().optional().or(z.literal(0)).or(z.string().optional()),
+      waterSupply: z.boolean().optional(),
+      waterSourceAvailable: z.boolean().optional(),
+      waterSourceType: z.string().optional(),
+      description: z.string().optional().or(z.literal(''))
     });
 
     if (transactionType === 'sale') {
@@ -133,12 +140,22 @@ export const HouseListingForm: React.FC<HouseListingFormProps> = ({ onBack, onSu
       // Additional details
       facingDirection: initialData?.facingDirection || initialData?.additionalDetails?.facingDirection || 'East',
       furnishingStatus: initialData?.furnishingStatus || initialData?.additionalDetails?.furnishingStatus || 'Unfurnished',
-      carParking: initialData?.carParking !== undefined ? initialData.carParking : false,
-      lift: initialData?.lift !== undefined ? initialData.lift : false,
-      garden: initialData?.garden !== undefined ? initialData.garden : false,
-      waterSupply: initialData?.waterSupply !== undefined ? initialData.waterSupply : true,
-      powerBackup: initialData?.powerBackup !== undefined ? initialData.powerBackup : true,
-      hasLoan: initialData?.hasLoan !== undefined ? initialData.hasLoan : false,
+      carParking: initialData?.carParking !== undefined ? Boolean(initialData.carParking) : (initialData?.additionalDetails?.carParking !== undefined ? Boolean(initialData.additionalDetails.carParking) : false),
+      parkingType: initialData?.parkingType || initialData?.additionalDetails?.parkingType || 'Covered',
+      lift: initialData?.lift !== undefined ? Boolean(initialData.lift) : (initialData?.additionalDetails?.lift !== undefined ? Boolean(initialData.additionalDetails.lift) : false),
+      garden: initialData?.garden !== undefined ? Boolean(initialData.garden) : (initialData?.additionalDetails?.garden !== undefined ? Boolean(initialData.additionalDetails.garden) : false),
+      terrace: initialData?.terrace !== undefined ? Boolean(initialData.terrace) : (initialData?.additionalDetails?.terrace !== undefined ? Boolean(initialData.additionalDetails.terrace) : false),
+      waterSupply: initialData?.waterSupply !== undefined 
+        ? Boolean(initialData.waterSupply) 
+        : (initialData?.additionalDetails?.waterSupply !== undefined 
+          ? Boolean(initialData.additionalDetails.waterSupply) 
+          : (initialData?.waterSourceAvailable !== undefined ? Boolean(initialData.waterSourceAvailable) : false)),
+      waterSourceAvailable: initialData?.waterSourceAvailable !== undefined 
+        ? Boolean(initialData.waterSourceAvailable) 
+        : (initialData?.waterSupply !== undefined ? Boolean(initialData.waterSupply) : false),
+      waterSourceType: initialData?.waterSourceType || initialData?.additionalDetails?.waterSourceType || initialData?.waterFacility || '',
+      powerBackup: initialData?.powerBackup !== undefined ? Boolean(initialData.powerBackup) : (initialData?.additionalDetails?.powerBackup !== undefined ? Boolean(initialData.additionalDetails.powerBackup) : false),
+      hasLoan: initialData?.hasLoan !== undefined ? Boolean(initialData.hasLoan) : false,
       loanBankName: initialData?.loanBankName || '',
       loanAmount: initialData?.loanAmount || undefined,
       bachelorsAllowed: initialData?.bachelorsAllowed !== undefined ? initialData.bachelorsAllowed : false,
@@ -154,7 +171,7 @@ export const HouseListingForm: React.FC<HouseListingFormProps> = ({ onBack, onSu
       cityVillage: initialData?.cityVillage || initialData?.addressLocation?.village || '',
       pincode: initialData?.pincode || '416415',
       fullAddress: initialData?.fullAddress || initialData?.addressLocation?.address || '',
-      description: initialData?.description || initialData?.propertyInformation?.description || 'Beautiful independent house with excellent layout, ventilation, and prime location.', // Satisfies schema constraint
+      description: initialData?.description || initialData?.propertyInformation?.description || '',
       amenities: initialData?.amenities || initialData?.propertyInformation?.amenities || [],
       images: initialData?.images || initialData?.mediaUpload?.images || [],
       videoPath: initialData?.videoPath || initialData?.mediaUpload?.videoPath || '',
@@ -202,7 +219,22 @@ export const HouseListingForm: React.FC<HouseListingFormProps> = ({ onBack, onSu
         userId: isEditMode && initialData ? initialData.userId : (user?.uid || 'guest-user'),
         // Make sure required sub-fields match
         bedrooms: data.bedrooms || 3,
-        carpetArea: data.builtUpArea || 0
+        carpetArea: data.builtUpArea || 0,
+        facingDirection: data.facingDirection || 'East',
+        furnishingStatus: data.furnishingStatus || 'Unfurnished',
+        carParking: Boolean(data.carParking),
+        parkingType: data.carParking ? (data.parkingType || 'Covered') : '',
+        lift: Boolean(data.lift),
+        garden: Boolean(data.garden),
+        terrace: Boolean(data.terrace),
+        powerBackup: Boolean(data.powerBackup),
+        hasLoan: Boolean(data.hasLoan),
+        loanBankName: data.hasLoan ? (data.loanBankName || '') : '',
+        loanAmount: data.hasLoan ? (Number(data.loanAmount) || null) : null,
+        waterSupply: Boolean(data.waterSupply || data.waterSourceAvailable),
+        waterSourceAvailable: Boolean(data.waterSupply || data.waterSourceAvailable),
+        waterSourceType: (data.waterSupply || data.waterSourceAvailable) ? (data.waterSourceType || '') : '',
+        description: data.description || ''
       });
 
       if (isEditMode && initialData?.id) {
@@ -453,10 +485,10 @@ export const HouseListingForm: React.FC<HouseListingFormProps> = ({ onBack, onSu
 
           </section>
 
-          {/* Section 4: Additional Details */}
+          {/* Section 4: Facilities & Amenities */}
           <section className="bg-white rounded-2xl border border-slate-200 shadow-sm">
-            <SectionHeader icon={Settings} title={t('forms.additionalDetails') || 'Additional Details'} iconColorClass="text-emerald-600" />
-            <div className="p-6 flex flex-col gap-5 text-left">
+            <SectionHeader icon={Settings} title={i18n.language?.startsWith('mr') ? 'सुविधा व वैशिष्ट्ये' : (t('forms.additionalDetails') || 'Facilities & Amenities')} iconColorClass="text-emerald-600" />
+            <div className="p-6 flex flex-col gap-6 text-left">
               
               {/* Facing Direction */}
               <Controller
@@ -466,47 +498,167 @@ export const HouseListingForm: React.FC<HouseListingFormProps> = ({ onBack, onSu
                   <Select 
                     label={t('forms.facingDirection') || 'Facing Direction'} 
                     options={[
-                      { value: 'East', label: i18n.language?.startsWith('mr') ? 'पूर्व' : 'East' },
-                      { value: 'West', label: i18n.language?.startsWith('mr') ? 'पश्चिम' : 'West' },
-                      { value: 'North', label: i18n.language?.startsWith('mr') ? 'उत्तर' : 'North' },
-                      { value: 'South', label: i18n.language?.startsWith('mr') ? 'दक्षिण' : 'South' }
+                      { value: 'East', label: i18n.language?.startsWith('mr') ? 'पूर्व (East)' : 'East' },
+                      { value: 'West', label: i18n.language?.startsWith('mr') ? 'पश्चिम (West)' : 'West' },
+                      { value: 'North', label: i18n.language?.startsWith('mr') ? 'उत्तर (North)' : 'North' },
+                      { value: 'South', label: i18n.language?.startsWith('mr') ? 'दक्षिण (South)' : 'South' },
+                      { value: 'North-East', label: i18n.language?.startsWith('mr') ? 'ईशान्य (North-East)' : 'North-East' },
+                      { value: 'North-West', label: i18n.language?.startsWith('mr') ? 'वायव्य (North-West)' : 'North-West' },
+                      { value: 'South-East', label: i18n.language?.startsWith('mr') ? 'आग्नेय (South-East)' : 'South-East' },
+                      { value: 'South-West', label: i18n.language?.startsWith('mr') ? 'नैऋत्य (South-West)' : 'South-West' }
                     ]} 
                     {...field} 
                   />
                 )}
               />
 
-              {/* Furnishing Status Toggle */}
+              {/* Furnishing Status 3-Option Selector */}
+              <div className="w-full flex flex-col gap-2.5 text-left">
+                <label className="text-xs uppercase tracking-widest font-bold text-slate-500">
+                  {i18n.language?.startsWith('mr') ? 'फर्निशिंग स्थिती (Furnishing Status)' : 'Furnishing Status'}
+                </label>
+                <div className="grid grid-cols-3 gap-2.5">
+                  {[
+                    { value: 'Unfurnished', label: i18n.language?.startsWith('mr') ? 'विना फर्निश्ड' : 'Unfurnished' },
+                    { value: 'Semi-Furnished', label: i18n.language?.startsWith('mr') ? 'अर्ध फर्निश्ड' : 'Semi-Furnished' },
+                    { value: 'Furnished', label: i18n.language?.startsWith('mr') ? 'पूर्ण फर्निश्ड' : 'Furnished' }
+                  ].map((fOpt) => {
+                    const isSel = (watch('furnishingStatus') || 'Unfurnished') === fOpt.value;
+                    return (
+                      <button
+                        key={fOpt.value}
+                        type="button"
+                        onClick={() => setValue('furnishingStatus', fOpt.value)}
+                        className={`py-3 px-3 rounded-xl border text-xs sm:text-sm font-semibold transition-all cursor-pointer flex items-center justify-center text-center ${
+                          isSel
+                            ? 'bg-[#111c2e] text-white border-[#111c2e] shadow-sm font-bold'
+                            : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                        }`}
+                      >
+                        {fOpt.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Car Parking Toggle & Type */}
+              <div className="flex flex-col gap-3">
+                <Controller
+                  name="carParking"
+                  control={control}
+                  render={({ field: { value, onChange } }) => (
+                    <ToggleSwitch
+                      icon={CarFront}
+                      label={i18n.language?.startsWith('mr') ? 'राखीव कार पार्किंग (Reserved Car Parking)' : 'Reserved Car Parking'}
+                      description={i18n.language?.startsWith('mr') ? 'घरासाठी राखीव बंद किंवा खुली कार पार्किंग जागा उपलब्ध आहे का.' : 'Dedicated closed or open parking spot available for cars.'}
+                      checked={Boolean(value)}
+                      onChange={onChange}
+                    />
+                  )}
+                />
+
+                {watch('carParking') && (
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col gap-2.5 text-left animate-in fade-in duration-200">
+                    <label className="text-xs uppercase tracking-widest font-bold text-slate-600">
+                      {i18n.language?.startsWith('mr') ? 'पार्किंग प्रकार निवडा' : 'Select Parking Type'}
+                    </label>
+                    <div className="flex flex-wrap gap-2.5">
+                      {[
+                        { value: 'Covered', label: i18n.language?.startsWith('mr') ? 'कव्हर्ड (बंद पार्किंग)' : 'Covered' },
+                        { value: 'Open', label: i18n.language?.startsWith('mr') ? 'ओपन (खुली पार्किंग)' : 'Open' }
+                      ].map((pOpt) => {
+                        const isSel = (watch('parkingType') || 'Covered') === pOpt.value;
+                        return (
+                          <button
+                            key={pOpt.value}
+                            type="button"
+                            onClick={() => setValue('parkingType', pOpt.value)}
+                            className={`py-2 px-4 rounded-xl border text-xs sm:text-sm font-semibold cursor-pointer transition-all ${
+                              isSel
+                                ? 'bg-[#111c2e] text-white border-[#111c2e] shadow-xs font-bold'
+                                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                            }`}
+                          >
+                            {pOpt.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Lift Toggle */}
               <Controller
-                name="furnishingStatus"
+                name="lift"
                 control={control}
                 render={({ field: { value, onChange } }) => (
                   <ToggleSwitch
-                    icon={Armchair}
-                    label={i18n.language?.startsWith('mr') ? 'पूर्ण फर्निश्ड' : 'Fully Furnished'}
-                    description={i18n.language?.startsWith('mr') ? 'घरात वॉर्डरोब, बेड, सोफा, किचन, एसी इत्यादी सुविधा आहेत का.' : 'Does the property include wardrobes, beds, sofa, kitchen, AC, etc.'}
-                    checked={value === 'Furnished'}
-                    onChange={(checked) => onChange(checked ? 'Furnished' : 'Unfurnished')}
+                    icon={ArrowUpDown}
+                    label={i18n.language?.startsWith('mr') ? 'लिफ्ट (Lift Available)' : 'Lift Available'}
+                    description={i18n.language?.startsWith('mr') ? 'इमारतीत किंवा घरात लिफ्टची सुविधा उपलब्ध आहे का.' : 'Is an elevator/lift facility available on the property?'}
+                    checked={Boolean(value)}
+                    onChange={onChange}
                   />
                 )}
               />
 
-              {/* Car Parking Toggle */}
+              {/* Garden Toggle */}
               <Controller
-                name="carParking"
+                name="garden"
                 control={control}
                 render={({ field: { value, onChange } }) => (
                   <ToggleSwitch
-                    icon={CarFront}
-                    label={i18n.language?.startsWith('mr') ? 'राखीव कार पार्किंग' : 'Reserved Car Parking'}
-                    description={i18n.language?.startsWith('mr') ? 'राखीव बंद किंवा खुली पार्किंग जागा' : 'Dedicated closed or open parking spot'}
-                    checked={value}
+                    icon={Trees}
+                    label={i18n.language?.startsWith('mr') ? 'खाजगी बाग / गार्डन (Private Garden)' : 'Private Garden'}
+                    description={i18n.language?.startsWith('mr') ? 'घराभोवती स्वतंत्र खाजगी बाग किंवा हिरवळ उपलब्ध आहे का.' : 'Is a private garden or lawn available on the property?'}
+                    checked={Boolean(value)}
+                    onChange={onChange}
+                  />
+                )}
+              />
+
+              {/* Private Terrace Toggle */}
+              <Controller
+                name="terrace"
+                control={control}
+                render={({ field: { value, onChange } }) => (
+                  <ToggleSwitch
+                    icon={Landmark}
+                    label={i18n.language?.startsWith('mr') ? 'खाजगी टेरेस (Private Terrace)' : 'Private Terrace'}
+                    description={i18n.language?.startsWith('mr') ? 'घरासाठी स्वतंत्र खाजगी टेरेस उपलब्ध आहे का.' : 'Is a dedicated private terrace available with the house?'}
+                    checked={Boolean(value)}
+                    onChange={onChange}
+                  />
+                )}
+              />
+
+              {/* Power Backup Toggle */}
+              <Controller
+                name="powerBackup"
+                control={control}
+                render={({ field: { value, onChange } }) => (
+                  <ToggleSwitch
+                    icon={Zap}
+                    label={i18n.language?.startsWith('mr') ? 'पॉवर बॅकअप (Power Backup / Inverter)' : 'Power Backup / Inverter'}
+                    description={i18n.language?.startsWith('mr') ? 'घरासाठी इनव्हर्टर किंवा जनरेटर पॉवर बॅकअप सुविधा उपलब्ध आहे का.' : 'Is inverter, generator, or backup power support available?'}
+                    checked={Boolean(value)}
                     onChange={onChange}
                   />
                 )}
               />
             </div>
           </section>
+
+          {/* Water Facility Available Section (Exact same as Land) */}
+          <WaterFacilitySection 
+            control={control}
+            watch={watch}
+            setValue={setValue}
+            categoryType="House"
+            hideFacing={true}
+          />
 
           {/* Property Loan Information */}
           {transactionType === 'sale' && (
@@ -574,6 +726,25 @@ export const HouseListingForm: React.FC<HouseListingFormProps> = ({ onBack, onSu
               </div>
             </section>
           )}
+
+          {/* Section: Property Description */}
+          <section className="bg-white rounded-2xl border border-slate-200 shadow-sm">
+            <SectionHeader icon={FileText} title={i18n.language?.startsWith('mr') ? 'घराचे वर्णन (Description)' : 'Property Description'} iconColorClass="text-blue-600" />
+            <div className="p-6 flex flex-col gap-3 text-left">
+              <Textarea
+                label={i18n.language?.startsWith('mr') ? 'तपशीलवार माहिती (वर्णन)' : 'Detailed Description'}
+                placeholder={i18n.language?.startsWith('mr') ? 'घराचे खास वैशिष्ट्ये, बांधकाम दर्जा, परिसर, जवळच्या सोयी-सुविधा इत्यादी तपशील लिहा...' : 'Describe the house, construction quality, locality, neighborhood advantages, etc...'}
+                rows={4}
+                {...register('description')}
+                error={errors.description?.message as string}
+              />
+              <span className="text-[11px] text-slate-400">
+                {i18n.language?.startsWith('mr') 
+                  ? 'येथे तुम्ही स्वतः घराची माहिती लिहू किंवा बदलू शकता. ही माहिती ग्राहकांना मालमत्तेच्या तपशील पेजवर दिसेल.'
+                  : 'Write or edit the property description in your own words. This will appear on the property details page.'}
+              </span>
+            </div>
+          </section>
 
           {/* Media upload */}
           <MediaUploadSection 

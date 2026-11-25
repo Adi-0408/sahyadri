@@ -62,6 +62,8 @@ const FieldIconMap: Record<string, any> = {
   lift: ArrowUpDown,
   garden: Trees,
   waterSupply: Droplet,
+  waterSourceAvailable: Droplet,
+  waterSourceType: Droplet,
   powerBackup: Bolt,
   bachelorsAllowed: Users,
   familyPreferred: Users,
@@ -143,7 +145,9 @@ const DETAILS_SECTIONS = [
       { id: 'cornerPlot', label: 'Corner Plot' },
       { id: 'boundaryWall', label: 'Boundary Wall' },
       { id: 'electricityConnection', label: 'Electricity Connection' },
-      { id: 'fencingAvailable', label: 'Fencing Available' }
+      { id: 'fencingAvailable', label: 'Fencing Available' },
+      { id: 'waterSourceAvailable', label: 'Water Facility Available' },
+      { id: 'waterSourceType', label: 'Water Source Type' }
     ]
   },
   {
@@ -160,6 +164,8 @@ const DETAILS_SECTIONS = [
       { id: 'lift', label: 'Lift' },
       { id: 'garden', label: 'Garden' },
       { id: 'waterSupply', label: 'Water Supply' },
+      { id: 'waterSourceAvailable', label: 'Water Facility Available' },
+      { id: 'waterSourceType', label: 'Water Source Type' },
       { id: 'powerBackup', label: 'Power Backup' },
       { id: 'bachelorsAllowed', label: 'Bachelors Allowed' },
       { id: 'familyPreferred', label: 'Family Preferred' },
@@ -642,15 +648,23 @@ export const Details: React.FC = () => {
           // Check visibility
           if (!isFieldVisible(section.id, field.id)) return false;
 
-          const val = property[field.id];
-          // Hide empty, null, undefined, false
-          if (val === undefined || val === null || val === '' || val === false) {
+          const val = (property[field.id] !== undefined && property[field.id] !== null && property[field.id] !== '')
+            ? property[field.id]
+            : (property.additionalDetails && property.additionalDetails[field.id] !== undefined 
+              ? property.additionalDetails[field.id] 
+              : (property.plotLandDetails && property.plotLandDetails[field.id] !== undefined ? property.plotLandDetails[field.id] : undefined));
+          // Hide empty, null, undefined
+          if (val === undefined || val === null || val === '') {
             return false;
           }
           return true;
         })
         .map((field) => {
-          const rawVal = property[field.id];
+          const rawVal = (property[field.id] !== undefined && property[field.id] !== null && property[field.id] !== '')
+            ? property[field.id]
+            : (property.additionalDetails && property.additionalDetails[field.id] !== undefined 
+              ? property.additionalDetails[field.id] 
+              : (property.plotLandDetails && property.plotLandDetails[field.id] !== undefined ? property.plotLandDetails[field.id] : undefined));
           let formattedValue = String(rawVal);
 
           // Value formatting based on field types
@@ -705,6 +719,27 @@ export const Details: React.FC = () => {
             formattedValue = t('districts.' + rawVal, rawVal);
           } else if (typeof rawVal === 'string' && field.id === 'taluka') {
             formattedValue = t('talukas.' + rawVal, rawVal);
+          } else if (typeof rawVal === 'string' && field.id === 'waterSourceType') {
+            const valLower = rawVal.toLowerCase();
+            if (valLower.includes('municipal') || valLower.includes('tap')) {
+              formattedValue = t('waterSource.municipal', 'Municipal Tap Line');
+            } else if (valLower.includes('borewell')) {
+              formattedValue = t('waterSource.borewell', 'Borewell');
+            } else if (valLower.includes('well')) {
+              formattedValue = t('waterSource.well', 'Well / Open Well');
+            } else if (valLower.includes('both')) {
+              formattedValue = isMr ? 'दोन्ही (नळ + बोअरवेल)' : 'Both (Municipal + Borewell)';
+            } else if (valLower.includes('24x7') || valLower.includes('24')) {
+              formattedValue = isMr ? '२४ तास पाण्याची सोय' : '24x7 Water Supply';
+            } else if (valLower.includes('canal')) {
+              formattedValue = t('waterSource.canal', 'Irrigation Canal');
+            } else if (valLower.includes('river')) {
+              formattedValue = t('waterSource.river', 'River Water Intake');
+            } else if (valLower.includes('other')) {
+              formattedValue = t('waterSource.other', 'Other Water Source');
+            } else {
+              formattedValue = rawVal;
+            }
           }
 
           const FieldIcon = FieldIconMap[field.id] || Home;

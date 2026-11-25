@@ -571,13 +571,20 @@ export const Properties: React.FC = () => {
         }
       }
 
-      if (category.toLowerCase() === 'land') {
+      if (['land', 'house', 'all'].includes(category.toLowerCase())) {
         if (waterSourceAvailable !== 'All') {
           const wantsWater = waterSourceAvailable === 'true';
-          result = result.filter((p) => !!p.waterSourceAvailable === wantsWater);
+          result = result.filter((p) => (Boolean(p.waterSourceAvailable) || Boolean(p.waterSupply) || Boolean(p.additionalDetails?.waterSupply) || Boolean(p.additionalDetails?.waterSourceAvailable)) === wantsWater);
         }
         if (waterSourceType !== 'All') {
-          result = result.filter((p) => p.waterSourceType?.toLowerCase() === waterSourceType.toLowerCase());
+          result = result.filter((p) => {
+            const propType = (p.waterSourceType || p.additionalDetails?.waterSourceType || '').toLowerCase();
+            const targetType = waterSourceType.toLowerCase();
+            if (targetType === 'municipal water') {
+              return propType.includes('municipal');
+            }
+            return propType.includes(targetType);
+          });
         }
       }
 
@@ -1230,8 +1237,8 @@ export const Properties: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Water Facility - Only shown when category is Land */}
-                    {category.toLowerCase() === 'land' && (
+                    {/* Water Facility - Shown when category is Land, House, or All */}
+                    {['land', 'house', 'all'].includes(category.toLowerCase()) && (
                       <div className="flex flex-col gap-4 text-left animate-fadeIn">
                         <h3 className="text-xs font-bold text-slate-800 uppercase tracking-widest font-serif border-l-2 border-primary pl-2">
                           {t('forms.waterFacility', 'Water Facility') as string}
@@ -1263,11 +1270,11 @@ export const Properties: React.FC = () => {
                             }}
                             options={[
                               { value: 'All', label: t('properties.anyWaterSourceType', 'Any Type') as string },
-                              { value: 'Well', label: t('waterSource.well', 'Well / Open Well') as string },
+                              { value: 'Municipal Water', label: t('waterSource.municipal', 'Municipal Tap Line') as string },
                               { value: 'Borewell', label: t('waterSource.borewell', 'Borewell') as string },
+                              { value: 'Well', label: t('waterSource.well', 'Well / Open Well') as string },
                               { value: 'Canal', label: t('waterSource.canal', 'Irrigation Canal') as string },
                               { value: 'River', label: t('waterSource.river', 'River Water Intake') as string },
-                              { value: 'Municipal Water', label: t('waterSource.municipal', 'Municipal Tap Line') as string },
                               { value: 'Other', label: t('waterSource.other', 'Other Water Source') as string }
                             ]}
                             className="py-2.5 text-xs font-semibold"

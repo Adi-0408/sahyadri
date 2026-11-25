@@ -444,7 +444,7 @@ export const RoleInquiryPage: React.FC = () => {
             roadAccess: roadAccess.trim(),
             electricity: electricity.trim(),
             titleClear: titleClear.trim(),
-            description: propDescription.trim() || `${propCategory} in ${sellerCity}, ${sellerTaluka}`,
+            description: propDescription.trim(),
             images: allImages
           }
         };
@@ -476,7 +476,7 @@ export const RoleInquiryPage: React.FC = () => {
             bathrooms: Number(String(propBathrooms || '').replace(/[^0-9.]/g, '')) || 0,
             furnishingStatus: propFurnishing,
             carParking: propCarParking,
-            description: propDescription.trim() || `${propTitle} by ${builderCompany}`,
+            description: propDescription.trim(),
             images: allImages
           }
         };

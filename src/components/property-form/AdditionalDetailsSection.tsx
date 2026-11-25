@@ -1,5 +1,5 @@
 import React from 'react';
-import { Settings, Armchair, Trees, Landmark, CarFront, Users } from 'lucide-react';
+import { Settings, Armchair, Trees, Landmark, CarFront, Users, Droplet, ArrowUpDown, Zap } from 'lucide-react';
 import { Controller } from 'react-hook-form';
 import type { Control } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -104,6 +104,48 @@ export const AdditionalDetailsSection: React.FC<AdditionalDetailsSectionProps> =
                 icon={CarFront}
                 label={t('forms.reservedParking')}
                 description={t('forms.reservedParkingDesc')}
+                checked={!!value}
+                onChange={onChange}
+              />
+            )}
+          />
+
+          <Controller
+            name="lift"
+            control={control}
+            render={({ field: { value, onChange } }) => (
+              <ToggleSwitch
+                icon={ArrowUpDown}
+                label={t('forms.lift', 'Lift Available')}
+                description={t('forms.liftDesc', 'Elevator or lift facility available')}
+                checked={!!value}
+                onChange={onChange}
+              />
+            )}
+          />
+
+          <Controller
+            name="powerBackup"
+            control={control}
+            render={({ field: { value, onChange } }) => (
+              <ToggleSwitch
+                icon={Zap}
+                label={t('details.fields.powerBackup', 'Power Backup')}
+                description={t('forms.powerBackupDesc', 'Inverter or generator backup power available')}
+                checked={!!value}
+                onChange={onChange}
+              />
+            )}
+          />
+
+          <Controller
+            name="waterSupply"
+            control={control}
+            render={({ field: { value, onChange } }) => (
+              <ToggleSwitch
+                icon={Droplet}
+                label={t('details.fields.waterSupply', 'Water Supply')}
+                description={t('forms.waterSupplyDesc', 'Active drinking and domestic water supply available')}
                 checked={!!value}
                 onChange={onChange}
               />

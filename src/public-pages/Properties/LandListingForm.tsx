@@ -4,13 +4,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { motion } from 'framer-motion';
 import {
   LayoutGrid, Check, Rocket,
-  Navigation, Ruler
+  Navigation, Ruler, FileText
 } from 'lucide-react';
 import * as z from 'zod';
 import { useTranslation } from 'react-i18next';
 
 import { sellPropertySchema, rentPropertySchema } from '../../schemas/property.schema';
 import { Input } from '../../components/ui/Input';
+import { Textarea } from '../../components/ui/Textarea';
 import { Select } from '../../components/ui/Select';
 import { Button } from '../../components/ui/Button';
 import { ToggleSwitch } from '../../components/ui/ToggleSwitch';
@@ -172,7 +173,7 @@ export const LandListingForm: React.FC<LandListingFormProps> = ({ onBack, onSucc
       cityVillage: initialData?.cityVillage || initialData?.addressLocation?.village || '',
       pincode: initialData?.pincode || '416415',
       fullAddress: initialData?.fullAddress || initialData?.addressLocation?.address || '',
-      description: initialData?.description || initialData?.propertyInformation?.description || 'Fertile agricultural land block / prime commercial development space with clear title boundaries.', // Satisfies schema constraint
+      description: initialData?.description || initialData?.propertyInformation?.description || '',
       amenities: initialData?.amenities || initialData?.propertyInformation?.amenities || [],
       images: initialData?.images || initialData?.mediaUpload?.images || [],
       videoPath: initialData?.videoPath || initialData?.mediaUpload?.videoPath || '',
@@ -484,6 +485,32 @@ export const LandListingForm: React.FC<LandListingFormProps> = ({ onBack, onSucc
               setValue={setValue} 
             />
           )}
+
+          {/* Property Description */}
+          <section className="bg-white rounded-2xl border border-slate-200 shadow-sm">
+            <div className="flex items-center gap-3 px-6 py-4 bg-orange-50/30 border-b border-orange-100/50 rounded-t-2xl">
+              <div className="text-blue-600">
+                <FileText className="w-5 h-5" fill="currentColor" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-800 font-serif tracking-wide">
+                {i18n.language?.startsWith('mr') ? 'जमिनीचे वर्णन (Description)' : 'Property Description'}
+              </h3>
+            </div>
+            <div className="p-6 flex flex-col gap-3 text-left">
+              <Textarea
+                label={i18n.language?.startsWith('mr') ? 'तपशीलवार माहिती (वर्णन)' : 'Detailed Description'}
+                placeholder={i18n.language?.startsWith('mr') ? 'जमिनीची सुपीकता, पाण्याचे नियोजन, पिके, डांबरी रस्ता, विहीर/बोअरवेल इत्यादी तपशील लिहा...' : 'Describe soil fertility, water source, crops, road connectivity, title details...'}
+                rows={4}
+                {...register('description')}
+                error={errors.description?.message as string}
+              />
+              <span className="text-[11px] text-slate-400">
+                {i18n.language?.startsWith('mr') 
+                  ? 'येथे तुम्ही स्वतः माहिती लिहू किंवा बदलू शकता. ही माहिती ग्राहकांना मालमत्तेच्या तपशील पेजवर दिसेल.'
+                  : 'Write or edit the property description in your own words. This will appear on the property details page.'}
+              </span>
+            </div>
+          </section>
 
           {/* Media upload */}
           <MediaUploadSection 

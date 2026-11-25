@@ -116,7 +116,7 @@ export const ProjectsManager: React.FC = () => {
 
     try {
       if (editingProj) {
-        await updateDocument('projects', editingProj.id, payload);
+        await updateDocument('projects', editingProj.id || editingProj.firestoreDocId, payload);
       } else {
         await createDocument('projects', {
           ...payload,
@@ -252,7 +252,7 @@ export const ProjectsManager: React.FC = () => {
                 <Button onClick={() => handleOpenEdit(proj)} variant="glass" className="py-2 px-4 rounded-lg text-[10px] flex items-center gap-1 border-slate-200 cursor-pointer">
                   <Edit className="w-3.5 h-3.5 text-primary" /> {t('admin.projects.actions.edit')}
                 </Button>
-                <Button onClick={() => handleDelete(proj.id)} variant="glass" className="py-2 px-4 rounded-lg text-[10px] flex items-center gap-1 border-slate-200 text-rose-500 hover:bg-rose-50 cursor-pointer">
+                <Button onClick={() => handleDelete(proj.id || proj.firestoreDocId)} variant="glass" className="py-2 px-4 rounded-lg text-[10px] flex items-center gap-1 border-slate-200 text-rose-500 hover:bg-rose-50 cursor-pointer">
                   <Trash2 className="w-3.5 h-3.5" /> {t('admin.projects.actions.delete')}
                 </Button>
               </div>

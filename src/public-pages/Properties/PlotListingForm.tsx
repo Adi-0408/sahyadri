@@ -3,11 +3,12 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { motion } from 'framer-motion';
-import { Rocket } from 'lucide-react';
+import { Rocket, FileText } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { sellPropertySchema, rentPropertySchema } from '../../schemas/property.schema';
 import { Button } from '../../components/ui/Button';
+import { Textarea } from '../../components/ui/Textarea';
 import { fetchCollection, createDocument } from '../../services/firebase';
 import { useAuth } from '../../app/providers/AuthProvider';
 import { scrollToFirstError } from '../../utils/validation';
@@ -108,7 +109,7 @@ export const PlotListingForm: React.FC<PlotListingFormProps> = ({ onBack, onSucc
       mobileNumber: initialData?.mobileNumber || initialData?.ownerDetails?.ownerPhone || '',
       alternateMobile: initialData?.alternateMobile || initialData?.ownerDetails?.ownerWhatsApp || '',
       propertyName: initialData?.propertyName || initialData?.title || initialData?.propertyInformation?.title || '',
-      description: initialData?.description || initialData?.propertyInformation?.description || 'Prime residential plot with excellent road connectivity and clean title, ready for immediate construction.',
+      description: initialData?.description || initialData?.propertyInformation?.description || '',
       priceType: initialData?.priceType || (initialData?.pricingDetails?.isPricePerGuntha ? 'price_per_guntha' : 'total_price'),
       priceAmount: initialData?.priceAmount || initialData?.price || initialData?.pricingDetails?.price || undefined,
       isNegotiable: initialData?.isNegotiable !== undefined ? initialData.isNegotiable : true,
@@ -323,6 +324,32 @@ export const PlotListingForm: React.FC<PlotListingFormProps> = ({ onBack, onSucc
               setValue={setValue} 
             />
           )}
+
+          {/* Property Description */}
+          <section className="bg-white rounded-2xl border border-slate-200 shadow-sm">
+            <div className="flex items-center gap-3 px-6 py-4 bg-orange-50/30 border-b border-orange-100/50 rounded-t-2xl">
+              <div className="text-blue-600">
+                <FileText className="w-5 h-5" fill="currentColor" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-800 font-serif tracking-wide">
+                {i18n.language?.startsWith('mr') ? 'प्लॉटचे वर्णन (Description)' : 'Property Description'}
+              </h3>
+            </div>
+            <div className="p-6 flex flex-col gap-3 text-left">
+              <Textarea
+                label={i18n.language?.startsWith('mr') ? 'तपशीलवार माहिती (वर्णन)' : 'Detailed Description'}
+                placeholder={i18n.language?.startsWith('mr') ? 'प्लॉटचे खास वैशिष्ट्ये, रस्ता, सीमा, परिसर इत्यादी तपशील लिहा...' : 'Describe the plot, road connectivity, title clarity, neighborhood, etc...'}
+                rows={4}
+                {...register('description')}
+                error={errors.description?.message as string}
+              />
+              <span className="text-[11px] text-slate-400">
+                {i18n.language?.startsWith('mr') 
+                  ? 'येथे तुम्ही स्वतः माहिती लिहू किंवा बदलू शकता. ही माहिती ग्राहकांना मालमत्तेच्या तपशील पेजवर दिसेल.'
+                  : 'Write or edit the property description in your own words. This will appear on the property details page.'}
+              </span>
+            </div>
+          </section>
 
           {/* Media Upload */}
           <MediaUploadSection 

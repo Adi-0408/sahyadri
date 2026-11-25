@@ -97,7 +97,7 @@ if (!isMockMode) {
 // ==========================================
 
 // ⬆️ Bump this version whenever seed data changes to auto-refresh localStorage
-const SEED_VERSION = '7';
+const SEED_VERSION = '8';
 const SEED_VERSION_KEY = 'luminous_seed_version';
 
 const getStoredData = (key: string, defaultData: any) => {
@@ -120,7 +120,15 @@ if (typeof window !== 'undefined') {
     // Clear only seed collections (not user data or saved properties)
     ['luminous_mock_properties', 'luminous_mock_projects', 'luminous_mock_blogs',
      'luminous_mock_buyer_requirements', 'luminous_mock_property_types',
-     'luminous_mock_homepage_sections', 'luminous_mock_representatives'].forEach(k => localStorage.removeItem(k));
+     'luminous_mock_homepage_sections', 'luminous_mock_representatives',
+     'sahyadri_cache_projects'].forEach(k => {
+       try {
+         localStorage.removeItem(k);
+         sessionStorage.removeItem(k);
+       } catch (err) {
+         // ignore storage errors
+       }
+     });
     localStorage.setItem(SEED_VERSION_KEY, SEED_VERSION);
     console.info(`[Sahyadri Realty] Seed data refreshed to v${SEED_VERSION}`);
   }
@@ -131,55 +139,7 @@ const seedAdmins = [
   { uid: 'admin-example', name: 'Super Admin', email: 'admin@example.com', role: 'admin' }
 ];
 
-
-
-const seedProjects = [
-  {
-    id: 'proj-1',
-    title: 'Nath Visawa Residency',
-    titleMr: 'नाथ विसावा रेसिडेन्सी',
-    description: 'Ready to move premium apartments by Dubal Developers located in Shantisagar Colony, Sangli.',
-    descriptionMr: 'डुबल डेव्हलपर्स तर्फे शांतिसागर कॉलनी, सांगली येथे रेडी टू मूव्ह प्रीमियम अपार्टमेंट्स.',
-    location: 'Shantisagar Colony, sangli',
-    locationMr: 'शांतिसागर कॉलनी, सांगली',
-    priceRange: '₹26,00,000',
-    status: 'Ready to Move',
-    images: ['https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1200&q=80'],
-    developerName: 'Dubal Developers',
-    imageCount: 10,
-    isLocationVerified: true
-  },
-  {
-    id: 'proj-2',
-    title: 'Nirmiti Elite 14',
-    titleMr: 'निर्मिती एलिट १४',
-    description: 'Elegant architectural spaces with state-of-the-art facilities by Swastivastu Developer in ST Colony.',
-    descriptionMr: 'एसटी कॉलनी येथे स्वास्तिका डेव्हलपर्स तर्फे अत्याधुनिक सुविधांसह सुसज्ज घरे.',
-    location: 'ST Colony, sangli',
-    locationMr: 'एसटी कॉलनी, सांगली',
-    priceRange: 'Contact for Price',
-    status: 'Ready to Move',
-    images: ['https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80'],
-    developerName: 'Swastivastu Developer',
-    imageCount: 2,
-    isLocationVerified: true
-  },
-  {
-    id: 'proj-3',
-    title: 'Vijay Apartment',
-    titleMr: 'विजय अपार्टमेंट',
-    description: 'Bespoke residences designed by Vijayraj Builder, offering high preservation value and security in Abhaynagar.',
-    descriptionMr: 'अभयनगर येथे विजयराज बिल्डर तर्फे उत्कृष्ट डिझाइन केलेली सुरक्षित घरे.',
-    location: 'Abhaynagar, sangli',
-    locationMr: 'अभयनगर, सांगली',
-    priceRange: 'Contact for Price',
-    status: 'Ready to Move',
-    images: ['https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80'],
-    developerName: 'Vijayraj Builder',
-    imageCount: 5,
-    isLocationVerified: true
-  }
-];
+const seedProjects: any[] = [];
 
 const seedBlogs = [
   {
